@@ -137,6 +137,8 @@ keyboard_shortcuts = {
             "settings_manipulator_toggle": "F2",
             "select_tab_left": "Ctrl+,",
             "select_tab_right": "Ctrl+.",
+            "open_chapter_list": "Ctrl+Shift+P",
+            "find_dialog": "Ctrl+Shift+S",
         },
         "editor": {
             "cancel": "Escape",

@@ -452,7 +452,7 @@ def get_nim_node_tree(nim_code):
                 )
                 or (
                     len(current_line.split("=")) > 2
-                    and current_line[current_line.rfind(")") :].split("=")[1] != ""
+                    and current_line[current_line.rfind(")"):].split("=")[1] != ""
                 )
             ):
                 # One-liner
@@ -1141,7 +1141,7 @@ def remove_comments_from_c_code(c_code):
                         stringing = True
                     elif ch == '"' and line[i - 1] != "\\" and stringing == True:
                         stringing = False
-                    elif stringing == False and line[i : i + 2] == "//":
+                    elif stringing == False and line[i: i + 2] == "//":
                         line = line[:i]
                         break
                 no_comment_code_list.append(line)
@@ -1152,7 +1152,7 @@ def remove_comments_from_c_code(c_code):
                         stringing = True
                     elif ch == '"' and line[i - 1] != "\\" and stringing == True:
                         stringing = False
-                    elif stringing == False and line[i : i + 2] == "/*":
+                    elif stringing == False and line[i: i + 2] == "/*":
                         # Remove the closed comments
                         rest_line = re.sub(r"/\*.*?\*/", "", line[i:], flags=re.DOTALL)
                         line = line[:i] + rest_line
@@ -1189,7 +1189,7 @@ def remove_comments_from_c_code(c_code):
                     if line.strip().endswith("*/"):
                         commenting = False
                     else:
-                        line = line[line.find("/*") + 2 :]
+                        line = line[line.find("/*") + 2:]
                         no_comment_code_list.append(line)
                         commenting = False
     # Return the result
@@ -1973,7 +1973,7 @@ def get_c_node_tree(c_code):
                             i,
                         )
                     node_list, skip_to_token = parse_loop(
-                        tokens[i + 1 :], node_list, current_line, i + 1, next_level
+                        tokens[i + 1:], node_list, current_line, i + 1, next_level
                     )
                     current_statement_tokens.append("{ ... }")
                     if func_found:
@@ -1995,21 +1995,21 @@ def get_c_node_tree(c_code):
                     function_flag = False
                     previous_t = None
                     next_t = None
-                    for j, t in enumerate(tokens[i + 1 :]):
+                    for j, t in enumerate(tokens[i + 1:]):
                         print(paren_count)
                         skip_to_token += 1
                         paren_tokens.append(t)
                         if j > 0:
-                            previous_t = tokens[i + 1 :][j - 1]
-                        if j < len(tokens[i + 1 :]) - 1:
-                            next_t = tokens[i + 1 :][j + 1]
+                            previous_t = tokens[i + 1:][j - 1]
+                        if j < len(tokens[i + 1:]) - 1:
+                            next_t = tokens[i + 1:][j + 1]
                         if t == "(" and previous_t != "'" and next_t != "'":
                             paren_count += 1
                         if t == ")" and previous_t != "'" and next_t != "'":
                             if paren_count == 0:
                                 #                                repl_print(previous_t, t, next_t)
                                 try:
-                                    tks = tokens[i + 1 :]
+                                    tks = tokens[i + 1:]
                                     for k in range(3):
                                         if "{" in tks[j + 1 + k].strip():
                                             function_flag = True
@@ -2183,6 +2183,7 @@ def replace_and_index(
     replace_text,
     case_sensitive=False,
     regular_expression=False,
+    whole_words=False
 ):
     """
     Function that replaces the search text with replace text in a string,
@@ -2205,6 +2206,7 @@ def replace_and_index(
             case_sensitive,
             regular_expression,
             text_to_bytes=True,
+            whole_words=whole_words,
         )
     # Create a matches list according to regular expression selection
     if regular_expression == True:
@@ -2234,8 +2236,11 @@ def replace_and_index(
             # Standard string replace
             replaced_text = input_string.replace(search_text, replace_text)
         else:
-            # Escape the regex special characters
-            new_search_text = re.escape(search_text)
+            if whole_words == True:
+                new_search_text = r"\b(" + search_text + r")\b"
+            else:
+                # Escape the regex special characters
+                new_search_text = re.escape(search_text)
             # Replace backslashes with double backslashes, so that the
             # regular expression treats backslashes the same as standard
             # Python string replace!
@@ -2287,7 +2292,7 @@ def regex_replace_text(
         if case_sensitive == True:
             replaced_text = input_string.replace(search_text, replace_text)
         else:
-            #'re.escape' replaces the re module special characters with literals,
+            # 're.escape' replaces the re module special characters with literals,
             # so that the search_text is treated as a string literal
             compiled_re = re.compile(re.escape(search_text), re.IGNORECASE)
             replaced_text = re.sub(compiled_re, replace_text, input_string)

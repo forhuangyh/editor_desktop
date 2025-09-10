@@ -78,6 +78,7 @@ import components.communicator
 import components.processcontroller
 import components.thesquid
 from components.pathwatcher import FileEvent, PathWatcher
+from gui.search_replace_dialog import SearchReplaceDialog
 
 if data.platform == "Windows":
     import win32gui
@@ -149,6 +150,7 @@ class MainWindow(qt.QMainWindow):
     editing = None
     display = None
     bookmarks = None
+    search_dialog = None
 
     # External program reference
     external_program = None
@@ -271,12 +273,16 @@ class MainWindow(qt.QMainWindow):
 
     def eventFilter(self, object, event):
         if event.type() == qt.QEvent.Type.Enter:
-            self.display.docking_overlay_hide()
+            # 防止查找等模态窗口出现挪动现象
+            if qt.QApplication.activeModalWidget() is None:
+                self.display.docking_overlay_hide()
 
         if event.type() == qt.QEvent.Type.WindowActivate:
             pass
         elif event.type() == qt.QEvent.Type.WindowDeactivate:
-            self.display.docking_overlay_hide()
+            # 防止查找等模态窗口出现挪动现象
+            if qt.QApplication.activeModalWidget() is None:
+                self.display.docking_overlay_hide()
 
         if event.type() in (
             qt.QEvent.Type.Enter,
@@ -1077,6 +1083,18 @@ class MainWindow(qt.QMainWindow):
                 "tango_icons/edit-clear.png",
                 self.view.clear_recent_file_list,
             )
+
+            def special_open_chapter_list():
+                self.open_chapter_list()
+
+            open_chapter_list_action = create_action(
+                "Open Chapter List",
+                settings.get("keyboard-shortcuts")["general"]["open_chapter_list"],
+                "Open Chapter List",
+                "tango_icons/document-open.png",
+                special_open_chapter_list,
+            )
+
             # Add the actions to the File menu
             file_menu.addAction(new_file_action)
             file_menu.addAction(open_file_action)
@@ -1095,6 +1113,8 @@ class MainWindow(qt.QMainWindow):
             file_menu.addAction(clear_recent_file_list_action)
             file_menu.addSeparator()
             file_menu.addAction(exit_action)
+            file_menu.addSeparator()
+            file_menu.addAction(open_chapter_list_action)
 
         # Edit Menus
         # Adding the basic options to the menu
@@ -1538,8 +1558,21 @@ class MainWindow(qt.QMainWindow):
             edit_menu.addAction(select_to_end_action)
             edit_menu.addAction(rect_block_action)
 
+        def open_find_replace_dialog():
+            """初始化树形tab"""
+            # 创建新的树形tab
+            # Create the new scintilla document in the selected basic widget
+            focused_tab = self.get_used_tab()
+            search_text = focused_tab.selectedText()
+            if self.search_dialog is None:
+                self.search_dialog = SearchReplaceDialog(search_text, focused_tab, self)
+            else:
+                self.search_dialog.change_editor(search_text, focused_tab)
+            # search_dialog.center()
+            self.search_dialog.show()
+
         def construct_edit_advanced_menu():
-            edit_menu = Menu("&Advanced", self.menubar)
+            edit_menu = Menu("&Find", self.menubar)
             self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
@@ -1570,6 +1603,23 @@ class MainWindow(qt.QMainWindow):
                 "Find text in the currently selected document",
                 "tango_icons/edit-find.png",
                 special_find,
+            )
+
+            def special_dialog_find():
+                try:
+                    open_find_replace_dialog()
+                except:
+                    pass
+                # self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
+                # self.repl.setFocus()
+                # self.repl.setCursorPosition(self.repl.text().find('",case_sensitive'))
+
+            dialog_find_action = create_action(
+                "Find Dialog",
+                settings.get("keyboard-shortcuts")["general"]["find_dialog"],
+                "Find text in the currently selected document",
+                "tango_icons/edit-find.png",
+                special_dialog_find,
             )
 
             # Nested special function for finding text in the currentlly focused
@@ -2117,6 +2167,7 @@ class MainWindow(qt.QMainWindow):
             )
             # Adding the edit menu and constructing all of the options
             edit_menu.addAction(find_action)
+            edit_menu.addAction(dialog_find_action)
             edit_menu.addAction(regex_find_action)
             edit_menu.addAction(find_and_replace_action)
             edit_menu.addAction(regex_find_and_replace_action)
@@ -2896,7 +2947,7 @@ class MainWindow(qt.QMainWindow):
             temp_icon = functions.create_icon("language_icons/logo_python.png")
             formatting_menu_python.setIcon(temp_icon)
 
-            ## Formatting Python code
+            # Formatting Python code
             formatting_libraries = (
                 "black",
                 "autopep8",
@@ -3423,6 +3474,18 @@ class MainWindow(qt.QMainWindow):
                 message_type=constants.MessageType.ERROR,
             )
             return None
+
+    def open_chapter_list(self):
+        """初始化树形tab"""
+        # 创建新的树形tab
+        # Create the new scintilla document in the selected basic widget
+        return_widget = self.get_largest_window().editor_add_tree(
+            "test"
+        )
+        # Set focus to the new widget
+        return_widget.setFocus()
+        # Return the widget reference
+        return return_widget
 
     def open_file_hex(self, file_path, tab_widget=None, save_layout=False):
         # Check if file exists
@@ -4037,7 +4100,7 @@ class MainWindow(qt.QMainWindow):
             self._parent.sessions_menu.addAction(exco_session_action)
             self._parent.sessions_menu.addSeparator()
 
-            ## Create the Sessions menu
+            # Create the Sessions menu
             # Group processing function
             def process_group(in_group, in_menu, create_menu=True):
                 # Create the new group and attach it to the parent menu

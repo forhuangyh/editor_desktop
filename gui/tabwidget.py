@@ -399,11 +399,11 @@ QTabBar::tab:selected {{
         self.custom_tab_bar = self.CustomTabBar(self)
         self.setTabBar(self.custom_tab_bar)
         # Enable drag&drop events
-        self.setAcceptDrops(True)
+        self.setAcceptDrops(False)
         # Add close buttons to tabs
-        self.setTabsClosable(True)
+        self.setTabsClosable(False)
         # Set tabs as movable, so that you can move tabs with the mouse
-        self.setMovable(True)
+        self.setMovable(False)
         # Add signal for coling a tab to the EVT_tabCloseRequested function
         self.tabCloseRequested.connect(self._signal_editor_tabclose)
         # Connect signal that fires when the tab index changes
@@ -515,37 +515,38 @@ QTabBar::tab:selected {{
             self.main_form.view.indication_check()
 
         if source == self.tabBar():
-            if (
-                event.type() == qt.QEvent.Type.MouseButtonPress
-                and event.buttons() == qt.Qt.MouseButton.LeftButton
-            ):
-                qt.QTimer.singleShot(0, self._setmove_range)
-            elif event.type() == qt.QEvent.Type.MouseButtonRelease:
-                self.move_range = None
-            elif (
-                event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
-            ):
-                pos = event.pos()
-                if self.tabBar().rect().contains(pos):
-                    self.drag_lock = False
-                else:
-                    buttons = data.application.mouseButtons()
-                    if buttons == qt.Qt.MouseButton.LeftButton:
-                        if self.drag_lock == False:
-                            if hasattr(self.main_form.display, "docking_overlay_show"):
-                                self.drag_lock = True
-                                self.main_form.display.docking_overlay_show()
-                                self.__init_drag_data(event)
-                                self.__start_tab_drag()
-                    else:
-                        self.drag_lock = False
+            pass
+            # if (
+            #     event.type() == qt.QEvent.Type.MouseButtonPress
+            #     and event.buttons() == qt.Qt.MouseButton.LeftButton
+            # ):
+            #     qt.QTimer.singleShot(0, self._setmove_range)
+            # elif event.type() == qt.QEvent.Type.MouseButtonRelease:
+            #     self.move_range = None
+            # elif (
+            #     event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
+            # ):
+            #     pos = event.pos()
+            #     if self.tabBar().rect().contains(pos):
+            #         self.drag_lock = False
+            #     else:
+            #         buttons = data.application.mouseButtons()
+            #         if buttons == qt.Qt.MouseButton.LeftButton:
+            #             if self.drag_lock == False:
+            #                 if hasattr(self.main_form.display, "docking_overlay_show"):
+            #                     self.drag_lock = True
+            #                     self.main_form.display.docking_overlay_show()
+            #                     self.__init_drag_data(event)
+            #                     self.__start_tab_drag()
+            #         else:
+            #             self.drag_lock = False
 
-                if (self.move_range is not None) and (pos.x() < self.move_range[0]):
-                    return True
-                elif (self.move_range is not None) and (
-                    pos.x() > self.tabBar().width() - self.move_range[1]
-                ):
-                    return True
+            #     if (self.move_range is not None) and (pos.x() < self.move_range[0]):
+            #         return True
+            #     elif (self.move_range is not None) and (
+            #         pos.x() > self.tabBar().width() - self.move_range[1]
+            #     ):
+            #         return True
         return qt.QTabWidget.eventFilter(self, source, event)
 
     def dragEnterEvent(self, event):
@@ -943,7 +944,7 @@ QTabBar::tab:selected {{
     def editor_add_document(self, document_name, type=None, bypass_check=False):
         """Check tab type and add a document to self(QTabWidget)"""
         if type == "file":
-            ## New tab is a file on disk
+            # New tab is a file on disk
             file_type = "unknown"
             if bypass_check == False:
                 file_type = functions.get_file_type(document_name)
@@ -975,7 +976,7 @@ QTabBar::tab:selected {{
                 )
                 return None
         else:
-            ## New tab is an empty tab
+            # New tab is an empty tab
             # Create new scintilla object
             new_editor_tab = self.editor_create_document(document_name)
             # Add the scintilla document to the tab widget
@@ -984,6 +985,16 @@ QTabBar::tab:selected {{
             self.setCurrentIndex(new_editor_tab_index)
             # Return the reference to the new added scintilla tab widget
             return self.widget(new_editor_tab_index)
+
+    def editor_add_tree(self, document_name):
+        """Check tab type and add a document to self(QTabWidget)"""
+        from gui.chapter_list import ChapterList
+        new_chapter_list = ChapterList(self, self.main_form)
+        tab_text = "章节"
+        new_hexview_tab_index = self.addTab(new_chapter_list, tab_text)
+        # Make new tab visible
+        self.setCurrentIndex(new_hexview_tab_index)
+        return self.widget(new_hexview_tab_index)
 
     def hexview_add(self, file_path):
         # Initialize the hex-view

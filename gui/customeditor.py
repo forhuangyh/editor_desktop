@@ -1174,11 +1174,11 @@ class CustomEditor(BaseEditor):
             # Get the selected line list
             lines = self.line_list[line_from:line_to]
 
-            ## Remove the leading tab-width number of spaces in every line
-            ## for i in range(0, len(lines)):
-            ##     for j in range(0, tab_width):
-            ##         if lines[i].startswith(" "):
-            ##             lines[i] = lines[i].replace(" ", "", 1)
+            # Remove the leading tab-width number of spaces in every line
+            # for i in range(0, len(lines)):
+            # for j in range(0, tab_width):
+            # if lines[i].startswith(" "):
+            # lines[i] = lines[i].replace(" ", "", 1)
             # Smart unindentation that unindents each line to the nearest tab column
             def unindent_func(line):
                 if line.startswith(" "):
@@ -1266,7 +1266,7 @@ class CustomEditor(BaseEditor):
             # Text is selected
             start_line_number = self.getSelection()[0] + 1
             first_selected_chars = self.selectedText()[
-                0 : len(self.lexer().comment_string)
+                0: len(self.lexer().comment_string)
             ]
             end_line_number = self.getSelection()[2] + 1
             # Choose un/commenting according to the first line in selection
@@ -1351,6 +1351,7 @@ class CustomEditor(BaseEditor):
         case_sensitive=False,
         search_forward=True,
         regular_expression=False,
+        whole_words=False
     ):
         """
         (SAME AS THE QSciScintilla.find, BUT THIS RETURNS A RESULT)
@@ -1458,8 +1459,9 @@ class CustomEditor(BaseEditor):
                 self.setCursorPosition(line, index - 1)
             # "findFirst" is the QScintilla function for finding text in a document
             search_result = self.findFirst(
-                search_text, False, case_sensitive, False, False, forward=search_forward
+                search_text, False, case_sensitive, whole_words, False, forward=search_forward
             )
+
             if search_result == False:
                 # Try to find text again from the top or at the bottom of
                 # the scintilla document, depending on the search direction
@@ -1469,11 +1471,12 @@ class CustomEditor(BaseEditor):
                 else:
                     s_line = len(self.line_list) - 1
                     s_index = len(self.text())
+
                 inner_result = self.findFirst(
                     search_text,
                     False,
                     case_sensitive,
-                    False,
+                    whole_words,
                     False,
                     forward=search_forward,
                     line=s_line,
@@ -1525,12 +1528,13 @@ class CustomEditor(BaseEditor):
         case_sensitive=False,
         search_forward=True,
         regular_expression=False,
+        whole_words=False
     ):
         """Find next instance of the search string and replace it with the replace string"""
         if regular_expression == True:
             # Check if expression exists in the document
             search_result = self.find_text(
-                search_text, case_sensitive, search_forward, regular_expression
+                search_text, case_sensitive, search_forward, regular_expression, whole_words
             )
             if search_result != constants.SearchResult.NOT_FOUND:
                 if case_sensitive == True:
@@ -1560,7 +1564,7 @@ class CustomEditor(BaseEditor):
                 return False
         else:
             # Check if string exists in the document
-            search_result = self.find_text(search_text, case_sensitive)
+            search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
             if search_result != constants.SearchResult.NOT_FOUND:
                 # Save the found selected text line/index information
                 saved_selection = self.getSelection()
@@ -1580,7 +1584,7 @@ class CustomEditor(BaseEditor):
                 return False
 
     def replace_all(
-        self, search_text, replace_text, case_sensitive=False, regular_expression=False
+        self, search_text, replace_text, case_sensitive=False, regular_expression=False, whole_words=False
     ):
         """
         Replace all occurences of a string in a scintilla document
@@ -1609,7 +1613,7 @@ class CustomEditor(BaseEditor):
                 compiled_search_re = re.compile(search_text, re.IGNORECASE)
             search_result = re.search(compiled_search_re, self.text())
         else:
-            search_result = self.find_text(search_text, case_sensitive)
+            search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
         if search_result == constants.SearchResult.NOT_FOUND:
             message = "No matches were found in '{}'!".format(file_name)
             self.main_form.display.repl_display_message(
@@ -1624,6 +1628,7 @@ class CustomEditor(BaseEditor):
             replace_text,
             case_sensitive,
             regular_expression,
+            whole_words=whole_words,
         )
         # Check if there were any matches or
         # if the search and replace text were equivalent!
@@ -1763,7 +1768,7 @@ class CustomEditor(BaseEditor):
     """
 
     def highlight_text(
-        self, highlight_text, case_sensitive=False, regular_expression=False
+        self, highlight_text, case_sensitive=False, regular_expression=False, whole_words=False
     ):
         """
         Highlight all instances of the selected text with a selected colour
@@ -1772,7 +1777,7 @@ class CustomEditor(BaseEditor):
         self.set_indicator("highlight")
         # Get all instances of the text using list comprehension and the re module
         matches = self.find_all(
-            highlight_text, case_sensitive, regular_expression, text_to_bytes=True
+            highlight_text, case_sensitive, regular_expression, text_to_bytes=True, whole_words=whole_words
         )
         # Check if the match list is empty
         if matches:
