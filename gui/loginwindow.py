@@ -109,12 +109,12 @@ class LoginWindow(qt.QDialog):
         button_layout.setSpacing(10)
 
         # Login button
-        self.login_button = qt.QPushButton("Login")
+        self.login_button = qt.QPushButton("登录")
         self.login_button.setDefault(True)
         self.login_button.setMinimumWidth(100)
 
         # Cancel button
-        self.cancel_button = qt.QPushButton("Cancel")
+        self.cancel_button = qt.QPushButton("取消")
         self.cancel_button.setMinimumWidth(100)
 
         # Add buttons to button layout
