@@ -15,7 +15,7 @@ isort
 send2trash
 pyflakes
 watchdog
-
+requests
 # Linux
 ptyprocess>=0.7.0; platform_system == "Linux"
 

@@ -24,7 +24,7 @@
         | <a href="https://openaitx.github.io/view.html?user=matkuki&project=ExCo&lang=tr">Türkçe</a>
         | <a href="https://openaitx.github.io/view.html?user=matkuki&project=ExCo&lang=vi">Tiếng Việt</a>
         | <a href="https://openaitx.github.io/view.html?user=matkuki&project=ExCo&lang=id">Bahasa Indonesia</a>
-        | <a href="https://openaitx.github.io/view.html?user=matkuki&project=ExCo&lang=as">অসমীয়া</
+        | <a href="https://openaitx.github.io/view.html?user=matkuki&project=ExCo&lang=as">অসমীয়া</a>
       </div>
     </div>
   </details>

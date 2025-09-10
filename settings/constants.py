@@ -10,6 +10,11 @@ import data
 import functions
 
 """
+自定义属性行
+"""
+editor_api_base_url="http://101.47.131.70:8087"
+
+"""
 Sessions
 """
 session_structures = {
@@ -303,6 +308,7 @@ one_window_layout = """
 }}
 """
 
+
 """
 General
 """
@@ -345,4 +351,5 @@ default_settings = {
     "last-layout-filename": "last_layout.json",
     "editor": editor["default"].copy(),
     "keyboard-shortcuts": keyboard_shortcuts["default"].copy(),
+    "editor_api_base_url": editor_api_base_url,
 }

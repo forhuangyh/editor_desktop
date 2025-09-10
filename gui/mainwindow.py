@@ -155,12 +155,19 @@ class MainWindow(qt.QMainWindow):
     # External program reference
     external_program = None
 
-    def __init__(self, new_document=False, logging=False, file_arguments=None):
+    def __init__(self, new_document=False, logging=False, file_arguments=None,user_info=None):
         """
         Initialization routine for the main form
         """
         # Initialize superclass, from which the main form is inherited
         super().__init__()
+        # 存储用户信息作为MainWindow的属性
+        self.user_info = user_info
+        # 如果用户信息存在，可以在控制台显示欢迎信息
+        if self.user_info:
+            welcome_message = f"用户: {self.user_info.user_name} 信息初始化成功"
+            print(welcome_message)
+
         # Initialize the namespace references
         self.settings = self.Settings(self)
         self.sessions = self.Sessions(self)
