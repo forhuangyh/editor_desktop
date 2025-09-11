@@ -3,16 +3,15 @@ from entity.account import user_info
 import settings
 
 class AccountService:
-    # 从settings中获取BASE_URL配置，如果不存在则使用默认值
-    @staticmethod
-    def get_base_url():
-        # 尝试从settings中获取BASE_URL配置
-        # 如果配置不存在，则返回默认值
-        base_url = settings.get("editor_api_base_url")
-        return base_url
 
-    @staticmethod
-    def login(username, password):
+    # 加入初始化函数
+    def __init__(self):
+        # 初始化连接
+        self.base_url = settings.get("editor_api_base_url")
+        # 登录接口
+        self.api_login = f"{self.base_url}/api/editor/login"
+
+    def login(self, username, password):
         """
         实现用户登录功能
 
@@ -28,16 +27,13 @@ class AccountService:
 
         try:
             # 准备登录请求数据
-            login_url = f"{AccountService.get_base_url()}/api/editor/login"
             login_data = {
                 "editor_name": username,
                 "editor_password": password
             }
 
             # 发送登录请求
-            response = http_form_post(login_url, form_data=login_data)
-
-            # 检查响应
+            response = http_form_post(self.api_login, form_data=login_data)
             # 检查响应 - 修改为新的响应格式判断
             if response and "code" in response and response["code"] == 0:
                 # 登录成功，从body中更新全局用户信息

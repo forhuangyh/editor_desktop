@@ -47,6 +47,8 @@ class LoginWindow(qt.QDialog):
 
         # Center the window on screen
         self.center_on_screen()
+        # 尝试从设置中加载记住的账号密码
+        self.load_saved_credentials()
 
     def init_ui(self):
         """
@@ -83,19 +85,26 @@ class LoginWindow(qt.QDialog):
         # Username field
         self.username_edit = qt.QLineEdit()
         self.username_edit.setPlaceholderText("请输入编辑平台登录账号")
-        self.username_edit.setText("lhc")
+        # self.username_edit.setText("lhc")
         self.username_edit.setMinimumWidth(250)
 
         # Password field
         self.password_edit = qt.QLineEdit()
         self.password_edit.setPlaceholderText("请输入密码")
-        self.password_edit.setText("lhc123")
+        # self.password_edit.setText("lhc123")
         self.password_edit.setEchoMode(qt.QLineEdit.EchoMode.Password)
         self.password_edit.setMinimumWidth(250)
 
         # Add fields to form layout
         form_layout.addRow("账号:", self.username_edit)
         form_layout.addRow("密码:", self.password_edit)
+
+        # 添加"记住账号密码"复选框
+        remember_layout = qt.QHBoxLayout()
+        self.remember_checkbox = qt.QCheckBox("记住账号密码")
+        remember_layout.addWidget(self.remember_checkbox)
+        remember_layout.setAlignment(qt.Qt.AlignmentFlag.AlignLeft)
+        form_layout.addRow(remember_layout)
 
         # Message label for showing errors
         self.message_label = qt.QLabel()
@@ -145,8 +154,13 @@ class LoginWindow(qt.QDialog):
 
         try:
             # 使用AccountService进行登录
-            success, message = AccountService.login(username, password)
+            success, message = AccountService().login(username, password)
             if success:
+                # 如果勾选了记住账号密码，则保存；否则清除已保存的凭据
+                if self.remember_checkbox.isChecked():
+                    self.save_credentials(username, password)
+                else:
+                    self.clear_saved_credentials()  # 添加这一行
                 # 登录成功，发射信号并接受对话框
                 self.login_successful.emit()
                 self.accept()
@@ -156,6 +170,43 @@ class LoginWindow(qt.QDialog):
         except Exception as e:
             # 处理异常
             self.show_error(f"登录过程中发生错误: {str(e)}")
+    def clear_saved_credentials(self):
+        """
+        清除已保存的账号密码
+        """
+        try:
+            settings.set("remember_credentials", False)
+            settings.set("saved_username", "")
+            settings.set("saved_password", "")
+        except Exception as e:
+            print(f"清除账号密码失败: {str(e)}")
+    def save_credentials(self, username, password):
+        """
+        保存账号密码到设置中
+        """
+        try:
+            settings.set("remember_credentials", True)
+            settings.set("saved_username", username)
+            settings.set("saved_password", password)  # 注意：实际应用中应考虑加密存储
+        except Exception as e:
+            print(f"保存账号密码失败: {str(e)}")
+
+    def load_saved_credentials(self):
+        """
+        从设置中加载保存的账号密码
+        """
+        try:
+            # 检查是否有保存的凭据
+            if settings.get("remember_credentials"):
+                username = settings.get("saved_username")
+                password = settings.get("saved_password")
+                if username:
+                    self.username_edit.setText(username)
+                    if password:
+                        self.password_edit.setText(password)
+                    self.remember_checkbox.setChecked(True)
+        except Exception as e:
+            print(f"加载账号密码失败: {str(e)}")
 
     def show_error(self, message):
         """
