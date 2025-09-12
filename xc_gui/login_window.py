@@ -38,6 +38,7 @@ class LoginWindow(qt.QDialog):
 
         # Initialize UI components
         self.init_ui()
+        self.init_loading_mask()
 
         # Connect signals
         self.login_button.clicked.connect(self.check_credentials)
@@ -74,7 +75,7 @@ class LoginWindow(qt.QDialog):
         title_label = qt.QLabel("version {:s}".format(data.application_version))
 
         title_font = qt.QFont(title_label.font())
-        title_font.setPointSize(18)  # 增大版本号字体（从14调整为18）
+        title_font.setPointSize(18)  # 增大版本号字体
         title_font.setBold(True)
         title_label.setFont(title_font)
         title_label.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
@@ -169,6 +170,74 @@ class LoginWindow(qt.QDialog):
         # Set main layout
         self.setLayout(main_layout)
 
+    def init_loading_mask(self):
+        """
+        初始化登录遮罩层和进度指示
+        """
+        # 创建半透明遮罩层
+        self.loading_mask = qt.QWidget(self)
+        self.loading_mask.setGeometry(self.rect())
+        self.loading_mask.setStyleSheet("background-color: rgba(255, 255, 255, 150);")  # 半透明白色背景
+        self.loading_mask.setWindowFlag(qt.Qt.WindowType.SubWindow)
+        self.loading_mask.hide()
+
+        # 创建遮罩层布局
+        mask_layout = qt.QVBoxLayout(self.loading_mask)
+        mask_layout.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
+
+        # 创建加载文本
+        loading_label = qt.QLabel("正在登录中...")
+        loading_font = qt.QFont(loading_label.font())
+        loading_font.setPointSize(16)
+        loading_font.setBold(True)
+        loading_label.setFont(loading_font)
+        loading_label.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
+
+        # 创建进度条 - 修复样式表设置
+        self.progress_bar = qt.QProgressBar()
+        self.progress_bar.setRange(0, 0)  # 设置为不确定模式
+        self.progress_bar.setMinimumWidth(300)
+        self.progress_bar.setMinimumHeight(25)
+        # 修复样式表语法，确保字符串格式正确
+        self.progress_bar.setStyleSheet(
+            "QProgressBar {" \
+            "    border: 2px solid #2c3e50;" \
+            "    border-radius: 5px;" \
+            "    background-color: #ecf0f1;" \
+            "    text-align: center;" \
+            "    height: 25px;" \
+            "}" \
+            "QProgressBar::chunk {" \
+            "    background-color: #3498db;" \
+            "    border-radius: 3px;" \
+            "}"
+        )
+
+        # 添加文本和进度条到遮罩层布局
+        mask_layout.addWidget(loading_label)
+        mask_layout.addSpacing(20)
+        mask_layout.addWidget(self.progress_bar)
+
+    def show_loading_mask(self):
+        """
+        显示加载遮罩层
+        """
+        # 调整遮罩层大小以适应窗口
+        self.loading_mask.setGeometry(self.rect())
+        # 显示遮罩层
+        self.loading_mask.raise_()
+        self.loading_mask.show()
+        # 强制刷新UI
+        qt.QApplication.processEvents()
+
+    def hide_loading_mask(self):
+        """
+        隐藏加载遮罩层
+        """
+        self.loading_mask.hide()
+        # 强制刷新UI
+        qt.QApplication.processEvents()
+
     def check_credentials(self):
         """
         Check if the entered credentials are valid
@@ -182,6 +251,23 @@ class LoginWindow(qt.QDialog):
             return
 
         try:
+            # 禁用所有交互控件，防止重复提交
+            self.login_button.setEnabled(False)
+            self.cancel_button.setEnabled(False)
+            self.username_edit.setEnabled(False)
+            self.password_edit.setEnabled(False)
+            self.remember_checkbox.setEnabled(False)
+
+            # 更改登录按钮文本
+            original_button_text = self.login_button.text()
+            self.login_button.setText("登录中...")
+
+            # 强制刷新UI，确保用户看到状态变化
+            qt.QApplication.processEvents()
+
+            # 显示遮罩层和进度条
+            self.show_loading_mask()
+
             # 使用AccountService进行登录
             success, message = AccountService().login(username, password)
             if success:
@@ -189,7 +275,7 @@ class LoginWindow(qt.QDialog):
                 if self.remember_checkbox.isChecked():
                     self.save_credentials(username, password)
                 else:
-                    self.clear_saved_credentials()  # 添加这一行
+                    self.clear_saved_credentials()
                 # 登录成功，发射信号并接受对话框
                 self.login_successful.emit()
                 self.accept()
@@ -199,6 +285,17 @@ class LoginWindow(qt.QDialog):
         except Exception as e:
             # 处理异常
             self.show_error(f"登录过程中发生错误: {str(e)}")
+        finally:
+            # 恢复控件状态
+            self.login_button.setEnabled(True)
+            self.cancel_button.setEnabled(True)
+            self.username_edit.setEnabled(True)
+            self.password_edit.setEnabled(True)
+            self.remember_checkbox.setEnabled(True)
+            self.login_button.setText(original_button_text)
+
+            # 隐藏遮罩层
+            self.hide_loading_mask()
 
     def clear_saved_credentials(self):
         """
