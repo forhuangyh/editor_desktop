@@ -2910,7 +2910,7 @@ class MainWindow(qt.QMainWindow):
 
         # Settings menu
         def construct_settings_menu():
-            settings_menu = Menu("Settings", self.menubar)
+            settings_menu = Menu("设置", self.menubar)
             self.menubar.addMenu(settings_menu)
             settings_menu.installEventFilter(click_filter)
 
@@ -2945,6 +2945,25 @@ class MainWindow(qt.QMainWindow):
                 font_size_menu.addAction(size_action)
                 # 将菜单项注册到FontResizeFunc类中进行统一管理
                 self.font_resizer.register_font_size_action(size, size_action)
+            # 添加字体选择子菜单（简化版，直接列出所有字体）
+            font_menu = Menu("字体", settings_menu)
+            settings_menu.addMenu(font_menu)
+            font_menu.installEventFilter(click_filter)
+
+            # 获取可用字体
+            available_fonts = self.font_resizer.get_available_fonts()
+
+            # 直接列出所有可用字体
+            for font_name in available_fonts:
+                font_action = create_action(
+                    font_name,
+                    None,
+                    f"使用 {font_name} 字体",
+                    None,
+                    lambda checked, name=font_name: self.font_resizer.set_font_name(name),
+                )
+                font_menu.addAction(font_action)
+                self.font_resizer.register_font_name_action(font_name, font_action)
         # Help menu
         def construct_help_menu():
             help_menu = Menu("&Help", self.menubar)

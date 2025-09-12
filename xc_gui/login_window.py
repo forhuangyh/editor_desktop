@@ -29,11 +29,11 @@ class LoginWindow(qt.QDialog):
         # Set window properties
         self.setWindowTitle("Editor Desktop. - 登录")
         self.setWindowIcon(qt.QIcon(data.application_icon) if os.path.isfile(data.application_icon) else qt.QIcon())
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(700, 500)
         self.setWindowFlag(qt.Qt.WindowType.WindowCloseButtonHint, True)
         self.setWindowFlag(qt.Qt.WindowType.WindowSystemMenuHint, True)
 
-        # Set font
+        # Set font - 这里不修改全局字体，而是在各个组件中单独设置
         self.setFont(settings.get_current_font())
 
         # Initialize UI components
@@ -56,8 +56,8 @@ class LoginWindow(qt.QDialog):
         """
         # Main layout
         main_layout = qt.QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(50, 50, 50, 50)  # 增大主布局边距，使所有元素远离边框
+        main_layout.setSpacing(25) # 增大组件间距
 
         # Logo and title
         title_layout = qt.QVBoxLayout()
@@ -67,11 +67,16 @@ class LoginWindow(qt.QDialog):
         logo_label = qt.QLabel()
         logo_label.setText("Editor Desktop.")
         logo_font = qt.QFont(logo_label.font())
-        logo_font.setPointSize(36)
+        logo_font.setPointSize(42)  # 增大标题字体
         logo_font.setBold(True)
         logo_label.setFont(logo_font)
         logo_label.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
         title_label = qt.QLabel("version {:s}".format(data.application_version))
+
+        title_font = qt.QFont(title_label.font())
+        title_font.setPointSize(18)  # 增大版本号字体（从14调整为18）
+        title_font.setBold(True)
+        title_label.setFont(title_font)
         title_label.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
 
         title_layout.addWidget(logo_label)
@@ -82,26 +87,44 @@ class LoginWindow(qt.QDialog):
         form_layout.setFieldGrowthPolicy(qt.QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         form_layout.setFormAlignment(qt.Qt.AlignmentFlag.AlignCenter)
 
+        # 创建标签字体
+        label_font = qt.QFont()
+        label_font.setPointSize(16)  # 设置表单标签字体大小
+
         # Username field
         self.username_edit = qt.QLineEdit()
         self.username_edit.setPlaceholderText("请输入编辑平台登录账号")
-        # self.username_edit.setText("lhc")
-        self.username_edit.setMinimumWidth(250)
+        # 设置输入框字体
+        edit_font = qt.QFont(self.username_edit.font())
+        edit_font.setPointSize(14)
+        self.username_edit.setFont(edit_font)
+        self.username_edit.setMinimumWidth(350)  # 增大输入框最小宽度
+        # 设置输入框高度
+        self.username_edit.setMinimumHeight(40)
 
         # Password field
         self.password_edit = qt.QLineEdit()
         self.password_edit.setPlaceholderText("请输入密码")
-        # self.password_edit.setText("lhc123")
+        self.password_edit.setFont(edit_font)  # 应用相同的字体设置
         self.password_edit.setEchoMode(qt.QLineEdit.EchoMode.Password)
-        self.password_edit.setMinimumWidth(250)
+        self.password_edit.setMinimumWidth(350)  # 增大输入框最小宽度
+        self.password_edit.setMinimumHeight(40)
 
-        # Add fields to form layout
-        form_layout.addRow("账号:", self.username_edit)
-        form_layout.addRow("密码:", self.password_edit)
+        # 添加带字体的标签和输入框到表单布局
+        username_label = qt.QLabel("账号:")
+        username_label.setFont(label_font)
+        password_label = qt.QLabel("密码:")
+        password_label.setFont(label_font)
+
+        form_layout.addRow(username_label, self.username_edit)
+        form_layout.addRow(password_label, self.password_edit)
 
         # 添加"记住账号密码"复选框
         remember_layout = qt.QHBoxLayout()
         self.remember_checkbox = qt.QCheckBox("记住账号密码")
+        checkbox_font = qt.QFont(self.remember_checkbox.font())
+        checkbox_font.setPointSize(14)
+        self.remember_checkbox.setFont(checkbox_font)  # 设置复选框字体
         remember_layout.addWidget(self.remember_checkbox)
         remember_layout.setAlignment(qt.Qt.AlignmentFlag.AlignLeft)
         form_layout.addRow(remember_layout)
@@ -115,16 +138,22 @@ class LoginWindow(qt.QDialog):
         # Button layout
         button_layout = qt.QHBoxLayout()
         button_layout.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
-        button_layout.setSpacing(10)
+        button_layout.setSpacing(20)  # 增大按钮间距
 
         # Login button
         self.login_button = qt.QPushButton("登录")
+        button_font = qt.QFont(self.login_button.font())
+        button_font.setPointSize(14)
+        self.login_button.setFont(button_font)  # 设置按钮字体
         self.login_button.setDefault(True)
-        self.login_button.setMinimumWidth(100)
+        self.login_button.setMinimumWidth(150)  # 增大按钮最小宽度
+        self.login_button.setMinimumHeight(45)  # 设置按钮高度
 
         # Cancel button
         self.cancel_button = qt.QPushButton("取消")
-        self.cancel_button.setMinimumWidth(100)
+        self.cancel_button.setFont(button_font)  # 应用相同的字体设置
+        self.cancel_button.setMinimumWidth(150)  # 增大按钮最小宽度
+        self.cancel_button.setMinimumHeight(45)  # 设置按钮高度
 
         # Add buttons to button layout
         button_layout.addWidget(self.login_button)
@@ -166,7 +195,7 @@ class LoginWindow(qt.QDialog):
                 self.accept()
             else:
                 # 登录失败，显示错误信息
-                self.show_error(message or "登录失败，请重试")
+                self.show_error("登录失败，请重试")
         except Exception as e:
             # 处理异常
             self.show_error(f"登录过程中发生错误: {str(e)}")
@@ -218,7 +247,7 @@ class LoginWindow(qt.QDialog):
         self.message_label.setVisible(True)
         # 设置错误消息的字体大小
         font = self.message_label.font()
-        font.setPointSize(12)  # 设置为12号字体，可以根据需要调整大小
+        font.setPointSize(14)  # 增大错误消息字体
         self.message_label.setFont(font)
 
     def center_on_screen(self):
