@@ -4,6 +4,7 @@ from qt import QColor
 import constants
 import qt
 import components.internals
+from gui.customeditor import CustomEditor
 
 
 class SearchReplaceDialog(QDialog):
@@ -35,12 +36,33 @@ class SearchReplaceDialog(QDialog):
         self.main_form = main_form
         # Set font family and size
         self._search_text = search_text
-
         self.init_ui()
+        self._change = False
 
     def change_editor(self, search_text, editor):
-        self._editor = editor
+        """change
+        """
+        if isinstance(editor, CustomEditor):
+            self._editor = editor
         self._search_text = search_text
+
+    def enterEvent(self, event):
+        """
+        """
+        if self._change:
+            focused_tab = self.main_form.get_used_tab()
+            if isinstance(focused_tab, CustomEditor):
+                self._editor = focused_tab
+
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """
+        """
+        if not self._change:
+            self._change = True
+
+        super().leaveEvent(event)
 
     def init_ui(self):
         self.setWindowTitle("搜索和替换")

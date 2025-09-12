@@ -10,7 +10,7 @@ import os
 import qt
 import data
 import settings
-from service.account_service import AccountService
+from xc_service.account_service import AccountService
 
 
 class LoginWindow(qt.QDialog):
@@ -170,6 +170,7 @@ class LoginWindow(qt.QDialog):
         except Exception as e:
             # 处理异常
             self.show_error(f"登录过程中发生错误: {str(e)}")
+
     def clear_saved_credentials(self):
         """
         清除已保存的账号密码
@@ -180,6 +181,7 @@ class LoginWindow(qt.QDialog):
             settings.set("saved_password", "")
         except Exception as e:
             print(f"清除账号密码失败: {str(e)}")
+
     def save_credentials(self, username, password):
         """
         保存账号密码到设置中

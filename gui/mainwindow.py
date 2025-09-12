@@ -1,3 +1,5 @@
+
+
 """
 Copyright (c) 2013-present Matic Kukovec.
 Released under the GNU GPL3 license.
@@ -78,7 +80,9 @@ import components.communicator
 import components.processcontroller
 import components.thesquid
 from components.pathwatcher import FileEvent, PathWatcher
-from gui.search_replace_dialog import SearchReplaceDialog
+from xc_gui.search_replace_dialog import SearchReplaceDialog
+from xc_gui.chapter_list import ChapterList
+
 
 if data.platform == "Windows":
     import win32gui
@@ -155,7 +159,7 @@ class MainWindow(qt.QMainWindow):
     # External program reference
     external_program = None
 
-    def __init__(self, new_document=False, logging=False, file_arguments=None,user_info=None):
+    def __init__(self, new_document=False, logging=False, file_arguments=None, user_info=None):
         """
         Initialization routine for the main form
         """
@@ -226,12 +230,12 @@ class MainWindow(qt.QMainWindow):
         # Initialize the theme indicator
         self.display.init_theme_indicator()
         # Initialize repl interpreter
-        self.init_interpreter()
+        # self.init_interpreter()
         # Set the main window icon if it exists
         if os.path.isfile(data.application_icon) == True:
             self.setWindowIcon(qt.QIcon(data.application_icon))
         # Set the repl type to a single line
-        self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
+        # self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
         self.view.reset_entire_style_sheet()
         # Add a custom event filter
         self.installEventFilter(self)
@@ -398,6 +402,23 @@ class MainWindow(qt.QMainWindow):
                     editors.append(widget)
         return editors
 
+    def get_last_used_editor(self):
+        """获取最后使用的editor
+        """
+        windows = self.get_all_windows()
+        last_used_editor = None
+        cur_tab = None
+        cur_index = 0
+        for w in windows:
+            for i in range(w.count()):
+                widget = w.widget(i)
+                if isinstance(widget, CustomEditor) and widget.hasFocus():
+                    last_used_editor = widget
+                    cur_index = i
+                    cur_tab = w
+
+        return last_used_editor
+
     def get_largest_window(self):
         largest_window = None
         surface = 0
@@ -562,6 +583,7 @@ class MainWindow(qt.QMainWindow):
 
     def set_cwd(self, directory):
         """Set the current working directory and display it"""
+        return
         os.chdir(directory)
         # Store the current REPL text
         repl_text = self.repl.text()
@@ -2780,6 +2802,7 @@ class MainWindow(qt.QMainWindow):
             repl_menu = Menu("&REPL", self.menubar)
             self.menubar.addMenu(repl_menu)
             repl_menu.installEventFilter(click_filter)
+            return
             repeat_eval_action = create_action(
                 "REPL Repeat Command",
                 settings.get("keyboard-shortcuts")["general"]["repeat_eval"],
@@ -3199,10 +3222,13 @@ class MainWindow(qt.QMainWindow):
         Initialize everything that concerns the REPL
         """
         # Initialize the groupbox that the REPL will be in, and place the REPL widget into it
-        self.repl_box = ReplBox(self, self.get_form_references())
-        # Initialize the Python REPL widget
-        self.repl = self.repl_box.repl
-        self.repl_helper = self.repl_box.repl_helper
+        # self.repl_box = ReplBox(self, self.get_form_references())
+        # # Initialize the Python REPL widget
+        # self.repl = self.repl_box.repl
+        # self.repl_helper = self.repl_box.repl_helper
+        self.repl_box = None
+        self.repl = None
+        self.repl_helper = None
 
     def init_interpreter(self):
         """
@@ -3224,6 +3250,7 @@ class MainWindow(qt.QMainWindow):
         self.import_user_functions()
 
     def import_user_functions(self):
+        return
         """Import the user defined functions form the userfunctions.cfg file"""
         self.repl.skip_next_repl_focus()
         user_file_path = os.path.join(data.application_directory, data.config_file)
@@ -3320,6 +3347,7 @@ class MainWindow(qt.QMainWindow):
             tab_name = "new_" + str(next(self.new_file_count))
         # Create the new scintilla document in the selected basic widget
         return_widget = None
+        # todo 需要给editor的tab容器起个名，所有editor统一放到容器中
         if tab_widget is None:
             return_widget = self.get_largest_window().editor_add_document(
                 tab_name, type="new"
@@ -3486,8 +3514,8 @@ class MainWindow(qt.QMainWindow):
         """初始化树形tab"""
         # 创建新的树形tab
         # Create the new scintilla document in the selected basic widget
-        return_widget = self.get_largest_window().editor_add_tree(
-            "test"
+        return_widget = self.get_largest_window().chapter_list_add(
+            "chapter_list"
         )
         # Set focus to the new widget
         return_widget.setFocus()
@@ -3691,8 +3719,8 @@ class MainWindow(qt.QMainWindow):
                 else:
                     if window.widget(i).hasFocus() == True:
                         return window.widget(i)
-            if self.repl_helper.hasFocus() == True:
-                return self.repl_helper
+            # if self.repl_helper.hasFocus() == True:
+            #     return self.repl_helper
         # No tab in the basic widgets has focus
         return None
 
@@ -4217,7 +4245,7 @@ class MainWindow(qt.QMainWindow):
 
             # Vertically split edit fields with the REPL
             main_splitter.addWidget(boxes_groupbox)
-            main_splitter.addWidget(self._parent.repl_box)
+            # main_splitter.addWidget(self._parent.repl_box)
             # Set the sizes for the main splitter
             main_splitter.setStretchFactor(0, 1)
             # Initialize the main groupbox
@@ -4633,7 +4661,7 @@ QSplitter::handle {{
                         window.widget(i).refresh_lexer()
                     elif hasattr(window.widget(i), "set_theme") == True:
                         window.widget(i).set_theme(settings.get_theme())
-            self._parent.repl_helper.refresh_lexer()
+            # self._parent.repl_helper.refresh_lexer()
             self.reset_entire_style_sheet()
             self._parent.statusbar.setStyleSheet(
                 gui.stylesheets.StyleSheetStatusbar.standard()
@@ -4684,6 +4712,7 @@ QSplitter::handle {{
                 "TreeExplorer": TreeExplorer,
                 "HexView": HexView,
                 "Terminal": Terminal,
+                "ChapterList": ChapterList,
             }
             inverted_classes = {v: k for k, v in classes.items()}
             return classes, inverted_classes
@@ -4900,6 +4929,10 @@ QSplitter::handle {{
                                         working_path
                                     ):
                                         new_terminal.set_cwd(working_path)
+                                elif cls == "ChapterList":
+                                    # file_path = widget_data[0]
+                                    # if os.path.isfile(file_path):
+                                    new_tabs.chapter_list_add("chapter_list")
 
                                 elif cls == constants.SpecialTabNames.Messages.value:
                                     self._parent.repl_messages_tab = (

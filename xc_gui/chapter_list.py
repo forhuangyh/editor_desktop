@@ -1,9 +1,5 @@
 """
-Copyright (c) 2013-present Matic Kukovec.
-Released under the GNU GPL3 license.
-
-For more information check the 'LICENSE.txt' file.
-For complete license information of the dependencies, check the 'additional_licenses' directory.
+Copyright (c) 2015
 """
 
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem
@@ -34,7 +30,8 @@ class ChapterList(QTreeWidget):
     hotspots = None
 
     def __del__(self):
-        pass
+        self._parent = None
+        self.main_form = None
 
     def __init__(self, parent, main_form):
         # Initialize the superclass
@@ -57,15 +54,6 @@ class ChapterList(QTreeWidget):
         self.itemDoubleClicked.connect(self.handle_item_double_click)
         # 展开所有项目
         self.expandAll()
-
-    def find_text(
-        self,
-        search_text,
-        case_sensitive=False,
-        search_forward=True,
-        regular_expression=False,
-    ):
-        return "111"
 
     # def mousePressEvent(self, event):
     #     """Function connected to the clicked signal of the tree display"""
@@ -120,13 +108,13 @@ class ChapterList(QTreeWidget):
         cur_tab.setCurrentIndex(cur_index)
 
         index_item = self.currentIndex()
-        cur_editor.goto_line(index_item.row()+1)
+        cur_editor.goto_line(index_item.row() + 1)
         cur_editor.setFocus()
         current_line = cur_editor.getCursorPosition()[0]
         line_length = len(cur_editor.text(current_line))
         # 设置行选择范围
         start = cur_editor.positionFromLineIndex(current_line, 0)
-        end = start + line_length-1
+        end = start + line_length - 1
         cur_editor.clear_highlights()
         cur_editor.set_indicator("highlight")
         cur_editor.highlight_raw([(0, start, 0, end)])

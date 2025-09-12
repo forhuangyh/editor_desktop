@@ -6,8 +6,8 @@ For more information check the 'LICENSE.txt' file.
 For complete license information of the dependencies, check the 'additional_licenses' directory.
 """
 
-##  FILE DESCRIPTION:
-##      Execute this file to start Ex.Co.
+# FILE DESCRIPTION:
+# Execute this file to start Ex.Co.
 
 
 import os
@@ -25,7 +25,7 @@ import components.communicator
 import components.thesquid
 import gui.mainwindow
 import gui.loginwindow
-from entity import account
+from xc_entity import account
 
 
 def parse_arguments():

@@ -106,7 +106,7 @@ class FunctionWheel(qt.QFrame):
         self.__init_basic_buttons()
         self.__init_advanced_buttons()
         self.__init_system_view_buttons()
-        self.__init_repl_buttons()
+        # self.__init_repl_buttons()
         self.__init_special_system_buttons()
         # Check the states of the hex function buttons
         self.__check_hex_button_states()

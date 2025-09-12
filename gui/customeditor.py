@@ -413,7 +413,7 @@ class CustomEditor(BaseEditor):
         when using the goto_line function for example.
         """
         # Disable REPL focus after the REPL evaluation
-        self.main_form.repl.skip_next_repl_focus()
+        # self.main_form.repl.skip_next_repl_focus()
         # Set focus to the basic widget that holds this document
         self.main_form.view.set_window_focus(self._parent)
 
