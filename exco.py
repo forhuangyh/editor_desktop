@@ -10,7 +10,6 @@ For complete license information of the dependencies, check the 'additional_lice
 # Execute this file to start Ex.Co.
 
 
-import os
 import sys
 import argparse
 import traceback
@@ -24,7 +23,7 @@ import components.processcontroller
 import components.communicator
 import components.thesquid
 import gui.mainwindow
-import gui.loginwindow
+import xc_gui.login_window
 from xc_entity import account
 
 
@@ -168,7 +167,7 @@ def main():
     data.signal_dispatcher = components.signaldispatcher.GlobalSignalDispatcher()
 
     # 在创建MainWindow之前显示登录窗口
-    login_window = gui.loginwindow.LoginWindow()
+    login_window = xc_gui.login_window.LoginWindow()
     if login_window.exec() != qt.QDialog.DialogCode.Accepted:
         # 如果用户取消登录或关闭窗口，直接退出应用程序
         sys.exit(0)
