@@ -942,7 +942,7 @@ class MainWindow(qt.QMainWindow):
             new_file_action = create_action(
                 "新建",
                 settings.get("keyboard-shortcuts")["general"]["new_file"],
-                "Create new empty file",
+                "新建文件",
                 "tango_icons/document-new.png",
                 special_create_new_file,
             )
@@ -952,9 +952,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_open()
 
             open_file_action = create_action(
-                "Open",
+                "打开",
                 settings.get("keyboard-shortcuts")["general"]["open_file"],
-                "Open file",
+                "打开文件",
                 "tango_icons/document-open.png",
                 special_open_file,
             )
@@ -965,9 +965,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_save()
 
             self.save_file_action = create_action(
-                "Save",
+                "保存",
                 settings.get("keyboard-shortcuts")["general"]["save_file"],
-                "Save current file in the UTF-8 encoding",
+                "保存当前文件",
                 "tango_icons/document-save.png",
                 special_save_file,
                 enabled=False,
@@ -978,9 +978,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_saveas()
 
             self.saveas_file_action = create_action(
-                "Save As",
+                "另存为",
                 settings.get("keyboard-shortcuts")["general"]["saveas_file"],
-                "Save current file as a new file in the UTF-8 encoding",
+                "另存为新文件",
                 "tango_icons/document-save-as.png",
                 special_saveas_file,
                 enabled=False,
@@ -1120,9 +1120,9 @@ class MainWindow(qt.QMainWindow):
             # Add recent file list in the file menu
             recent_file_list_menu = self.view.create_recent_file_list_menu()
             clear_recent_file_list_action = create_action(
-                "Clear recent files",
+                "清理最近文件",
                 None,
-                "Clear the recent files list",
+                "清理最近文件列表",
                 "tango_icons/edit-clear.png",
                 self.view.clear_recent_file_list,
             )
@@ -1166,11 +1166,11 @@ class MainWindow(qt.QMainWindow):
             file_menu.addMenu(recent_file_list_menu)
             file_menu.addAction(clear_recent_file_list_action)
             file_menu.addSeparator()
-            file_menu.addAction(exit_action)
-            file_menu.addSeparator()
             file_menu.addAction(open_chapter_list_action)
             file_menu.addSeparator()
             file_menu.addAction(open_special_replace_action)
+            file_menu.addSeparator()
+            file_menu.addAction(exit_action)
 
         # Edit Menus
         # Adding the basic options to the menu
@@ -1620,7 +1620,7 @@ class MainWindow(qt.QMainWindow):
             self.fixed_widget.open_find_replace_dialog()
 
         def construct_edit_advanced_menu():
-            edit_menu = Menu("&Find", self.menubar)
+            edit_menu = Menu("&编辑", self.menubar)
             self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
@@ -1663,9 +1663,9 @@ class MainWindow(qt.QMainWindow):
                 # self.repl.setCursorPosition(self.repl.text().find('",case_sensitive'))
 
             dialog_find_action = create_action(
-                "Find Dialog",
+                "查找",
                 settings.get("keyboard-shortcuts")["general"]["find"],
-                "Find text in the currently selected document",
+                "查找&替换",
                 "tango_icons/edit-find.png",
                 special_dialog_find,
             )
@@ -4747,7 +4747,7 @@ QSplitter::handle {{
             CustomButton.stored_hex = None
 
         def create_recent_file_list_menu(self):
-            self._parent.recent_files_menu = Menu("Recent Files", self._parent.menubar)
+            self._parent.recent_files_menu = Menu("最近文件", self._parent.menubar)
             temp_icon = functions.create_icon("tango_icons/file-recent-files.png")
             self._parent.recent_files_menu.setIcon(temp_icon)
             return self._parent.recent_files_menu
