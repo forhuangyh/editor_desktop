@@ -80,8 +80,9 @@ import components.communicator
 import components.processcontroller
 import components.thesquid
 from components.pathwatcher import FileEvent, PathWatcher
-from xc_gui.search_replace_dialog import SearchReplaceDialog
 from xc_gui.chapter_list import ChapterList
+from xc_gui.special_replace import SpecialReplace
+from xc_gui.fixed_widget import FixedWidget
 
 
 if data.platform == "Windows":
@@ -154,7 +155,7 @@ class MainWindow(qt.QMainWindow):
     editing = None
     display = None
     bookmarks = None
-    search_dialog = None
+    fixed_widget = None
 
     # External program reference
     external_program = None
@@ -181,6 +182,7 @@ class MainWindow(qt.QMainWindow):
         self.display = self.Display(self)
         self.bookmarks = self.Bookmarks(self)
         self.tools = self.Tools(self)
+        self.fixed_widget = FixedWidget(self)
         # Set the name of the main window
         self.name = "{} - PID:{}".format(self.get_default_title(), os.getpid())
         self.setObjectName("Form")
@@ -405,19 +407,26 @@ class MainWindow(qt.QMainWindow):
     def get_last_used_editor(self):
         """获取最后使用的editor
         """
+        last_used_editor, _, _ = self.get_last_used_editor_info()
+        return last_used_editor
+
+    def get_last_used_editor_info(self):
+        """获取最后使用的editor info
+        """
         windows = self.get_all_windows()
         last_used_editor = None
-        cur_tab = None
-        cur_index = 0
+        last_tab = None
+        index = 0
         for w in windows:
             for i in range(w.count()):
                 widget = w.widget(i)
                 if isinstance(widget, CustomEditor) and widget.hasFocus():
                     last_used_editor = widget
-                    cur_index = i
-                    cur_tab = w
+                    index = i
+                    last_tab = w
+                    break
 
-        return last_used_editor
+        return last_used_editor, index, last_tab
 
     def get_largest_window(self):
         largest_window = None
@@ -917,7 +926,7 @@ class MainWindow(qt.QMainWindow):
         # File menu
         def construct_file_menu():
             #            file_menu = self.menubar.addMenu("&File")
-            file_menu = Menu("&File", self.menubar)
+            file_menu = Menu("&文件", self.menubar)
             self.menubar.addMenu(file_menu)
             file_menu.installEventFilter(click_filter)
 
@@ -926,7 +935,7 @@ class MainWindow(qt.QMainWindow):
                 self.file_create_new()
 
             new_file_action = create_action(
-                "New",
+                "新建",
                 settings.get("keyboard-shortcuts")["general"]["new_file"],
                 "Create new empty file",
                 "tango_icons/document-new.png",
@@ -1117,11 +1126,22 @@ class MainWindow(qt.QMainWindow):
                 self.open_chapter_list()
 
             open_chapter_list_action = create_action(
-                "Open Chapter List",
+                "打开章节列表",
                 settings.get("keyboard-shortcuts")["general"]["open_chapter_list"],
-                "Open Chapter List",
+                "打开章节列表",
                 "tango_icons/document-open.png",
                 special_open_chapter_list,
+            )
+
+            def special_open_special_replace():
+                self.open_special_replace()
+
+            open_special_replace_action = create_action(
+                "人名替换",
+                settings.get("keyboard-shortcuts")["general"]["open_special_replace"],
+                "人名替换",
+                "tango_icons/document-open.png",
+                special_open_special_replace,
             )
 
             # Add the actions to the File menu
@@ -1129,14 +1149,14 @@ class MainWindow(qt.QMainWindow):
             file_menu.addAction(open_file_action)
             file_menu.addAction(self.save_file_action)
             file_menu.addAction(self.saveas_file_action)
-            add_save_in_different_encoding_submenu()
-            file_menu.addAction(self.save_all_action)
-            file_menu.addSeparator()
-            file_menu.addAction(close_tab_action)
-            file_menu.addAction(close_all_action)
-            file_menu.addSeparator()
-            file_menu.addAction(edit_functions_action)
-            file_menu.addAction(reload_functions_action)
+            # add_save_in_different_encoding_submenu()
+            # file_menu.addAction(self.save_all_action)
+            # file_menu.addSeparator()
+            # file_menu.addAction(close_tab_action)
+            # file_menu.addAction(close_all_action)
+            # file_menu.addSeparator()
+            # file_menu.addAction(edit_functions_action)
+            # file_menu.addAction(reload_functions_action)
             file_menu.addSeparator()
             file_menu.addMenu(recent_file_list_menu)
             file_menu.addAction(clear_recent_file_list_action)
@@ -1144,12 +1164,15 @@ class MainWindow(qt.QMainWindow):
             file_menu.addAction(exit_action)
             file_menu.addSeparator()
             file_menu.addAction(open_chapter_list_action)
+            file_menu.addSeparator()
+            file_menu.addAction(open_special_replace_action)
 
         # Edit Menus
         # Adding the basic options to the menu
+
         def construct_edit_basic_menu():
             edit_menu = Menu("&Editing", self.menubar)
-            self.menubar.addMenu(edit_menu)
+            # self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
             def copy():
@@ -1588,17 +1611,8 @@ class MainWindow(qt.QMainWindow):
             edit_menu.addAction(rect_block_action)
 
         def open_find_replace_dialog():
-            """初始化树形tab"""
-            # 创建新的树形tab
-            # Create the new scintilla document in the selected basic widget
-            focused_tab = self.get_used_tab()
-            search_text = focused_tab.selectedText()
-            if self.search_dialog is None:
-                self.search_dialog = SearchReplaceDialog(search_text, focused_tab, self)
-            else:
-                self.search_dialog.change_editor(search_text, focused_tab)
-            # search_dialog.center()
-            self.search_dialog.show()
+            """初始化查找替换"""
+            self.fixed_widget.open_find_replace_dialog()
 
         def construct_edit_advanced_menu():
             edit_menu = Menu("&Find", self.menubar)
@@ -1628,7 +1642,7 @@ class MainWindow(qt.QMainWindow):
 
             find_action = create_action(
                 "Find",
-                settings.get("keyboard-shortcuts")["general"]["find"],
+                settings.get("keyboard-shortcuts")["general"]["find_dialog"],
                 "Find text in the currently selected document",
                 "tango_icons/edit-find.png",
                 special_find,
@@ -1645,7 +1659,7 @@ class MainWindow(qt.QMainWindow):
 
             dialog_find_action = create_action(
                 "Find Dialog",
-                settings.get("keyboard-shortcuts")["general"]["find_dialog"],
+                settings.get("keyboard-shortcuts")["general"]["find"],
                 "Find text in the currently selected document",
                 "tango_icons/edit-find.png",
                 special_dialog_find,
@@ -2195,38 +2209,38 @@ class MainWindow(qt.QMainWindow):
                 open_in_browser,
             )
             # Adding the edit menu and constructing all of the options
-            edit_menu.addAction(find_action)
+            # edit_menu.addAction(find_action)
             edit_menu.addAction(dialog_find_action)
-            edit_menu.addAction(regex_find_action)
-            edit_menu.addAction(find_and_replace_action)
-            edit_menu.addAction(regex_find_and_replace_action)
-            edit_menu.addAction(goto_line_action)
-            edit_menu.addAction(indent_to_cursor_action)
-            edit_menu.addAction(highlight_action)
-            edit_menu.addAction(regex_highlight_action)
-            edit_menu.addAction(clear_highlights_action)
-            edit_menu.addAction(replace_selection_action)
-            edit_menu.addAction(regex_replace_selection_action)
-            edit_menu.addAction(replace_all_action)
-            edit_menu.addAction(regex_replace_all_action)
-            edit_menu.addAction(toggle_comment_action)
-            edit_menu.addAction(toggle_autocompletion_action)
-            edit_menu.addAction(toggle_wrap_action)
-            edit_menu.addAction(to_uppercase_action)
-            edit_menu.addAction(to_lowercase_action)
-            edit_menu.addAction(node_tree_action)
-            edit_menu.addAction(reload_file_action)
-            edit_menu.addAction(open_in_browser_action)
-            edit_menu.addAction(reset_context_menu_action)
-            edit_menu.addSeparator()
-            edit_menu.addAction(find_in_documents_action)
-            edit_menu.addAction(find_replace_in_documents_action)
-            edit_menu.addAction(replace_all_in_documents_action)
+            # edit_menu.addAction(regex_find_action)
+            # edit_menu.addAction(find_and_replace_action)
+            # edit_menu.addAction(regex_find_and_replace_action)
+            # edit_menu.addAction(goto_line_action)
+            # edit_menu.addAction(indent_to_cursor_action)
+            # edit_menu.addAction(highlight_action)
+            # edit_menu.addAction(regex_highlight_action)
+            # edit_menu.addAction(clear_highlights_action)
+            # edit_menu.addAction(replace_selection_action)
+            # edit_menu.addAction(regex_replace_selection_action)
+            # edit_menu.addAction(replace_all_action)
+            # edit_menu.addAction(regex_replace_all_action)
+            # edit_menu.addAction(toggle_comment_action)
+            # edit_menu.addAction(toggle_autocompletion_action)
+            # edit_menu.addAction(toggle_wrap_action)
+            # edit_menu.addAction(to_uppercase_action)
+            # edit_menu.addAction(to_lowercase_action)
+            # edit_menu.addAction(node_tree_action)
+            # edit_menu.addAction(reload_file_action)
+            # edit_menu.addAction(open_in_browser_action)
+            # edit_menu.addAction(reset_context_menu_action)
+            # edit_menu.addSeparator()
+            # edit_menu.addAction(find_in_documents_action)
+            # edit_menu.addAction(find_replace_in_documents_action)
+            # edit_menu.addAction(replace_all_in_documents_action)
 
         # System menu
         def construct_system_menu():
             system_menu = Menu("S&ystem", self.menubar)
-            self.menubar.addMenu(system_menu)
+            # self.menubar.addMenu(system_menu)
             system_menu.installEventFilter(click_filter)
 
             def special_find_in():
@@ -2495,7 +2509,7 @@ class MainWindow(qt.QMainWindow):
         # View menu
         def construct_view_menu():
             view_menu = Menu("&View", self.menubar)
-            self.menubar.addMenu(view_menu)
+            # self.menubar.addMenu(view_menu)
             view_menu.installEventFilter(click_filter)
             # Show/hide the function wheel
             function_wheel_toggle_action = create_action(
@@ -2676,7 +2690,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             bookmark_menu = Menu("&Bookmarks", self.menubar)
-            view_menu.addMenu(bookmark_menu)
+            # view_menu.addMenu(bookmark_menu)
             bookmark_menu.installEventFilter(click_filter)
             temp_icon = functions.create_icon("tango_icons/bookmarks.png")
             bookmark_menu.setIcon(temp_icon)
@@ -2776,31 +2790,31 @@ class MainWindow(qt.QMainWindow):
                 toggle_cursor_line_highlighting,
             )
             # Add all actions and menus
-            view_menu.addAction(function_wheel_toggle_action)
-            view_menu.addAction(settings_manipulator_toggle_action)
-            view_menu.addSeparator()
-            view_menu.addMenu(bookmark_menu)
-            view_menu.addSeparator()
-            construct_lexers_menu(view_menu)
-            view_menu.addSeparator()
-            view_menu.addAction(main_focus_action)
-            view_menu.addAction(upper_focus_action)
-            view_menu.addAction(lower_focus_action)
-            view_menu.addAction(toggle_one_window_mode_action)
-            view_menu.addAction(maximize_window_action)
-            view_menu.addAction(select_tab_right_action)
-            view_menu.addAction(select_tab_left_action)
-            view_menu.addAction(move_tab_right_action)
-            view_menu.addAction(move_tab_left_action)
-            view_menu.addAction(toggle_edge_action)
-            view_menu.addAction(reset_zoom_action)
-            view_menu.addAction(toggle_lineend_action)
-            view_menu.addAction(toggle_cursor_line_action)
+            # view_menu.addAction(function_wheel_toggle_action)
+            # view_menu.addAction(settings_manipulator_toggle_action)
+            # view_menu.addSeparator()
+            # view_menu.addMenu(bookmark_menu)
+            # view_menu.addSeparator()
+            # construct_lexers_menu(view_menu)
+            # view_menu.addSeparator()
+            # view_menu.addAction(main_focus_action)
+            # view_menu.addAction(upper_focus_action)
+            # view_menu.addAction(lower_focus_action)
+            # view_menu.addAction(toggle_one_window_mode_action)
+            # view_menu.addAction(maximize_window_action)
+            # view_menu.addAction(select_tab_right_action)
+            # view_menu.addAction(select_tab_left_action)
+            # view_menu.addAction(move_tab_right_action)
+            # view_menu.addAction(move_tab_left_action)
+            # view_menu.addAction(toggle_edge_action)
+            # view_menu.addAction(reset_zoom_action)
+            # view_menu.addAction(toggle_lineend_action)
+            # view_menu.addAction(toggle_cursor_line_action)
 
         # REPL menu
         def construct_repl_menu():
             repl_menu = Menu("&REPL", self.menubar)
-            self.menubar.addMenu(repl_menu)
+            # self.menubar.addMenu(repl_menu)
             repl_menu.installEventFilter(click_filter)
             return
             repeat_eval_action = create_action(
@@ -2856,7 +2870,7 @@ class MainWindow(qt.QMainWindow):
         # Sessions menu
         def construct_sessions_menu():
             sessions_menu = Menu("Sessions", self.menubar)
-            self.menubar.addMenu(sessions_menu)
+            # self.menubar.addMenu(sessions_menu)
             sessions_menu.installEventFilter(click_filter)
 
             def add_session():
@@ -2905,7 +2919,7 @@ class MainWindow(qt.QMainWindow):
         # Settings menu
         def construct_settings_menu():
             settings_menu = Menu("Settings", self.menubar)
-            self.menubar.addMenu(settings_menu)
+            # self.menubar.addMenu(settings_menu)
             settings_menu.installEventFilter(click_filter)
 
             def show_settings():
@@ -2939,7 +2953,7 @@ class MainWindow(qt.QMainWindow):
         # Tools menu
         def construct_tools_menu():
             tools_menu = Menu("&Tools", self.menubar)
-            self.menubar.addMenu(tools_menu)
+            # self.menubar.addMenu(tools_menu)
             tools_menu.installEventFilter(click_filter)
 
             # Print indicated editor to PDF
@@ -3515,7 +3529,19 @@ class MainWindow(qt.QMainWindow):
         # 创建新的树形tab
         # Create the new scintilla document in the selected basic widget
         return_widget = self.get_largest_window().chapter_list_add(
-            "chapter_list"
+            "章节目录"
+        )
+        # Set focus to the new widget
+        return_widget.setFocus()
+        # Return the widget reference
+        return return_widget
+
+    def open_special_replace(self):
+        """特殊替换"""
+        # 创建新的树形tab
+        # Create the new scintilla document in the selected basic widget
+        return_widget = self.get_largest_window().special_replace_add(
+            "特殊替换"
         )
         # Set focus to the new widget
         return_widget.setFocus()
@@ -3658,10 +3684,10 @@ class MainWindow(qt.QMainWindow):
         """Enable or disable the save functionality and save options under "File" in the menubar"""
         self.save_file_action.setEnabled(enable)
         self.saveas_file_action.setEnabled(enable)
-        self.save_ascii_file_action.setEnabled(enable)
-        self.save_ansiwin_file_action.setEnabled(enable)
-        self.save_in_encoding.setEnabled(enable)
-        self.save_all_action.setEnabled(enable)
+        # self.save_ascii_file_action.setEnabled(enable)
+        # self.save_ansiwin_file_action.setEnabled(enable)
+        # self.save_in_encoding.setEnabled(enable)
+        # self.save_all_action.setEnabled(enable)
         # Set the save state flag accordingly
         self.save_state = enable
 
@@ -4713,6 +4739,7 @@ QSplitter::handle {{
                 "HexView": HexView,
                 "Terminal": Terminal,
                 "ChapterList": ChapterList,
+                "SpecialReplace": SpecialReplace,
             }
             inverted_classes = {v: k for k, v in classes.items()}
             return classes, inverted_classes
@@ -4930,9 +4957,10 @@ QSplitter::handle {{
                                     ):
                                         new_terminal.set_cwd(working_path)
                                 elif cls == "ChapterList":
-                                    # file_path = widget_data[0]
-                                    # if os.path.isfile(file_path):
-                                    new_tabs.chapter_list_add("chapter_list")
+                                    new_tabs.chapter_list_add("章节列表")
+
+                                elif cls == "SpecialReplace":
+                                    new_tabs.special_replace_add("特殊替换")
 
                                 elif cls == constants.SpecialTabNames.Messages.value:
                                     self._parent.repl_messages_tab = (
