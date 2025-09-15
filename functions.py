@@ -2123,7 +2123,7 @@ def index_strings_in_text(
         compiled_search_re = re.compile(search_text, re.IGNORECASE)
     # Create the list with all of the matches
     list_of_matches = [
-        (0, match.start(), 0, match.end())
+        (0, match.start(), 0, match.end(), match.group())
         for match in re.finditer(compiled_search_re, text)
     ]
     return list_of_matches

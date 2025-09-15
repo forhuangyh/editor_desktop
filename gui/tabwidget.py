@@ -684,6 +684,7 @@ QTabBar::tab:selected {{
         self._set_save_status()
         # Check if there is a tab in the tab widget
         current_tab = self.currentWidget()
+
         # Update the icons of the tabs
         for i in range(self.count()):
             self.update_tab_icon(self.widget(i))
@@ -703,6 +704,8 @@ QTabBar::tab:selected {{
 
         # Update window title
         data.signal_dispatcher.update_title.emit()
+        # xc:当标签变化后，切换固定组件的editor
+        self.main_form.fixed_widget.change_editor(current_tab)
 
     def _signal_editor_tabclose(self, emmited_tab_number, force=False):
         """
@@ -719,6 +722,8 @@ QTabBar::tab:selected {{
 
         # Store the tab reference
         tab = self.widget(emmited_tab_number)
+        # xc:当标签变化后，切换固定组件的editor
+        self.main_form.fixed_widget.close_editor(tab)
         # Check if the document is modified
         if tab.savable == constants.CanSave.YES:
             if tab.save_status == constants.FileStatus.MODIFIED and force == False:
@@ -987,27 +992,12 @@ QTabBar::tab:selected {{
             return self.widget(new_editor_tab_index)
 
     def chapter_list_add(self, document_name=""):
-        """Check tab type and add a document to self(QTabWidget)"""
-        from xc_gui.chapter_list import ChapterList
-        new_chapter_list = ChapterList(self, self.main_form)
-        new_chapter_list_tab_index = self.addTab(new_chapter_list, document_name)
-        # 禁止关闭
-        self.tabBar().setTabButton(new_chapter_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
-        # Make new tab visible
-        self.setCurrentIndex(new_chapter_list_tab_index)
-        return self.widget(new_chapter_list_tab_index)
+        """chapter_list_add"""
+        return self.main_form.fixed_widget.open_chapter_list(self, document_name)
 
     def special_replace_add(self, document_name=""):
-        """Check tab type and add a document to self(QTabWidget)"""
-        from xc_gui.special_replace import SpecialReplace
-
-        new_special_replace = SpecialReplace(self, self.main_form)
-        new_tab_index = self.addTab(new_special_replace, document_name)
-        # 禁止关闭
-        self.tabBar().setTabButton(new_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
-        # Make new tab visible
-        self.setCurrentIndex(new_tab_index)
-        return self.widget(new_tab_index)
+        """special_replace_add"""
+        return self.main_form.fixed_widget.open_special_replace(self, document_name)
 
     def hexview_add(self, file_path):
         # Initialize the hex-view

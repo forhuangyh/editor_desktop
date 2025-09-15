@@ -12,7 +12,7 @@ import functions
 """
 自定义属性行
 """
-editor_api_base_url="http://101.47.131.70:8087"
+editor_api_base_url = "http://101.47.131.70:8087"
 
 """
 Sessions
@@ -144,6 +144,7 @@ keyboard_shortcuts = {
             "select_tab_right": "Ctrl+.",
             "open_chapter_list": "Ctrl+Shift+P",
             "find_dialog": "Ctrl+Shift+S",
+            "open_special_replace": "Ctrl+Shift+S",
         },
         "editor": {
             "cancel": "Escape",
