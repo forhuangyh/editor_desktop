@@ -5,45 +5,90 @@ Copyright (c) 2015
 
 
 """
-
+import qt
 from xc_gui.search_replace_dialog import SearchReplaceDialog
 from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
+from gui.customeditor import CustomEditor
 
 
-class FixedWidget(object):
+class FixedWidget(qt.QObject):
     """
     存放固定的部件，如搜索部件，特殊替换部件，搜索结果部件等
     """
     chapter_list = None
     search_dialog = None
     special_replace = None
+    editor = None
+    editor_changed = qt.pyqtSignal(qt.QObject)
 
     def __init__(self, main_form):
         """init
         """
+        super().__init__(main_form)
         self.main_form = main_form
+        self.editor = None
+
+    def change_editor(self, widget):
+        """change
+        """
+        if isinstance(widget, CustomEditor):
+            self.editor = widget
+            self.editor_changed.emit(self.editor)  # 当编辑器变化时发出信号
+
+    def close_editor(self, widget):
+        """close_editor
+        """
+        if isinstance(widget, CustomEditor):
+            if self.editor != widget:
+                return
+            self.editor = None
+            self.editor_changed.emit(self.editor)  # 当编辑器变化时发出信号
 
     def open_find_replace_dialog(self):
-        """初始化常规查找替换窗口
+        """open_find_replace_dialog
         """
         # 创建新的树形tab
         # Create the new scintilla document in the selected basic widget
-        focused_tab = self.main_form.get_used_tab()
-        search_text = focused_tab.selectedText()
+        focused_editor = self.editor
+        search_text = focused_editor.selectedText()
         if self.search_dialog is None:
-            self.search_dialog = SearchReplaceDialog(search_text, focused_tab, self)
+            self.search_dialog = SearchReplaceDialog(search_text, self.main_form, self)
         else:
-            self.search_dialog.change_editor(search_text, focused_tab)
-        # search_dialog.center()
+            self.search_dialog.change_editor(search_text, focused_editor)
         self.search_dialog.show()
 
-    def get_used_tab(self):
-        """
-        Get the tab that was last used (if none return the main tab)
-        """
-        focused_tab = self.get_tab_by_focus()
-        # Check if any tab is focused
-        if focused_tab is None:
-            focused_tab = self.get_largest_window()
-        return focused_tab
+    def open_chapter_list(self, tab_widget, document_name=""):
+        """open_chapter_list"""
+        if self.chapter_list:
+            return self.chapter_list
+
+        new_chapter_list = ChapterList(tab_widget, self.main_form)
+        new_chapter_list_tab_index = tab_widget.addTab(new_chapter_list, document_name)
+        # 禁止关闭
+        tab_widget.tabBar().setTabButton(new_chapter_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
+        # Make new tab visible
+        tab_widget.setCurrentIndex(new_chapter_list_tab_index)
+        self.chapter_list = tab_widget.widget(new_chapter_list_tab_index)
+        return self.chapter_list
+
+    def open_special_replace(self, tab_widget, document_name=""):
+        """open_special_replace"""
+        search_text = ""
+        focused_editor = self.editor
+        if self.special_replace:
+            self.special_replace.change_editor("", focused_editor)
+            return self.special_replace
+
+        if focused_editor:
+            search_text = focused_editor.selectedText()
+
+        new_special_replace = SpecialReplace(search_text, self, tab_widget, self.main_form)
+        new_tab_index = tab_widget.addTab(new_special_replace, document_name)
+        # 禁止关闭
+        tab_widget.tabBar().setTabButton(new_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
+        # Make new tab visible
+        tab_widget.setCurrentIndex(new_tab_index)
+        self.special_replace = tab_widget.widget(new_tab_index)
+
+        return self.special_replace

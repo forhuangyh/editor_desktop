@@ -23,7 +23,7 @@ class SearchReplaceDialog(QDialog):
     def __del__(self):
         pass
 
-    def __init__(self, search_text, editor, main_form):
+    def __init__(self, search_text, main_form, fixed_widget):
         # Initialize the superclass
         super().__init__(main_form)
         # Initialize components
@@ -31,38 +31,17 @@ class SearchReplaceDialog(QDialog):
         # Store the main form and parent widget references
         current_flags = self.windowFlags()
         self.setWindowFlags(current_flags | qt.Qt.WindowType.WindowStaysOnTopHint)
-        self._editor = editor
+        self._fixed_widget = fixed_widget
+        self._editor = self._fixed_widget.editor
         self._parent = main_form
         self.main_form = main_form
-        # Set font family and size
         self._search_text = search_text
+        self._fixed_widget.editor_changed.connect(self.update_editor_reference)
         self.init_ui()
-        self._change = False
 
-    def change_editor(self, search_text, editor):
-        """change
-        """
-        if isinstance(editor, CustomEditor):
-            self._editor = editor
-        self._search_text = search_text
-
-    def enterEvent(self, event):
-        """
-        """
-        if self._change:
-            focused_tab = self.main_form.get_used_tab()
-            if isinstance(focused_tab, CustomEditor):
-                self._editor = focused_tab
-
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        """
-        """
-        if not self._change:
-            self._change = True
-
-        super().leaveEvent(event)
+    def update_editor_reference(self, new_editor):
+        """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
+        self._editor = new_editor
 
     def init_ui(self):
         self.setWindowTitle("搜索和替换")
@@ -118,8 +97,6 @@ class SearchReplaceDialog(QDialog):
         replace_all_btn.clicked.connect(self._replace_all)
         clear_highlight_btn.clicked.connect(self._clear_highlight)
 
-        self._regex.checkStateChanged
-
         # # 初始化高亮指示器
         # self._init_indicator()
 
@@ -141,7 +118,8 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        self._editor.highlight_text(
+        editor = self._fixed_widget.editor
+        editor.highlight_text(
             search_text, case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
@@ -154,8 +132,8 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-
-        self._editor.find_and_replace(
+        editor = self._fixed_widget.editor
+        editor.find_and_replace(
             search_text, replace_text,
             case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
@@ -169,8 +147,8 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-
-        self._editor.replace_all(
+        editor = self._fixed_widget.editor
+        editor.replace_all(
             search_text, replace_text,
             case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
@@ -179,7 +157,8 @@ class SearchReplaceDialog(QDialog):
 
     def _clear_highlight(self):
         """清除所有高亮"""
-        self._editor.clear_highlights()
+        editor = self._fixed_widget.editor
+        editor.clear_highlights()
 
     # def showEvent(self, event):
     #     # self.center()

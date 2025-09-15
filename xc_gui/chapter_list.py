@@ -18,7 +18,7 @@ import gui.baseeditor
 
 class ChapterList(QTreeWidget):
     # Class variables
-    name = "chapter_list"
+    name = "章节列表"
     _parent = None
     main_form = None
     current_icon = None
@@ -55,12 +55,11 @@ class ChapterList(QTreeWidget):
         # 展开所有项目
         self.expandAll()
 
-    # def mousePressEvent(self, event):
-    #     """Function connected to the clicked signal of the tree display"""
-    #     super().mousePressEvent(event)
-    #     # Set the focus
-    #     self.setFocus()
-    #     QMessageBox.information(self, "项目信息", "test")
+    def change_editor(self, search_text, editor):
+        """change
+        """
+        if isinstance(editor, CustomEditor):
+            self._editor = editor
 
     def add_default_items(self):
         """添加三个默认项目"""
@@ -93,20 +92,11 @@ class ChapterList(QTreeWidget):
     def handle_item_double_click(self, item, column):
         """处理项目双击事件"""
         # 创建消息内容
-        from gui.customeditor import CustomEditor
-        cur_editor = None
-        cur_tab = None
-        cur_index = 0
-        for w in self.main_form.get_all_windows():
-            for i in range(w.count()):
-                widget = w.widget(i)
-                if isinstance(widget, CustomEditor):
-                    cur_editor = widget
-                    cur_index = i
-                    cur_tab = w
-                    break
-        cur_tab.setCurrentIndex(cur_index)
+        cur_editor, cur_index, cur_tab = self.main_form.get_last_used_editor_info()
+        if not cur_editor:
+            return
 
+        cur_tab.setCurrentIndex(cur_index)
         index_item = self.currentIndex()
         cur_editor.goto_line(index_item.row() + 1)
         cur_editor.setFocus()
