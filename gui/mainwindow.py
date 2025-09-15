@@ -31,6 +31,7 @@ import libraryfunctions
 import qt
 import settings
 import settings.constants
+import xc_gui.font_resize_func
 from gui.custombuttons import CustomButton
 from gui.customeditor import CustomEditor
 from gui.dialogs import (
@@ -183,6 +184,10 @@ class MainWindow(qt.QMainWindow):
         self.bookmarks = self.Bookmarks(self)
         self.tools = self.Tools(self)
         self.fixed_widget = FixedWidget(self)
+
+        # 添加这一行来初始化字体设置
+        self.font_resizer = xc_gui.font_resize_func.FontResizeFunc(self)
+        self.font_resizer.initialize_font_settings()
         # Set the name of the main window
         self.name = "{} - PID:{}".format(self.get_default_title(), os.getpid())
         self.setObjectName("Form")
@@ -2919,23 +2924,63 @@ class MainWindow(qt.QMainWindow):
         # Settings menu
         def construct_settings_menu():
             settings_menu = Menu("Settings", self.menubar)
-            # self.menubar.addMenu(settings_menu)
+            settings_menu = Menu("设置", self.menubar)
+            self.menubar.addMenu(settings_menu)
+
             settings_menu.installEventFilter(click_filter)
 
-            def show_settings():
-                self.view.show_settings_manipulator()
+            # def show_settings():
+            #     self.view.show_settings_manipulator()
+            #
+            # show_gui_action = create_action(
+            #     "Graphical Settings Editor",
+            #     None,
+            #     "Graphical user friendly settings editor",
+            #     "tango_icons/settings-png",
+            #     show_settings,
+            # )
+            # # Add the items
+            # settings_menu.addAction(show_gui_action)
 
-            show_gui_action = create_action(
-                "Graphical Settings Editor",
-                None,
-                "Graphical user friendly settings editor",
-                "tango_icons/settings-png",
-                show_settings,
-            )
-            # Add the items
-            settings_menu.addAction(show_gui_action)
+            # 添加字体大小子菜单
+            font_size_menu = Menu("字体大小", settings_menu)
+            settings_menu.addMenu(font_size_menu)
+            font_size_menu.installEventFilter(click_filter)
 
+            # 添加常用字体大小选项（这里使用更实用的大号字体）
+            for size in [12, 14, 16, 18, 20, 22, 24, 26, 28, 30]:
+                size_action = create_action(
+                    f"{size}pt",
+                    None,
+                    f"设置字号 {size}pt",
+                    None,
+                    lambda checked, size=size: self.font_resizer.set_font_size(size),
+                )
+                # 将菜单项添加到菜单
+                font_size_menu.addAction(size_action)
+                # 将菜单项注册到FontResizeFunc类中进行统一管理
+                self.font_resizer.register_font_size_action(size, size_action)
+            # 添加字体选择子菜单（简化版，直接列出所有字体）
+            font_menu = Menu("字体", settings_menu)
+            settings_menu.addMenu(font_menu)
+            font_menu.installEventFilter(click_filter)
+
+            # 获取可用字体
+            available_fonts = self.font_resizer.get_available_fonts()
+
+            # 直接列出所有可用字体
+            for font_name in available_fonts:
+                font_action = create_action(
+                    font_name,
+                    None,
+                    f"使用 {font_name} 字体",
+                    None,
+                    lambda checked, name=font_name: self.font_resizer.set_font_name(name),
+                )
+                font_menu.addAction(font_action)
+                self.font_resizer.register_font_name_action(font_name, font_action)
         # Help menu
+
         def construct_help_menu():
             help_menu = Menu("&Help", self.menubar)
             self.menubar.addMenu(help_menu)
@@ -3216,7 +3261,7 @@ class MainWindow(qt.QMainWindow):
         construct_repl_menu()
         construct_tools_menu()
         construct_sessions_menu()
-        # construct_settings_menu()
+        construct_settings_menu()
         construct_help_menu()
 
         # Connect the triggered signal for hiding the function wheel on menubar clicks

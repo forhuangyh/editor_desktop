@@ -1783,15 +1783,18 @@ class CustomEditor(BaseEditor):
         if matches:
             # Use the raw highlight function to set the highlight indicators
             self.highlight_raw(matches)
-            self.main_form.display.repl_display_message(
-                "{:d} matches highlighted".format(len(matches))
-            )
+            # self.main_form.display.repl_display_message(
+            #     "{:d} matches highlighted".format(len(matches))
+            # )
+            return matches
             # Set the cursor to the first highlight (I don't like this feature)
         #            self.find_text(highlight_text, case_sensitive, True, regular_expression)
         else:
             self.main_form.display.repl_display_message(
                 "No matches found!", message_type=constants.MessageType.WARNING
             )
+
+        return []
 
     def highlight_raw(self, highlight_list):
         """
