@@ -659,7 +659,7 @@ class MainWindow(qt.QMainWindow):
 
         # Check if there are any modified documents
         if self.check_document_states() == True:
-            quit_message = "文档已修改！\n是否保持退出？"
+            quit_message = "文档已修改！\n是否保存退出？"
             reply = QuitDialog.question(quit_message)
             if reply == constants.DialogResult.Quit.value:
                 pass
