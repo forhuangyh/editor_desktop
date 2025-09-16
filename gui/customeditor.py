@@ -1748,6 +1748,8 @@ class CustomEditor(BaseEditor):
             not_repalce_match_dict,
             case_sensitive,
         )
+        if not matches:
+            return []
         # Check if there were any matches or
         # if the search and replace text were equivalent!
         if matches:
@@ -1784,14 +1786,15 @@ class CustomEditor(BaseEditor):
             self.highlight_raw(matches)
             # Restore the previous cursor position
             self.setCursorPosition(current_position[0], current_position[1])
-        else:
-            message = "The search string and replace string are equivalent!\n"
-            message += (
-                "Change the search/replace string or change the case sensitivity!"
-            )
-            self.main_form.display.repl_display_message(
-                message, message_type=constants.MessageType.ERROR
-            )
+        # else:
+        #     message = "The search string and replace string are equivalent!\n"
+        #     message += (
+        #         "Change the search/replace string or change the case sensitivity!"
+        #     )
+        #     self.main_form.display.repl_display_message(
+        #         message, message_type=constants.MessageType.ERROR
+        #     )
+        return matches
 
     def replace_in_selection(
         self, search_text, replace_text, case_sensitive=False, regular_expression=False

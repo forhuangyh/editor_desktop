@@ -147,17 +147,16 @@ class SpecialReplace(QWidget):
         """添加到list
         """
         self.result_list.clear()
-        self.result_list.setUpdatesEnabled(False)  # 禁用更新以提高性能
-        delegate = self.result_list.itemDelegate()
-        if isinstance(delegate, HighlightDelegate):
-            delegate.setSearchText(search_text)
-
         if not matches:
             list_item = QListWidgetItem("无匹配项")
             list_item.setData(Qt.ItemDataRole.UserRole, 0)  # 例如存储行号
             self.result_list.addItem(list_item)
-            self.result_list.setUpdatesEnabled(True)  # 重新启用更新
             return
+
+        self.result_list.setUpdatesEnabled(False)  # 禁用更新以提高性能
+        delegate = self.result_list.itemDelegate()
+        if isinstance(delegate, HighlightDelegate):
+            delegate.setSearchText(search_text)
 
         for index, item in enumerate(matches[:1000]):
             #  item=(0, match.start(), 0, match.end(), match.group())
@@ -203,13 +202,17 @@ class SpecialReplace(QWidget):
                 continue
             not_repalce_match_dict[index] = self.matches[index]
 
-        self._editor.replace_part(
+        matches = self._editor.replace_part(
             search_text,
             replace_text,
             not_repalce_match_dict,
             case_sensitive=False,
-
         )
+        if not matches:
+            self.result_list.clear()
+            list_item = QListWidgetItem("文本内容有更新，无匹配项被替换")
+            list_item.setData(Qt.ItemDataRole.UserRole, 0)  # 例如存储行号
+            self.result_list.addItem(list_item)
 
     def _clear_highlight(self):
         """清除所有高亮"""

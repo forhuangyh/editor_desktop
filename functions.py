@@ -2298,6 +2298,9 @@ def replace_part_and_index(
         text_to_bytes=True,
         whole_words=False,
     )
+    if not matches:
+        return matches
+
     for index, match in not_repalce_match_dict.items():
         new_match = matches[index]
         if index >= len(matches):
