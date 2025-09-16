@@ -3436,7 +3436,8 @@ class MainWindow(qt.QMainWindow):
             self,
             "Open File",
             self.last_opened_directory,  # 使用上次打开的目录作为初始目录
-            "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
+            "Text Files (*.txt *.text);;All Files (*)",
+            # "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
         )
         # 如果用户选择了文件，更新上次打开的目录
         if files and files[0]:
