@@ -210,6 +210,11 @@ class MainWindow(qt.QMainWindow):
         self.init_menubar()
         # Initialize the docking overlay
         self.docking_overlay = DockingOverlay(self)
+        # 初始化上次打开的目录为当前工作目录
+        try:
+            self.last_opened_directory = settings.get("last_opened_directory")
+        except (KeyError, ValueError):
+            self.last_opened_directory = os.getcwd()
 
         # Initialize the debug print function
         def repl_print(*message):
@@ -640,6 +645,9 @@ class MainWindow(qt.QMainWindow):
         """
         Event that fires when the main window is closed
         """
+        # 保存上次打开的目录到settings
+        settings.set("last_opened_directory", self.last_opened_directory)
+
         # Check if there are any modified documents
         if self.check_document_states() == True:
             quit_message = "You have modified documents!\nWhat do you wish to do?"
@@ -3425,9 +3433,16 @@ class MainWindow(qt.QMainWindow):
         files = file_dialog.getOpenFileNames(
             self,
             "Open File",
-            os.getcwd(),
+            self.last_opened_directory,  # 使用上次打开的目录作为初始目录
             "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
         )
+        # 如果用户选择了文件，更新上次打开的目录
+        if files and files[0]:
+            # 获取第一个选中文件的目录
+            selected_file = files[0][0] if isinstance(files[0], list) else files[0]
+            if selected_file:
+                self.last_opened_directory = os.path.dirname(selected_file)
+
         # Check and then add the selected file to the main TabWidget if the window parameter is unspecified
         self.open_files(files, tab_widget)
 
