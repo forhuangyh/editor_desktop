@@ -24,7 +24,7 @@ import settings
 import gui.contextmenu
 
 from gui.baseeditor import BaseEditor
-from gui.dialogs import YesNoDialog
+from gui.dialogs import YesNoDialog, OkDialog
 
 
 class CustomEditor(BaseEditor):
@@ -1712,6 +1712,87 @@ class CustomEditor(BaseEditor):
                 message, message_type=constants.MessageType.ERROR
             )
 
+    def replace_part(self, search_text, replace_text, not_repalce_match_dict, case_sensitive=False):
+        """
+        Replace part occurences of a string in a scintilla document
+        """
+        # Store the current cursor position
+        current_position = self.getCursorPosition()
+        # Move cursor to the top of the document, so all the search string instances will be found
+        self.setCursorPosition(0, 0)
+        # Clear all previous highlights
+        self.clear_highlights()
+        # Setup the indicator style, the replace indicator is 1
+        # self.set_indicator("replace")
+
+        # Correct the displayed file name
+        if not self.save_path:
+            file_name = self._parent.tabText(self._parent.currentIndex())
+        else:
+            file_name = os.path.basename(self.save_path)
+        # Check if there are any instances of the search text in the document
+        # based on the regular expression flag
+        # search_result = self.find_text(search_text, case_sensitive, whole_words=False)
+        # if search_result == constants.SearchResult.NOT_FOUND:
+        #     message = "No matches were found in '{}'!".format(file_name)
+        #     self.main_form.display.repl_display_message(
+        #         message, message_type=constants.MessageType.WARNING
+        #     )
+        #     return
+        # Use the re module to replace the text
+        text = self.text()
+        matches, replaced_text = functions.replace_part_and_index(
+            text,
+            search_text,
+            replace_text,
+            not_repalce_match_dict,
+            case_sensitive,
+        )
+        # Check if there were any matches or
+        # if the search and replace text were equivalent!
+        if matches:
+            # Replace the text
+            self.replace_entire_text(replaced_text)
+            # replace_entire_text清除了样式，重新设置
+            self.set_indicator("replace")
+
+            # Matches can only be displayed for non-regex functionality
+            # Display the replacements in the REPL tab
+            if len(matches) < settings.get("editor")["maximum_highlights"]:
+                message = "{} replacements:".format(file_name)
+                # self.main_form.display.repl_display_message(
+                #     message, message_type=constants.MessageType.SUCCESS
+                # )
+                for match in matches:
+                    line = self.lineIndexFromPosition(match[1])[0] + 1
+                    index = self.lineIndexFromPosition(match[1])[1]
+                    message = '    replaced "{}" in line:{:d} column:{:d}'.format(
+                        search_text, line, index
+                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
+            else:
+                message = "{:d} replacements made in {}!\n".format(
+                    len(matches), file_name
+                )
+                message += "Too many to list individually!"
+                # self.main_form.display.repl_display_message(
+                #     message, message_type=constants.MessageType.WARNING
+                # )
+            # Highlight and display the replaced text
+            self.highlight_raw(matches)
+            # Restore the previous cursor position
+            self.setCursorPosition(current_position[0], current_position[1])
+        else:
+            message = "The search string and replace string are equivalent!\n"
+            message += (
+                "Change the search/replace string or change the case sensitivity!"
+            )
+            self.main_form.display.repl_display_message(
+                message, message_type=constants.MessageType.ERROR
+            )
+
     def replace_in_selection(
         self, search_text, replace_text, case_sensitive=False, regular_expression=False
     ):
@@ -1789,10 +1870,13 @@ class CustomEditor(BaseEditor):
             return matches
             # Set the cursor to the first highlight (I don't like this feature)
         #            self.find_text(highlight_text, case_sensitive, True, regular_expression)
-        else:
-            self.main_form.display.repl_display_message(
-                "No matches found!", message_type=constants.MessageType.WARNING
-            )
+        # else:
+        #     return
+            # OkDialog.error("查找不到匹配的文本")
+
+            # self.main_form.display.repl_display_message(
+            #     "No matches found!", message_type=constants.MessageType.WARNING
+            # )
 
         return []
 

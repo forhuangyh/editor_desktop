@@ -42,6 +42,7 @@ class SpecialReplace(QWidget):
         self.main_form = None
         self._fixed_widget = None
         self._editor = None
+        self.matches = None
 
     def __init__(self, search_text, fixed_widget, parent, main_form):
         # Initialize the superclass
@@ -125,16 +126,21 @@ class SpecialReplace(QWidget):
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
-        search_text = self.find_input.text()
+        search_text = self.find_input.text().strip()
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        matches = self._editor.clear_highlights()
+        if search_text.find("\n") > -1:
+            QMessageBox.warning(self, "警告", "搜索内容中有换行符号")
+            return
+
+        self._editor.clear_highlights()
         matches = self._editor.highlight_text(
             search_text, case_sensitive=False,
             regular_expression=False,
             whole_words=False
         )
+        self.matches = matches
         self.add_rich_text_items(search_text, matches)
 
     def add_rich_text_items(self, search_text, matches):
@@ -146,7 +152,14 @@ class SpecialReplace(QWidget):
         if isinstance(delegate, HighlightDelegate):
             delegate.setSearchText(search_text)
 
-        for index, item in enumerate(matches[:100]):
+        if not matches:
+            list_item = QListWidgetItem("无匹配项")
+            list_item.setData(Qt.ItemDataRole.UserRole, 0)  # 例如存储行号
+            self.result_list.addItem(list_item)
+            self.result_list.setUpdatesEnabled(True)  # 重新启用更新
+            return
+
+        for index, item in enumerate(matches[:1000]):
             #  item=(0, match.start(), 0, match.end(), match.group())
             # select_text = item[4].decode('utf-8')
             line, _ = self._editor.lineIndexFromPosition(item[1])
@@ -164,42 +177,67 @@ class SpecialReplace(QWidget):
 
         self.result_list.setUpdatesEnabled(True)  # 重新启用更新
         # 滚动到顶部
-        # self.result_list.scrollToTop()
-
-    def _replace(self):
-        """替换当前匹配项"""
-        search_text = self._search_input.text()
-        replace_text = self._replace_input.text()
-        if not search_text:
-            QMessageBox.warning(self, "警告", "请输入搜索内容！")
-            return
-        editor = self._fixed_widget.editor
-        editor.find_and_replace(
-            search_text, replace_text,
-            case_sensitive=self._case_sensitive.isChecked(),
-            regular_expression=self._regex.isChecked(),
-            whole_words=self._whole_word.isChecked()
-        )
+        self.result_list.scrollToTop()
 
     def _replace_all(self):
         """替换所有匹配项"""
-        search_text = self._search_input.text()
-        replace_text = self._replace_input.text()
+        search_text = self.find_input.text().strip()
+        replace_text = self.replace_input.text().strip()
+
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        editor = self._fixed_widget.editor
-        editor.replace_all(
-            search_text, replace_text,
-            case_sensitive=self._case_sensitive.isChecked(),
-            regular_expression=self._regex.isChecked(),
-            whole_words=self._whole_word.isChecked()
+        if search_text.find("\n") > -1:
+            QMessageBox.warning(self, "警告", "搜索内容中有换行符号")
+            return
+        if not search_text:
+            QMessageBox.warning(self, "警告", "请输入替换内容！")
+            return
+        if search_text.find("\n") > -1:
+            QMessageBox.warning(self, "警告", "替换内容中有换行符号")
+            return
+
+        not_repalce_match_dict = {}
+        for index in range(0, self.result_list.count()):
+            if self.result_list.item(index).checkState() == Qt.CheckState.Checked:
+                continue
+            not_repalce_match_dict[index] = self.matches[index]
+
+        self._editor.replace_part(
+            search_text,
+            replace_text,
+            not_repalce_match_dict,
+            case_sensitive=False,
+
         )
 
     def _clear_highlight(self):
         """清除所有高亮"""
         editor = self._fixed_widget.editor
         editor.clear_highlights()
+
+    def replace_entire_text(self, replace_list, replace_text):
+        """
+        替换整个文档的文本。
+        """
+        doc_text = "Hello, {name}! Welcome to {name} again."
+        target = "{name}"
+        replace_text = "Alice"
+        start_pos = 10  # 仅替换从索引 10 开始的 {name}
+
+        result = []
+        i = 0
+        n = len(doc_text)
+        while i < n:
+            if doc_text.startswith(target, i) and i >= start_pos:
+                result.append(replace_text)
+                i += len(target)
+            else:
+                result.append(doc_text[i])
+                i += 1
+
+        doc_text = "".join(result)
+        print(doc_text)  # 输出: "Hello, {name}! Welcome to Alice again."
 
     def on_item_clicked(self, item):
         """
@@ -208,7 +246,7 @@ class SpecialReplace(QWidget):
         # 获取被点击项目的文本
         # clicked_text = item.text()
         line_number = item.data(Qt.ItemDataRole.UserRole)
-        self._editor.goto_line(line_number)
+        self._editor.goto_line(line_number + 1)
         self._editor.setFocus()
 
 
@@ -220,7 +258,39 @@ class HighlightDelegate(QStyledItemDelegate):
 
     def setSearchText(self, text):
         self.search_text = text.lower()
-        # self.parent().viewport().update()
+
+    # def editorEvent(self, event, model, option, index):
+    #     # Ensure the index is valid and the item has a checkable flag
+    #     if not index.isValid() or not (index.flags() & Qt.ItemFlag.ItemIsUserCheckable):
+    #         return super().editorEvent(event, model, option, index)
+
+    #     # Process checkbox clicks
+    #     if event.type() == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
+    #         # Calculate the checkbox rectangle
+    #         style = QApplication.style()
+    #         checkbox_rect = style.subElementRect(
+    #             QStyle.SubElement.SE_ItemViewItemCheckIndicator, option, self.parent()
+    #         )
+
+    #         # Check if the click was inside the checkbox rectangle
+    #         if checkbox_rect.contains(event.pos()):
+    #             # Get the current check state
+    #             current_state = index.data(Qt.ItemDataRole.CheckStateRole)
+
+    #             # Toggle the check state
+    #             new_state = Qt.CheckState.Checked if current_state == Qt.CheckState.Unchecked else Qt.CheckState.Unchecked
+
+    #             # Set the new data in the model
+    #             model.setData(index, new_state.value, Qt.ItemDataRole.CheckStateRole)
+
+    #             # Explicitly trigger an update for only the edited item's area.
+    #             # This is more efficient than updating the entire widget.
+    #             self.parent().viewport().update(option.rect)
+
+    #             # Return True to indicate that we have handled the event
+    #             return True
+
+    #     return super().editorEvent(event, model, option, index)
 
     def editorEvent(self, event, model, option, index):
         # 处理鼠标事件
@@ -245,8 +315,10 @@ class HighlightDelegate(QStyledItemDelegate):
                     model.setData(index, new_state, Qt.ItemDataRole.CheckStateRole)
 
                     # 只重绘当前项，而不是整个视图
-                    self.parent().update(index)
-
+                    # self.parent().update(index)
+                    self.parent().viewport().update(checkbox_rect)
+                    # self.parent().update(option.rect)
+                    # index = index.data(Qt.ItemDataRole.UserRole)
                     # 阻止事件继续传播
                     return True
 
@@ -259,6 +331,8 @@ class HighlightDelegate(QStyledItemDelegate):
         if not text:
             super().paint(painter, option, index)
             return
+
+        print(index.data(Qt.ItemDataRole.UserRole))
 
         # 获取 QListWidgetItem 的复选框状态
         check_state = index.data(Qt.ItemDataRole.CheckStateRole)

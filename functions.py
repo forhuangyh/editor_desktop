@@ -2273,6 +2273,85 @@ def replace_and_index(
     return replaced_match_indexes, replaced_text
 
 
+def replace_part_and_index(
+    input_string,
+    search_text,
+    replace_text,
+    not_repalce_match_dict,
+    case_sensitive=False,
+):
+    """
+    Function that replaces the search text with replace text in a string,
+    but skips replacement for specified matches, and returns the
+    line numbers and indexes of the replacements as a list.
+    """
+    if search_text == replace_text:
+        return [], input_string
+    if not case_sensitive and search_text.lower() == replace_text.lower():
+        return None, input_string
+
+    matches = index_strings_in_text(
+        search_text,
+        input_string,
+        case_sensitive,
+        regular_expression=False,
+        text_to_bytes=True,
+        whole_words=False,
+    )
+    for index, match in not_repalce_match_dict.items():
+        new_match = matches[index]
+        if index >= len(matches):
+            raise Exception("文本内容发生变化，请重新查找")
+        if new_match[1] != match[1] or new_match[3] != match[3]:
+            raise Exception("文本内容发生变化，请重新查找")
+
+    # # Perform a full replacement first
+    # if case_sensitive:
+    #     replaced_text = input_string.replace(search_text, replace_text)
+    # else:
+    #     search_re = re.escape(search_text)
+    #     replaced_text = re.sub(search_re, replace_text, input_string, flags=re.IGNORECASE)
+
+    # 逐段构建新字符串并计算新索引
+    replaced_parts = []
+    replaced_match_indexes = []
+    last_end = 0
+
+    bl_search = bytes(search_text, "utf-8")
+    bl_search = len(bl_search.replace(b"\\", b" "))
+    bl_replace = bytes(replace_text, "utf-8")
+    bl_replace = len(bl_replace.replace(b"\\", b" "))
+
+    diff = 0
+
+    for i, match in enumerate(matches):
+        # 将上一个匹配项和当前匹配项之间的文本添加到列表中
+        start_pos = match[1]
+        replaced_parts.append(input_string[last_end:start_pos])
+
+        # 判断是否需要跳过此匹配
+        if i in not_repalce_match_dict:
+            # 跳过，添加原始文本
+            replaced_parts.append(search_text)
+            # diff 不变
+        else:
+            # 不跳过，添加替换文本并计算新索引
+            replaced_parts.append(replace_text)
+            new_index = start_pos + diff
+            replaced_match_indexes.append((0, new_index, 0, new_index + bl_replace))
+            diff += bl_replace - bl_search
+
+        last_end = match[3]
+
+    # 将最后一个匹配项之后的所有文本添加到列表中
+    replaced_parts.append(input_string[last_end:])
+
+    # 4. 一次性拼接所有部分
+    replaced_text = "".join(replaced_parts)
+
+    return replaced_match_indexes, replaced_text
+
+
 def regex_replace_text(
     input_string,
     search_text,
