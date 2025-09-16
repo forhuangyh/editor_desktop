@@ -287,6 +287,15 @@ class MainWindow(qt.QMainWindow):
         last_layout_filepath = functions.unixify_join(
             data.settings_directory, settings.get("last-layout-filename")
         )
+        # 检查文件是否存在，如果不存在则创建默认的布局文件
+        if not os.path.exists(last_layout_filepath):
+            # 确保.settings目录存在
+            functions.create_directory(data.settings_directory)
+            # 解析settings.constants中预定义的default_layout JSON字符串
+            default_layout = json.loads(settings.constants.default_layout)
+            # 保存默认布局到文件
+            import filefunctions
+            filefunctions.write_json_file(last_layout_filepath, default_layout)
         last_layout = functions.load_json_file(last_layout_filepath)
         self.view.layout_restore(last_layout)
 
