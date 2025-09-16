@@ -211,10 +211,10 @@ QTabBar::tab:selected {{
                     functions.create_icon("tango_icons/update-cwd.png")
                 )
                 update_cwd_action.triggered.connect(update_cwd)
-                self.addAction(update_cwd_action)
-                self.addSeparator()
+                # self.addAction(update_cwd_action)
+                # self.addSeparator()
             # Add the 'copy file name to clipboard' action
-            clipboard_copy_action = qt.QAction("Copy tab name to clipboard", self)
+            clipboard_copy_action = qt.QAction("复制文件名", self)
 
             def clipboard_copy():
                 cb = data.application.clipboard()
@@ -229,7 +229,7 @@ QTabBar::tab:selected {{
             # Copy path
             if self.__check_for_editor(tab_widget):
                 clipboard_copy_path_action = qt.QAction(
-                    "Copy document path to clipboard", self
+                    "复制文件路径", self
                 )
 
                 def clipboard_path_copy():
@@ -270,9 +270,9 @@ QTabBar::tab:selected {{
                 action_open_hex.triggered.connect(open_hex)
                 icon = functions.create_icon("various/node_template.png")
                 action_open_hex.setIcon(icon)
-                self.addAction(action_open_hex)
+                # self.addAction(action_open_hex)
 
-                open_in_explorer_action = qt.QAction("Open document in explorer", self)
+                open_in_explorer_action = qt.QAction("打开文件目录", self)
 
                 def open_in_explorer():
                     path = widget.save_path
@@ -293,7 +293,7 @@ QTabBar::tab:selected {{
 
             # Closing
             self.addSeparator()
-            close_other_action = qt.QAction("Close all other tabs in this window", self)
+            close_other_action = qt.QAction("关闭其它所有窗口", self)
             close_other_action.setIcon(
                 functions.create_icon("tango_icons/close-all-tabs.png")
             )
