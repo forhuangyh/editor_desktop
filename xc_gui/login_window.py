@@ -58,7 +58,7 @@ class LoginWindow(qt.QDialog):
         # Main layout
         main_layout = qt.QVBoxLayout(self)
         main_layout.setContentsMargins(50, 50, 50, 50)  # 增大主布局边距，使所有元素远离边框
-        main_layout.setSpacing(25) # 增大组件间距
+        main_layout.setSpacing(25)  # 增大组件间距
 
         # Logo and title
         title_layout = qt.QVBoxLayout()
@@ -95,10 +95,10 @@ class LoginWindow(qt.QDialog):
         # Username field
         self.username_edit = qt.QLineEdit()
         self.username_edit.setPlaceholderText("请输入编辑平台登录账号")
-        # 设置输入框字体
-        edit_font = qt.QFont(self.username_edit.font())
-        edit_font.setPointSize(14)
-        self.username_edit.setFont(edit_font)
+
+        settings_control_font = settings.get("settings_control_font")
+        self.username_edit.setStyleSheet(settings_control_font.get("QLineEdit"))
+
         self.username_edit.setMinimumWidth(350)  # 增大输入框最小宽度
         # 设置输入框高度
         self.username_edit.setMinimumHeight(40)
@@ -106,7 +106,7 @@ class LoginWindow(qt.QDialog):
         # Password field
         self.password_edit = qt.QLineEdit()
         self.password_edit.setPlaceholderText("请输入密码")
-        self.password_edit.setFont(edit_font)  # 应用相同的字体设置
+        self.password_edit.setStyleSheet(settings_control_font.get("QLineEdit"))
         self.password_edit.setEchoMode(qt.QLineEdit.EchoMode.Password)
         self.password_edit.setMinimumWidth(350)  # 增大输入框最小宽度
         self.password_edit.setMinimumHeight(40)
@@ -200,16 +200,16 @@ class LoginWindow(qt.QDialog):
         self.progress_bar.setMinimumHeight(25)
         # 修复样式表语法，确保字符串格式正确
         self.progress_bar.setStyleSheet(
-            "QProgressBar {" \
-            "    border: 2px solid #2c3e50;" \
-            "    border-radius: 5px;" \
-            "    background-color: #ecf0f1;" \
-            "    text-align: center;" \
-            "    height: 25px;" \
-            "}" \
-            "QProgressBar::chunk {" \
-            "    background-color: #3498db;" \
-            "    border-radius: 3px;" \
+            "QProgressBar {"
+            "    border: 2px solid #2c3e50;"
+            "    border-radius: 5px;"
+            "    background-color: #ecf0f1;"
+            "    text-align: center;"
+            "    height: 25px;"
+            "}"
+            "QProgressBar::chunk {"
+            "    background-color: #3498db;"
+            "    border-radius: 3px;"
             "}"
         )
 

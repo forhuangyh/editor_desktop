@@ -22,6 +22,7 @@ import constants
 import components.internals
 from qt import QTextDocument, QColor
 from qt import QSize, Qt, QStyle
+import settings
 
 
 class SpecialReplace(QWidget):
@@ -55,6 +56,7 @@ class SpecialReplace(QWidget):
         self._editor = self._fixed_widget.editor
         self.main_form = main_form
         self._search_text = search_text
+        self.settings_control_font = settings.get("settings_control_font")
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
 
@@ -74,6 +76,9 @@ class SpecialReplace(QWidget):
         # 1. 顶部查找行
         find_layout = QHBoxLayout()
         self.find_input = QLineEdit()
+        # constants.constants.settings_control_font.get("QLineEdit", "")
+
+        self.find_input.setStyleSheet(self.settings_control_font.get("QLineEdit"))
         self.find_input.setPlaceholderText("请输入查找内容")
         self.find_input.setMinimumHeight(30)
 
@@ -88,6 +93,7 @@ class SpecialReplace(QWidget):
         replace_layout = QHBoxLayout()
         self.replace_input = QLineEdit()
         self.replace_input.setPlaceholderText("请输入替换内容")
+        self.replace_input.setStyleSheet(self.settings_control_font.get("QLineEdit"))
         self.replace_input.setMinimumHeight(30)
 
         # self.replace_all_button = QPushButton("全部替换")
@@ -103,7 +109,7 @@ class SpecialReplace(QWidget):
         replace_layout.addWidget(self.replace_button)
 
         self.result_list = QListWidget()
-        self.result_list.setUniformItemSizes(False)  # 允许不同大小的项
+        self.result_list.setUniformItemSizes(True)  # 允许不同大小的项
         self.result_list.setWordWrap(True)  # 允许换行
         self.result_list.setTextElideMode(Qt.TextElideMode.ElideNone)  # 不省略文本
         # 使用自定义delegate 展示部分高亮
@@ -111,6 +117,9 @@ class SpecialReplace(QWidget):
         # 优化性能的设置
         self.result_list.setBatchSize(100)  # 批量处理数量
         self.result_list.setLayoutMode(QListView.LayoutMode.Batched)
+        font_obj = self.settings_control_font.get("QListWidget")
+        font_style = f"font-family: '{font_obj.split(";")[0]}'; font-size: {font_obj.split(";")[1]};"
+        self.result_list.setStyleSheet(font_style)
 
         # 4. 添加组件到主布局
         main_layout.addLayout(find_layout)

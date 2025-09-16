@@ -37,7 +37,7 @@ editor = {
     "default": {
         "autocompletion": False,
         "brace_color": "#80ff9900",
-        "cursor_line_visible": False,
+        "cursor_line_visible": True,
         "edge_marker_color": "#ffb4b4b4",
         "edge_marker_column": 90,
         "edge_marker_visible": False,
@@ -319,6 +319,17 @@ settings_filename = {
     "mark-2": "exco.mk2.ini",
     "mark-3": "exco.mk3.ini",
 }
+if data.platform.lower() == "windows":
+    settings_control_font = {
+        "QLineEdit": "font: 14px 'Segoe UI';",
+        "QListWidget": "font: 14px 'SF Pro';",
+    }
+else:
+    settings_control_font = {
+        "QLineEdit": "font: 14px 'SF Pro';",
+        "QListWidget": "SF Pro;14px",
+    }
+
 default_settings = {
     "application-directory": data.application_directory,
     "resources-directory": data.resources_directory,
@@ -353,4 +364,5 @@ default_settings = {
     "editor": editor["default"].copy(),
     "keyboard-shortcuts": keyboard_shortcuts["default"].copy(),
     "editor_api_base_url": editor_api_base_url,
+    "settings_control_font": settings_control_font,
 }
