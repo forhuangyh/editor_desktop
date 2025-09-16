@@ -410,47 +410,97 @@ def test_file_content_for_type(file_with_path):
 
 def read_file_to_string(file_with_path):
     """Read contents of a text file to a single string"""
-    # Test if a file is in binary format
-    binary_text = test_binary_file(file_with_path)
-    if binary_text != None:
-        cleaned_binary_text = binary_text.replace(b"\x00", b"")
-        #        cleaned_binary_text = re.sub(b'[\x00]+',b'', binary_text)
-        #        cleaned_binary_text = re.sub(b'[\x00-\x7f]+',b'.', binary_text)
-        return cleaned_binary_text.decode(encoding="utf-8", errors="replace")
-    else:
-        # File is not binary, loop through encodings to find the correct one.
-        # Try the default Ex.Co. encoding UTF-8 first
-        test_encodings = [
-            "utf-8",
-            "cp1250",
-            "ascii",
-            "utf-16",
-            "utf-32",
-            "iso-8859-1",
-            "latin-1",
-            "gb2312",
-        ]
-        for current_encoding in test_encodings:
+    # 先尝试二进制模式读取并使用cp936解码 - 优先处理中文ANSI文件
+    try:
+        with open(file_with_path, "rb") as file:
+            binary_content = file.read()
+
+        # 首先尝试直接用cp936解码（Windows中文ANSI编码）
+        try:
+            return binary_content.decode("cp936")
+        except UnicodeDecodeError:
+            # 如果失败，清理可能的控制字符后再试
+            cleaned_content = binary_content.replace(b"\x00", b"")
             try:
-                # If opening the file in the default Ex.Co. encoding fails,
-                # open it using the prefered system encoding!
-                with open(
+                return cleaned_content.decode("cp936", errors="replace")
+            except:
+                pass  # 继续尝试其他编码
+    except:
+        pass  # 如果二进制读取失败，继续尝试文本模式
+
+    # 尝试多种编码来找到正确的编码方式
+    # 优先尝试中文编码
+    test_encodings = [
+        "cp936",  # Windows中文ANSI编码 (GBK的超集)
+        "gbk",  # 中文编码
+        "gb2312",  # 简体中文编码
+        "utf-8",  # 通用Unicode编码
+        "cp1252",  # Windows默认编码
+        "iso-8859-1",  # 拉丁编码
+        "latin-1",  # 别名
+        "utf-16",  # Unicode编码
+    ]
+
+    for current_encoding in test_encodings:
+        try:
+            with open(
                     file_with_path,
                     "r",
                     encoding=current_encoding,
-                    errors="surrogateescape",
-                ) as file:
-                    # Read the whole file with "read()"
-                    text = file.read()
-                    # Close the file handle
-                    file.close()
-                # Return the text string
+                    errors="replace",  # 替换无法解码的字符
+            ) as file:
+                text = file.read()
                 return text
-            except:
-                # Error occured while reading the file, skip to next encoding
-                continue
-    # Error, no encoding was correct
+        except:
+            continue
+
+    # 所有尝试都失败，返回None
     return None
+
+# 注释掉，兼容中文编码， 上面重写
+# def read_file_to_string(file_with_path):
+#     """Read contents of a text file to a single string"""
+#     # Test if a file is in binary format
+#     binary_text = test_binary_file(file_with_path)
+#     if binary_text != None:
+#         cleaned_binary_text = binary_text.replace(b"\x00", b"")
+#         #        cleaned_binary_text = re.sub(b'[\x00]+',b'', binary_text)
+#         #        cleaned_binary_text = re.sub(b'[\x00-\x7f]+',b'.', binary_text)
+#         return cleaned_binary_text.decode(encoding="utf-8", errors="replace")
+#     else:
+#         # File is not binary, loop through encodings to find the correct one.
+#         # Try the default Ex.Co. encoding UTF-8 first
+#         test_encodings = [
+#             "utf-8",
+#             "cp1250",
+#             "ascii",
+#             "utf-16",
+#             "utf-32",
+#             "iso-8859-1",
+#             "latin-1",
+#             "gb2312",
+#         ]
+#         for current_encoding in test_encodings:
+#             try:
+#                 # If opening the file in the default Ex.Co. encoding fails,
+#                 # open it using the prefered system encoding!
+#                 with open(
+#                     file_with_path,
+#                     "r",
+#                     encoding=current_encoding,
+#                     errors="surrogateescape",
+#                 ) as file:
+#                     # Read the whole file with "read()"
+#                     text = file.read()
+#                     # Close the file handle
+#                     file.close()
+#                 # Return the text string
+#                 return text
+#             except:
+#                 # Error occured while reading the file, skip to next encoding
+#                 continue
+#     # Error, no encoding was correct
+#     return None
 
 
 def read_binary_file_as_generator(file_object, chunk_size=1024):
