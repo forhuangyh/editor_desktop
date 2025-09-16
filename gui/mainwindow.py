@@ -2990,7 +2990,7 @@ class MainWindow(qt.QMainWindow):
         # Help menu
 
         def construct_help_menu():
-            help_menu = Menu("&Help", self.menubar)
+            help_menu = Menu("&关于", self.menubar)
             self.menubar.addMenu(help_menu)
             help_menu.installEventFilter(click_filter)
             self.fm = help_menu
@@ -3270,7 +3270,9 @@ class MainWindow(qt.QMainWindow):
         construct_tools_menu()
         construct_sessions_menu()
         construct_settings_menu()
-        construct_help_menu()
+
+        # 去掉help菜单
+        # construct_help_menu()
 
         # Connect the triggered signal for hiding the function wheel on menubar clicks
         def hide_fw(action):
