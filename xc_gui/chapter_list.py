@@ -66,11 +66,11 @@ class ChapterList(QTreeWidget):
         # 创建父项目
         projects = [
             {
-                "name": "定位",
+                "name": "章节列表",
                 "children": [
-                    {"name": "第一行"},
-                    {"name": "第二行"},
-                    {"name": "第三行"}
+                    {"name": "第一章"},
+                    {"name": "第二章"},
+                    {"name": "第三章"}
                 ]
             }
         ]

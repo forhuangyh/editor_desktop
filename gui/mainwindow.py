@@ -84,6 +84,7 @@ from components.pathwatcher import FileEvent, PathWatcher
 from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
 from xc_gui.fixed_widget import FixedWidget
+from xc_common.file_utils import copy_file
 
 
 if data.platform == "Windows":
@@ -3432,7 +3433,7 @@ class MainWindow(qt.QMainWindow):
         """Open a file for editing using a file dialog"""
         # Create and show a file dialog window, restore last browsed directory and set the file filter
         file_dialog = qt.QFileDialog
-        files = file_dialog.getOpenFileNames(
+        files, _ = file_dialog.getOpenFileNames(
             self,
             "Open File",
             self.last_opened_directory,  # 使用上次打开的目录作为初始目录
@@ -3450,16 +3451,20 @@ class MainWindow(qt.QMainWindow):
 
     def open_files(self, files=None, tab_widget=None):
         """Cheach and read valid files to the selected TabWidget"""
+
+        #  先把文件复制到临时目录中，然后打开
         # Check if the files are valid
         if files is None or files == "":
             return
         if isinstance(files, str):
             # Single file
-            self.open_file(files, tab_widget)
+            new_file_path = copy_file(data.platform, files, data.temp_file_directory)
+            self.open_file(new_file_path, tab_widget)
         else:
             # List of files
             for file in files:
-                self.open_file(file, tab_widget)
+                new_file_path = copy_file(data.platform, file, data.temp_file_directory)
+                self.open_file(new_file_path, tab_widget)
 
     def open_file(self, file=None, tab_widget=None, save_layout=False):
         """
@@ -3950,7 +3955,8 @@ class MainWindow(qt.QMainWindow):
             # Nested function for opening the recent file
             def new_file_function(file):
                 try:
-                    self._parent.open_file(file=file, tab_widget=None)
+                    new_file_path = copy_file(data.platform, file, data.temp_file_directory)
+                    self._parent.open_file(file=new_file_path, tab_widget=None)
                     self._parent.get_largest_window().currentWidget().setFocus()
                 except:
                     pass

@@ -339,9 +339,9 @@ default_settings = {
     "terminal": "x-terminal-emulator",  # Terminal console program used on GNU/Linux
     "tree_display_icon_size": 16,  # Default tree display icon size
     "current_font_name": "Selawik",
-    "current_font_size": 10,
+    "current_font_size": 14,
     "current_editor_font_name": "Source Code Pro",
-    "current_editor_font_size": 10,
+    "current_editor_font_size": 14,
     "toplevel_menu_scale": 100.0,
     "standard_button_size": 50,
     "restore_last_session": True,

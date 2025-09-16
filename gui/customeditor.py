@@ -1580,7 +1580,7 @@ class CustomEditor(BaseEditor):
                 return True
             else:
                 # Search text not found
-                self.main_form.display.write_to_statusbar("Text was not found!")
+                # self.main_form.display.write_to_statusbar("Text was not found!")
                 return False
 
     def replace_all(
@@ -1595,8 +1595,7 @@ class CustomEditor(BaseEditor):
         self.setCursorPosition(0, 0)
         # Clear all previous highlights
         self.clear_highlights()
-        # Setup the indicator style, the replace indicator is 1
-        self.set_indicator("replace")
+
         # Correct the displayed file name
         if self.save_path == None or self.save_path == "":
             file_name = self._parent.tabText(self._parent.currentIndex())
@@ -1635,6 +1634,8 @@ class CustomEditor(BaseEditor):
         if matches != None:
             # Replace the text
             self.replace_entire_text(replaced_text)
+            # Setup the indicator style, the replace indicator is 1
+            self.set_indicator("replace")
             # Matches can only be displayed for non-regex functionality
             if regular_expression == True:
                 # Build the list of matches used by the highlight_raw function
@@ -1655,24 +1656,24 @@ class CustomEditor(BaseEditor):
                     < settings.get("editor")["maximum_highlights"]
                 ):
                     message = "{} replacements:".format(file_name)
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.SUCCESS
-                    )
-                    for match in corrected_matches:
-                        line = self.lineIndexFromPosition(match[1])[0] + 1
-                        index = self.lineIndexFromPosition(match[1])[1]
-                        message = "    replacement made in line:{:d}".format(line)
-                        self.main_form.display.repl_display_message(
-                            message, message_type=constants.MessageType.SUCCESS
-                        )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
+                    # for match in corrected_matches:
+                    #     line = self.lineIndexFromPosition(match[1])[0] + 1
+                    #     index = self.lineIndexFromPosition(match[1])[1]
+                    #     message = "    replacement made in line:{:d}".format(line)
+                    #     self.main_form.display.repl_display_message(
+                    #         message, message_type=constants.MessageType.SUCCESS
+                    #     )
                 else:
                     message = "{:d} replacements made in {}!\n".format(
                         len(corrected_matches), file_name
                     )
                     message += "Too many to list individually!"
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.WARNING
-                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.WARNING
+                    # )
                 # Highlight and display the line difference between the old and new texts
                 self.highlight_raw(corrected_matches)
             else:
@@ -1682,23 +1683,23 @@ class CustomEditor(BaseEditor):
                     self.main_form.display.repl_display_message(
                         message, message_type=constants.MessageType.SUCCESS
                     )
-                    for match in matches:
-                        line = self.lineIndexFromPosition(match[1])[0] + 1
-                        index = self.lineIndexFromPosition(match[1])[1]
-                        message = '    replaced "{}" in line:{:d} column:{:d}'.format(
-                            search_text, line, index
-                        )
-                        self.main_form.display.repl_display_message(
-                            message, message_type=constants.MessageType.SUCCESS
-                        )
+                    # for match in matches:
+                    #     line = self.lineIndexFromPosition(match[1])[0] + 1
+                    #     index = self.lineIndexFromPosition(match[1])[1]
+                    #     message = '    replaced "{}" in line:{:d} column:{:d}'.format(
+                    #         search_text, line, index
+                    #     )
+                    #     self.main_form.display.repl_display_message(
+                    #         message, message_type=constants.MessageType.SUCCESS
+                    #     )
                 else:
                     message = "{:d} replacements made in {}!\n".format(
                         len(matches), file_name
                     )
                     message += "Too many to list individually!"
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.WARNING
-                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.WARNING
+                    # )
                 # Highlight and display the replaced text
                 self.highlight_raw(matches)
             # Restore the previous cursor position
@@ -2014,15 +2015,12 @@ class CustomEditor(BaseEditor):
             # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
             # Get the filename from the QFileDialog window
             tab_text = self._parent.tabText(self._parent.indexOf(self))
-            temp_save_path = qt.QFileDialog.getSaveFileName(
+            temp_save_path, _ = qt.QFileDialog.getSaveFileName(
                 self,
                 "Save File: '{}'".format(tab_text),
                 os.getcwd() + self.save_path,
                 "All Files(*)",
             )
-            # PyQt6's getOpenFileNames returns a tuple (files_list, selected_filter),
-            # so pass only the files to the function
-            temp_save_path = temp_save_path[0]
             # Check if the user has selected a file
             if temp_save_path == "":
                 return False
@@ -2078,6 +2076,56 @@ class CustomEditor(BaseEditor):
                 "Saving to file failed, check path and disk space!"
             )
             return False
+
+    # def save_to_temp_directory(self, encoding="utf-8", line_ending=None):
+    #     """
+    #     新打开文件，主动存到临时文件夹
+    #     """
+    #     temp_file_dir =
+    #     temp_save_path = os.path.join(temp_file_dir, self.name)
+    #     # Replace back-slashes to forward-slashes on Windows
+    #     if data.platform == "Windows":
+    #         temp_save_path = functions.unixify_path(temp_save_path)
+    #     # Save the chosen file name to the document "save_path" attribute
+    #     self.save_path = temp_save_path
+    #     # Set the tab name by filtering it out from the QFileDialog result
+    #     self.name = os.path.basename(self.save_path)
+    #     # Change the displayed name of the tab in the basic widget
+    #     self._parent.set_tab_name(self, self.name)
+    #     # Check if a line ending was specified
+    #     if line_ending == None:
+    #         # Write contents of the tab into the specified file
+    #         save_result = functions.write_to_file(self.text(), self.save_path, encoding)
+    #     else:
+    #         # The line ending has to be a string
+    #         if isinstance(line_ending, str) == False:
+    #             self.main_form.display.repl_display_message(
+    #                 "Line ending has to be a string!",
+    #                 message_type=constants.MessageType.ERROR,
+    #             )
+    #             return False
+    #         else:
+    #             # Convert the text into a list and join it together with the specified line ending
+    #             text_list = self.line_list
+    #             converted_text = line_ending.join(text_list)
+    #             save_result = functions.write_to_file(
+    #                 converted_text, self.save_path, encoding
+    #             )
+    #     # Store the modification time
+    #     self.modification_time = os.path.getmtime(self.save_path)
+    #     # Check save result
+    #     if save_result == True:
+    #         # Saving has succeded
+    #         self.reset_text_changed()
+    #         # Update the lexer for the document only if the lexer is not set
+    #         if isinstance(self.lexer(), lexers.Text):
+    #             file_type = functions.get_file_type(self.save_path)
+    #             self.choose_lexer(file_type)
+    #         # Update the settings manipulator with the new file
+    #         self.main_form.settings.update_recent_list(self.save_path)
+    #         return True
+    #     else:
+    #         return False
 
     def refresh_lexer(self):
         """
