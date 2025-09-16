@@ -288,6 +288,15 @@ class MainWindow(qt.QMainWindow):
         last_layout_filepath = functions.unixify_join(
             data.settings_directory, settings.get("last-layout-filename")
         )
+        # 检查文件是否存在，如果不存在则创建默认的布局文件
+        if not os.path.exists(last_layout_filepath):
+            # 确保.settings目录存在
+            functions.create_directory(data.settings_directory)
+            # 解析settings.constants中预定义的default_layout JSON字符串
+            default_layout = json.loads(settings.constants.default_layout)
+            # 保存默认布局到文件
+            import filefunctions
+            filefunctions.write_json_file(last_layout_filepath, default_layout)
         last_layout = functions.load_json_file(last_layout_filepath)
         self.view.layout_restore(last_layout)
 
@@ -651,7 +660,7 @@ class MainWindow(qt.QMainWindow):
 
         # Check if there are any modified documents
         if self.check_document_states() == True:
-            quit_message = "You have modified documents!\nWhat do you wish to do?"
+            quit_message = "文档已修改！\n是否保存退出？"
             reply = QuitDialog.question(quit_message)
             if reply == constants.DialogResult.Quit.value:
                 pass
@@ -3437,7 +3446,8 @@ class MainWindow(qt.QMainWindow):
             self,
             "Open File",
             self.last_opened_directory,  # 使用上次打开的目录作为初始目录
-            "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
+            "Text Files (*.txt *.text);;All Files (*)",
+            # "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
         )
         # 如果用户选择了文件，更新上次打开的目录
         if files and files[0]:

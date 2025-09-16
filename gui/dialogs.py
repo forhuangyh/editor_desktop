@@ -350,7 +350,7 @@ class QuitDialog(BaseDialog):
         return (
             {
                 "name": "save-and-quit",
-                "text": "Save all\n&& Quit",
+                "text": "保存所有\n&& 退出",
                 "icon": None,
                 "size": (
                     int(settings.get("standard_button_size") * 1.5),
@@ -364,7 +364,7 @@ class QuitDialog(BaseDialog):
             },
             {
                 "name": "quit",
-                "text": "Quit",
+                "text": "退出",
                 "icon": None,
                 "size": (settings.get("standard_button_size"), settings.get("standard_button_size")),
                 "tooltip": "Quit ExCo without saving",
@@ -375,7 +375,7 @@ class QuitDialog(BaseDialog):
             },
             {
                 "name": "cancel",
-                "text": "Cancel",
+                "text": "取消",
                 "icon": None,
                 "size": (settings.get("standard_button_size"), settings.get("standard_button_size")),
                 "tooltip": "Cancel quitting ExCo",
