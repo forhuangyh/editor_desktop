@@ -48,19 +48,24 @@ class FixedWidget(qt.QObject):
     def open_find_replace_dialog(self):
         """open_find_replace_dialog
         """
-        # 创建新的树形tab
-        # Create the new scintilla document in the selected basic widget
         focused_editor = self.editor
         search_text = focused_editor.selectedText()
-        if self.search_dialog is None:
-            self.search_dialog = SearchReplaceDialog(search_text, self.main_form, self)
-        else:
+        if self.search_dialog:
             self.search_dialog.change_editor(search_text, focused_editor)
-        self.search_dialog.show()
+            if not self.search_dialog.isVisible():
+                self.search_dialog.show()
+        else:
+            self.search_dialog = SearchReplaceDialog(search_text, self.main_form, self)
+            self.search_dialog.show()
+
+        self.search_dialog.activateWindow()
+        self.search_dialog.setFocus()
+        self.search_dialog._search_input.setFocus()
 
     def open_chapter_list(self, tab_widget, document_name=""):
         """open_chapter_list"""
         if self.chapter_list:
+            self.special_replace.update_editor_reference(tab_widget)
             return self.chapter_list
 
         new_chapter_list = ChapterList(tab_widget, self.main_form)
@@ -77,7 +82,7 @@ class FixedWidget(qt.QObject):
         search_text = ""
         focused_editor = self.editor
         if self.special_replace:
-            self.special_replace.change_editor("", focused_editor)
+            self.special_replace.update_editor_reference(focused_editor)
             return self.special_replace
 
         if focused_editor:

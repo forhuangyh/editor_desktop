@@ -43,6 +43,14 @@ class SearchReplaceDialog(QDialog):
         """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
         self._editor = new_editor
 
+    def change_editor(self, search_text, editor):
+        """change
+        """
+        if isinstance(editor, CustomEditor):
+            self._editor = editor
+            self._search_text = search_text
+            self._search_input.setText(self._search_text)
+
     def init_ui(self):
         self.setWindowTitle("搜索和替换")
         self.setFixedSize(400, 200)

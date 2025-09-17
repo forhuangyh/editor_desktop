@@ -25,6 +25,7 @@ import gui.contextmenu
 
 from gui.baseeditor import BaseEditor
 from gui.dialogs import YesNoDialog, OkDialog
+from xc_common.file_utils import copy_file
 
 
 class CustomEditor(BaseEditor):
@@ -1615,9 +1616,9 @@ class CustomEditor(BaseEditor):
             search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
         if search_result == constants.SearchResult.NOT_FOUND:
             message = "No matches were found in '{}'!".format(file_name)
-            self.main_form.display.repl_display_message(
-                message, message_type=constants.MessageType.WARNING
-            )
+            # self.main_form.display.repl_display_message(
+            #     message, message_type=constants.MessageType.WARNING
+            # )
             return
         # Use the re module to replace the text
         text = self.text()
@@ -1680,9 +1681,9 @@ class CustomEditor(BaseEditor):
                 # Display the replacements in the REPL tab
                 if len(matches) < settings.get("editor")["maximum_highlights"]:
                     message = "{} replacements:".format(file_name)
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.SUCCESS
-                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
                     # for match in matches:
                     #     line = self.lineIndexFromPosition(match[1])[0] + 1
                     #     index = self.lineIndexFromPosition(match[1])[1]
@@ -2076,6 +2077,32 @@ class CustomEditor(BaseEditor):
                 "Saving to file failed, check path and disk space!"
             )
             return False
+
+    def save_document_and_export(self, encoding="utf-8", line_ending=None):
+        """
+        Save a document to a file
+        """
+
+        # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
+        # Get the filename from the QFileDialog window
+        tab_text = self._parent.tabText(self._parent.indexOf(self))
+        temp_save_path, _ = qt.QFileDialog.getSaveFileName(
+            self,
+            "Save File: '{}'".format(tab_text),
+            os.getcwd() + self.save_path,
+            "All Files(*)",
+        )
+        # Check if the user has selected a file
+        if temp_save_path == "":
+            return False
+        # Replace back-slashes to forward-slashes on Windows
+        if data.platform == "Windows":
+            temp_save_path = functions.unixify_path(temp_save_path)
+
+        if self.save_document(saveas=False, encoding=encoding):
+            copy_file(data.platform, self.save_path, temp_save_path)
+        else:
+            raise Exception("保存失败")
 
     # def save_to_temp_directory(self, encoding="utf-8", line_ending=None):
     #     """

@@ -84,7 +84,7 @@ from components.pathwatcher import FileEvent, PathWatcher
 from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
 from xc_gui.fixed_widget import FixedWidget
-from xc_common.file_utils import copy_file
+from xc_common.file_utils import copy_file_and_save_utf
 
 
 if data.platform == "Windows":
@@ -820,6 +820,18 @@ class MainWindow(qt.QMainWindow):
                 self.update_menubar()
                 self.import_user_functions()
 
+    def file_save_and_export(self, encoding="utf-8"):
+        """The function name says it all"""
+        focused_tab = self.get_tab_by_focus()
+        if focused_tab is not None:
+            focused_tab.save_document_and_export(encoding=encoding)
+            # Set the icon if it was set by the lexer
+            focused_tab.internals.update_icon(focused_tab)
+            # Reimport the user configuration file and update the menubar
+            if functions.is_config_file(focused_tab.save_path) == True:
+                self.update_menubar()
+                self.import_user_functions()
+
     def file_save_all(self, encoding="utf-8"):
         """
         Save all open modified files
@@ -995,12 +1007,16 @@ class MainWindow(qt.QMainWindow):
             def special_saveas_file():
                 self.file_saveas()
 
+            def special_save_and_export_file():
+                self.file_save_and_export()
+
+            # todo 增加一个保存
             self.saveas_file_action = create_action(
-                "导出",
+                "保存并导出",
                 settings.get("keyboard-shortcuts")["general"]["saveas_file"],
-                "导出为新文件",
+                "保存并导出为新文件",
                 "tango_icons/document-save-as.png",
-                special_saveas_file,
+                special_save_and_export_file,
                 enabled=False,
             )
 
@@ -1156,17 +1172,6 @@ class MainWindow(qt.QMainWindow):
                 special_open_chapter_list,
             )
 
-            def special_open_special_replace():
-                self.open_special_replace()
-
-            open_special_replace_action = create_action(
-                "人名替换",
-                settings.get("keyboard-shortcuts")["general"]["open_special_replace"],
-                "人名替换",
-                "tango_icons/document-open.png",
-                special_open_special_replace,
-            )
-
             # Add the actions to the File menu
             file_menu.addAction(new_file_action)
             file_menu.addAction(open_file_action)
@@ -1184,10 +1189,9 @@ class MainWindow(qt.QMainWindow):
             file_menu.addMenu(recent_file_list_menu)
             file_menu.addAction(clear_recent_file_list_action)
             file_menu.addSeparator()
-            file_menu.addAction(open_chapter_list_action)
-            file_menu.addSeparator()
-            file_menu.addAction(open_special_replace_action)
-            file_menu.addSeparator()
+            # file_menu.addAction(open_chapter_list_action)
+            # file_menu.addSeparator()
+            # file_menu.addSeparator()
             file_menu.addAction(exit_action)
 
         # Edit Menus
@@ -1686,6 +1690,17 @@ class MainWindow(qt.QMainWindow):
                 "查找&替换",
                 "tango_icons/edit-find.png",
                 special_dialog_find,
+            )
+
+            def special_open_special_replace():
+                self.open_special_replace()
+
+            open_special_replace_action = create_action(
+                "特殊替换",
+                settings.get("keyboard-shortcuts")["general"]["open_special_replace"],
+                "特殊替换",
+                "tango_icons/document-open.png",
+                special_open_special_replace,
             )
 
             # Nested special function for finding text in the currentlly focused
@@ -2234,6 +2249,9 @@ class MainWindow(qt.QMainWindow):
             # Adding the edit menu and constructing all of the options
             # edit_menu.addAction(find_action)
             edit_menu.addAction(dialog_find_action)
+            edit_menu.addSeparator()
+            edit_menu.addAction(open_special_replace_action)
+
             # edit_menu.addAction(regex_find_action)
             # edit_menu.addAction(find_and_replace_action)
             # edit_menu.addAction(regex_find_and_replace_action)
@@ -3468,12 +3486,12 @@ class MainWindow(qt.QMainWindow):
             return
         if isinstance(files, str):
             # Single file
-            new_file_path = copy_file(data.platform, files, data.temp_file_directory)
+            new_file_path = copy_file_and_save_utf(data.platform, files, data.temp_file_directory)
             self.open_file(new_file_path, tab_widget)
         else:
             # List of files
             for file in files:
-                new_file_path = copy_file(data.platform, file, data.temp_file_directory)
+                new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
                 self.open_file(new_file_path, tab_widget)
 
     def open_file(self, file=None, tab_widget=None, save_layout=False):
@@ -3622,6 +3640,7 @@ class MainWindow(qt.QMainWindow):
         )
         # Set focus to the new widget
         return_widget.setFocus()
+        return_widget.find_input.setFocus()
         # Return the widget reference
         return return_widget
 
