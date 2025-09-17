@@ -367,7 +367,8 @@ class MainWindow(qt.QMainWindow):
                     self.activateWindow()
 
     def get_default_title(self):
-        return "Ex.Co. {}".format(data.application_version)
+        # return "Ex.Co. {}".format(data.application_version)
+        return "Editor Desktop {}".format(data.application_version)
 
     def reset_title(self):
         self.setWindowTitle(self.get_default_title())

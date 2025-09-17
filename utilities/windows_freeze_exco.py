@@ -235,3 +235,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # 访问下载版本地址 http://192.168.3.7:8090/downloads/ 下载最新版本
