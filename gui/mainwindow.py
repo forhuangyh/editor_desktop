@@ -3984,7 +3984,7 @@ class MainWindow(qt.QMainWindow):
             # Nested function for opening the recent file
             def new_file_function(file):
                 try:
-                    new_file_path = copy_file(data.platform, file, data.temp_file_directory)
+                    new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
                     self._parent.open_file(file=new_file_path, tab_widget=None)
                     self._parent.get_largest_window().currentWidget().setFocus()
                 except:

@@ -14,7 +14,7 @@ from qt import (
     QStyledItemDelegate,
     QStyleOptionButton, QApplication,
     QListView, QEvent, QStyle, QColor, QFontMetrics,
-    QAbstractListModel, QModelIndex, QVariant
+    QAbstractListModel, QModelIndex, QVariant, QRect, Qt
 )
 
 import constants
@@ -381,9 +381,6 @@ class SearchMatchModel(QAbstractListModel):
         ]
 
 
-from qt import QStyledItemDelegate, QStyleOptionButton, QApplication, QEvent, QStyle, QColor, QSize, QRect, Qt
-
-
 class HighlightDelegate(QStyledItemDelegate):
     def __init__(self, parent=None, highlight_color=QColor(Qt.GlobalColor.yellow)):
         super().__init__(parent)
@@ -410,6 +407,7 @@ class HighlightDelegate(QStyledItemDelegate):
         # Get the item data
         text = index.data(Qt.ItemDataRole.DisplayRole)
         check_state = index.data(Qt.ItemDataRole.CheckStateRole)
+        line_number = index.data(Qt.ItemDataRole.UserRole)
 
         # --- Draw Checkbox ---
         checkbox_rect = QStyle.alignedRect(
@@ -432,13 +430,19 @@ class HighlightDelegate(QStyledItemDelegate):
 
         # --- Draw Text with Highlighting ---
         text_rect = option.rect.adjusted(checkbox_rect.width() + 5, 0, 0, 0)
-
-        lower_text = text.lower()
+        line_number = line_number + 1
+        lower_text = f"{line_number}: {text.lower()}"
+        text = f"{line_number}: {text}"
         last_pos = 0
         search_len = len(self.search_text)
+        line_number_len = len(f"{line_number}:") + 1
 
         while True:
-            pos = lower_text.find(self.search_text, last_pos)
+            if last_pos == 0:
+                pos = lower_text.find(self.search_text, last_pos + line_number_len)
+            else:
+                pos = lower_text.find(self.search_text, last_pos)
+
             if pos == -1:
                 painter.drawText(text_rect, Qt.TextFlag.TextSingleLine, text[last_pos:])
                 break
