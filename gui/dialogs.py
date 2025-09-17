@@ -276,14 +276,20 @@ class OkDialog(BaseDialog):
 
 
 class CloseEditorDialog(BaseDialog):
+    def __init__(self, text, dialog_type=None, parent=None):
+        # 调用父类的初始化方法
+        super().__init__(text, dialog_type, parent)
+        # 设置对话框的固定宽高
+        self.resize(400, 200)  # 宽度400px，高度200px，可以根据需要调整
+
     def create_button_list(self):
         return (
             {
                 "name": "save-and-close",
-                "text": "Save \n&& Close",
+                "text": "保存 && 退出",
                 "icon": None,
                 "size": (
-                    int(settings.get("standard_button_size") * 1.5),
+                    int(settings.get("standard_button_size") * 2.5),
                     settings.get("standard_button_size"),
                 ),
                 "tooltip": "Save document and close it",
@@ -294,7 +300,7 @@ class CloseEditorDialog(BaseDialog):
             },
             {
                 "name": "close",
-                "text": "Close",
+                "text": "退出",
                 "icon": None,
                 "size": (settings.get("standard_button_size"), settings.get("standard_button_size")),
                 "tooltip": "Close the document without saving",
@@ -305,7 +311,7 @@ class CloseEditorDialog(BaseDialog):
             },
             {
                 "name": "cancel",
-                "text": "Cancel",
+                "text": "取消",
                 "icon": None,
                 "size": (settings.get("standard_button_size"), settings.get("standard_button_size")),
                 "tooltip": "Cancel closing of the document",
@@ -350,10 +356,10 @@ class QuitDialog(BaseDialog):
         return (
             {
                 "name": "save-and-quit",
-                "text": "保存所有\n&& 退出",
+                "text": "保存 && 退出",
                 "icon": None,
                 "size": (
-                    int(settings.get("standard_button_size") * 1.5),
+                    int(settings.get("standard_button_size") * 2.5),
                     settings.get("standard_button_size"),
                 ),
                 "tooltip": "Save all unsaved documents and quit ExCo",
