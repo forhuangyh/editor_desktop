@@ -2020,7 +2020,7 @@ class CustomEditor(BaseEditor):
                 self,
                 "Save File: '{}'".format(tab_text),
                 os.getcwd() + self.save_path,
-                "All Files(*)",
+                "Text Files (*.txt)",
             )
             # Check if the user has selected a file
             if temp_save_path == "":

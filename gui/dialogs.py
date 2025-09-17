@@ -280,7 +280,8 @@ class CloseEditorDialog(BaseDialog):
         # 调用父类的初始化方法
         super().__init__(text, dialog_type, parent)
         # 设置对话框的固定宽高
-        self.resize(400, 200)  # 宽度400px，高度200px，可以根据需要调整
+        self.resize(550, 220)  # 宽度550px，高度220px，提供更充足的空间展示内容
+
 
     def create_button_list(self):
         return (
@@ -352,6 +353,12 @@ class ToggleOneWindowDialog(BaseDialog):
 
 
 class QuitDialog(BaseDialog):
+    def __init__(self, text, dialog_type=None, parent=None):
+        # 调用父类的初始化方法
+        super().__init__(text, dialog_type, parent)
+        # 设置对话框的固定宽高
+        self.resize(550, 220)  # 宽度550px，高度220px，提供更充足的空间展示内容
+
     def create_button_list(self):
         return (
             {
