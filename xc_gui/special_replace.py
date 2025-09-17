@@ -2,7 +2,7 @@
 Copyright (c) 2025
 
 """
-
+import qt
 from qt import (
     QWidget,
     QVBoxLayout,
@@ -10,19 +10,17 @@ from qt import (
     QLineEdit,
     QPushButton,
     QListWidget,
-    QAbstractItemView,
     QMessageBox,
-    QPainter, QTextDocument, QSize, Qt,
+    QTextDocument, QSize, Qt,
     QStyledItemDelegate,
-    QListWidgetItem, QStyleOptionViewItem, QStyleOptionButton, QApplication,
-    QListView, QEvent
+    QListWidgetItem, QStyleOptionButton, QApplication,
+    QListView, QEvent, QStyle, QColor
 )
 
 import constants
 import components.internals
-from qt import QTextDocument, QColor
-from qt import QSize, Qt, QStyle
 import settings
+from gui.stylesheets import StyleSheetScrollbar
 
 
 class SpecialReplace(QWidget):
@@ -59,6 +57,7 @@ class SpecialReplace(QWidget):
         self.settings_control_font = settings.get("settings_control_font")
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
+        self.set_theme(settings.get_theme())
 
     def update_editor_reference(self, new_editor):
         """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
@@ -112,6 +111,7 @@ class SpecialReplace(QWidget):
         self.result_list.setUniformItemSizes(True)  # 允许不同大小的项
         self.result_list.setWordWrap(True)  # 允许换行
         self.result_list.setTextElideMode(Qt.TextElideMode.ElideNone)  # 不省略文本
+
         # 使用自定义delegate 展示部分高亮
         self.result_list.setItemDelegate(HighlightDelegate(self.result_list))
         # 优化性能的设置
@@ -228,29 +228,6 @@ class SpecialReplace(QWidget):
         editor = self._fixed_widget.editor
         editor.clear_highlights()
 
-    def replace_entire_text(self, replace_list, replace_text):
-        """
-        替换整个文档的文本。
-        """
-        doc_text = "Hello, {name}! Welcome to {name} again."
-        target = "{name}"
-        replace_text = "Alice"
-        start_pos = 10  # 仅替换从索引 10 开始的 {name}
-
-        result = []
-        i = 0
-        n = len(doc_text)
-        while i < n:
-            if doc_text.startswith(target, i) and i >= start_pos:
-                result.append(replace_text)
-                i += len(target)
-            else:
-                result.append(doc_text[i])
-                i += 1
-
-        doc_text = "".join(result)
-        print(doc_text)  # 输出: "Hello, {name}! Welcome to Alice again."
-
     def on_item_clicked(self, item):
         """
         当 QListWidget 中的一个项目被点击时调用的槽函数。
@@ -260,6 +237,107 @@ class SpecialReplace(QWidget):
         line_number = item.data(Qt.ItemDataRole.UserRole)
         self._editor.goto_line(line_number + 1)
         self._editor.setFocus()
+
+    def set_theme(self, theme):
+        """
+        根据提供的字典主题设置UI的样式。
+        """
+        # 设置主窗口背景色
+        main_bg = theme['indication']['passivebackground']
+        self.setStyleSheet(f"QWidget {{ background-color: {main_bg}; }}")
+
+        # 更新 QLineEdit 的样式
+        line_edit_style = (
+            f"QLineEdit {{ "
+            f"background-color: {main_bg}; "
+            f"color: {theme['fonts']['default']['color']}; "
+            f"border: 1px solid {theme['indication']['passiveborder']}; "
+            f"selection-background-color: {theme['indication']['selection']}; "
+            f"selection-color: {theme['fonts']['default']['color']}; "
+            f"}}"
+        )
+        self.find_input.setStyleSheet(line_edit_style)
+        self.replace_input.setStyleSheet(line_edit_style)
+
+        # 更新 QPushButton 的样式
+        button_style = (
+            f"QPushButton {{ "
+            f"background-color: {theme['indication']['passivebackground']}; "
+            f"color: {theme['fonts']['default']['color']}; "
+            f"border: 1px solid {theme['indication']['passiveborder']}; "
+            f"padding: 4px; "
+            f"}}"
+            f"QPushButton:hover {{ "
+            f"background-color: {theme['indication']['hover']}; "
+            f"}}"
+        )
+        self.search_button.setStyleSheet(button_style)
+        self.replace_button.setStyleSheet(button_style)
+
+        # 更新 QListWidget 的样式
+        list_style = (
+            f"QListWidget {{ "
+            f"background-color: {main_bg}; "
+            f"color: {theme['fonts']['default']['color']}; "
+            f"border: 1px solid {theme['indication']['passiveborder']}; "
+            f"}}"
+            f"QListWidget::item:selected {{ "
+            f"background-color: {theme['indication']['selection']}; "
+            f"color: {theme['fonts']['default']['color']}; "
+            f"}}"
+        )
+        self.result_list.setStyleSheet(list_style)
+
+        # 更新滚动条样式
+        scrollbar_style = (
+            f"QScrollBar:vertical {{ "
+            f"background: {theme['scrollbar']['background']}; "
+            f"width: 12px; "
+            f"margin: 0px; "
+            f"}}"
+            f"QScrollBar::handle:vertical {{ "
+            f"background: {theme['scrollbar']['handle']}; "
+            f"min-height: 20px; "
+            f"}}"
+            f"QScrollBar::handle:vertical:hover {{ "
+            f"background: {theme['scrollbar']['handle-hover']}; "
+            f"}}"
+        )
+        self.result_list.verticalScrollBar().setStyleSheet(scrollbar_style)
+
+        # # 更新 HighlightDelegate 的高亮颜色
+        # delegate = self.result_list.itemDelegate()
+        # if isinstance(delegate, HighlightDelegate):
+        #     # 使用find指示器的高亮颜色
+        #     highlight_color = QColor(theme['indication']['find'].replace('64', 'ff'))  # 移除透明度
+        #     delegate.highlight_color = highlight_color
+
+        # 刷新列表视图以应用新的高亮颜色
+        self.result_list.viewport().update()
+
+        # # 设置上下文菜单样式（如果有）
+        # if hasattr(self, 'context_menu'):
+        #     context_menu_style = (
+        #         f"QMenu {{ "
+        #         f"background-color: {theme['context-menu-background']}; "
+        #         f"border: 1px solid {theme['context-menu-hex-edge']}; "
+        #         f"}}"
+        #         f"QMenu::item:selected {{ "
+        #         f"background-color: {theme['indication']['selection']}; "
+        #         f"}}"
+        #     )
+        #     self.context_menu.setStyleSheet(context_menu_style)
+
+        # 设置工具提示样式
+        tooltip_style = (
+            f"QToolTip {{ "
+            f"background-color: {theme['indication']['passivebackground']}; "
+            f"color: {theme['fonts']['default']['color']}; "
+            f"border: 1px solid {theme['indication']['passiveborder']}; "
+            f"padding: 2px; "
+            f"}}"
+        )
+        self.setStyleSheet(self.styleSheet() + tooltip_style)
 
 
 class HighlightDelegate(QStyledItemDelegate):
