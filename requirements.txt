@@ -16,6 +16,8 @@ send2trash
 pyflakes
 watchdog
 requests
+paramiko
+zipfile
 # Linux
 ptyprocess>=0.7.0; platform_system == "Linux"
 
