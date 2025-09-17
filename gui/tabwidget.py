@@ -728,8 +728,8 @@ QTabBar::tab:selected {{
         if tab.savable == constants.CanSave.YES:
             if tab.save_status == constants.FileStatus.MODIFIED and force == False:
                 # Display the close notification
-                close_message = "Document '" + self.tabText(emmited_tab_number)
-                close_message += "' has been modified!\nWhat do you wish to do?"
+                close_message = "文件 '" + self.tabText(emmited_tab_number)
+                close_message += "' 已修改!\n是否保存?"
                 reply = CloseEditorDialog.question(close_message)
                 if reply == constants.DialogResult.SaveAndClose.value:
                     result = tab.save_document()
