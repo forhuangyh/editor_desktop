@@ -218,16 +218,16 @@ class MainWindow(qt.QMainWindow):
             self.last_opened_directory = os.getcwd()
 
         # Initialize the debug print function
-        def repl_print(*message):
-            if len(message) == 1 and isinstance(message, str):
-                message = ["REPL PRINT:\n", message[0]]
-            else:
-                message = ["REPL PRINT:\n"] + [str(x) for x in message]
-            self.display.repl_display_message(
-                *message, message_type=constants.MessageType.WARNING
-            )
-
-        functions.repl_print = repl_print
+        # def repl_print(*message):
+        #     if len(message) == 1 and isinstance(message, str):
+        #         message = ["REPL PRINT:\n", message[0]]
+        #     else:
+        #         message = ["REPL PRINT:\n"] + [str(x) for x in message]
+        #     self.display.repl_display_message(
+        #         *message, message_type=constants.MessageType.WARNING
+        #     )
+        #
+        # functions.repl_print = repl_print
         # Initialize layout
         self.view.layout_init()
         # Set the initial window size according to the system resolution
