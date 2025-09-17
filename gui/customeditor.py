@@ -2018,7 +2018,7 @@ class CustomEditor(BaseEditor):
             tab_text = self._parent.tabText(self._parent.indexOf(self))
             temp_save_path, _ = qt.QFileDialog.getSaveFileName(
                 self,
-                "Save File: '{}'".format(tab_text),
+                "保存文件: '{}'".format(tab_text),
                 os.getcwd() + self.save_path,
                 "Text Files (*.txt)",
             )
@@ -2083,26 +2083,43 @@ class CustomEditor(BaseEditor):
         Save a document to a file
         """
 
-        # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
-        # Get the filename from the QFileDialog window
-        tab_text = self._parent.tabText(self._parent.indexOf(self))
-        temp_save_path, _ = qt.QFileDialog.getSaveFileName(
-            self,
-            "Save File: '{}'".format(tab_text),
-            os.getcwd() + self.save_path,
-            "All Files(*)",
-        )
-        # Check if the user has selected a file
-        if temp_save_path == "":
-            return False
-        # Replace back-slashes to forward-slashes on Windows
-        if data.platform == "Windows":
-            temp_save_path = functions.unixify_path(temp_save_path)
-
-        if self.save_document(saveas=False, encoding=encoding):
-            copy_file(data.platform, self.save_path, temp_save_path)
+        if not self.save_path:
+            if self.save_document(saveas=True, encoding=encoding):
+                tab_text = self._parent.tabText(self._parent.indexOf(self))
+                temp_save_path, _ = qt.QFileDialog.getSaveFileName(
+                    self,
+                    "导出文件: '{}'".format(tab_text),
+                    os.getcwd() + self.save_path,
+                    "All Files(*)",
+                )
+                # Check if the user has selected a file
+                if temp_save_path == "":
+                    return False
+                # Replace back-slashes to forward-slashes on Windows
+                if data.platform == "Windows":
+                    temp_save_path = functions.unixify_path(temp_save_path)
+                copy_file(data.platform, self.save_path, temp_save_path)
         else:
-            raise Exception("保存失败")
+            # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
+            # Get the filename from the QFileDialog window
+            tab_text = self._parent.tabText(self._parent.indexOf(self))
+            temp_save_path, _ = qt.QFileDialog.getSaveFileName(
+                self,
+                "导出文件: '{}'".format(tab_text),
+                os.getcwd() + self.save_path,
+                "All Files(*)",
+            )
+            # Check if the user has selected a file
+            if temp_save_path == "":
+                return False
+            # Replace back-slashes to forward-slashes on Windows
+            if data.platform == "Windows":
+                temp_save_path = functions.unixify_path(temp_save_path)
+
+            if self.save_document(saveas=False, encoding=encoding):
+                copy_file(data.platform, self.save_path, temp_save_path)
+            else:
+                raise Exception("保存失败")
 
     # def save_to_temp_directory(self, encoding="utf-8", line_ending=None):
     #     """
