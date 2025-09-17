@@ -996,9 +996,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_saveas()
 
             self.saveas_file_action = create_action(
-                "另存为",
+                "导出",
                 settings.get("keyboard-shortcuts")["general"]["saveas_file"],
-                "另存为新文件",
+                "导出为新文件",
                 "tango_icons/document-save-as.png",
                 special_saveas_file,
                 enabled=False,
@@ -2518,16 +2518,16 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(message)
                     self.display.write_to_statusbar(message)
 
-            lexers_menu = self.display.create_lexers_menu(
-                "Change lexer",
-                set_lexer,
-                store_menu_to_mainform=False,
-                custom_parent=parent,
-            )
-            lexers_menu.installEventFilter(click_filter)
-            temp_icon = functions.create_icon("tango_icons/lexers.png")
-            lexers_menu.setIcon(temp_icon)
-            parent.addMenu(lexers_menu)
+            # lexers_menu = self.display.create_lexers_menu(
+            #     "Change lexer",
+            #     set_lexer,
+            #     store_menu_to_mainform=False,
+            #     custom_parent=parent,
+            # )
+            # lexers_menu.installEventFilter(click_filter)
+            # temp_icon = functions.create_icon("tango_icons/lexers.png")
+            # lexers_menu.setIcon(temp_icon)
+            # parent.addMenu(lexers_menu)
 
         # View menu
         def construct_view_menu():

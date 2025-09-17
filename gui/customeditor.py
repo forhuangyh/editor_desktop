@@ -212,9 +212,9 @@ class CustomEditor(BaseEditor):
         self.internals = components.internals.Internals(parent=self, tab_widget=parent)
         # Set the lexer to the default Plain Text
         self.choose_lexer("text")
-        self.add_corner_buttons()
+        # self.add_corner_buttons()
         # Setup autocompletion
-        self.init_autocompletions()
+        # self.init_autocompletions()
         # Setup the LineList object that will hold the custom editor text as a list of lines
         self.line_list = components.linelist.LineList(self, self.text())
         # Reset the selection anti-recursion lock
