@@ -145,13 +145,13 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
+        self._editor.clear_highlights()
         result = self._editor.highlight_text(
             search_text, case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
         )
         if not result:
-            self._editor.clear_highlights()
             QMessageBox.warning(self, "警告", "查询不到匹配项")
 
     def _replace(self):
