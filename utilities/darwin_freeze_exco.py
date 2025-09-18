@@ -229,7 +229,7 @@ def main():
     ssh_username = 'root'
     ssh_password = '123,abc'  # 或者使用密钥文件
     # ssh_key_file = '/path/to/your/private_key'
-    remote_directory = '/home/www/editor_desktop_downloads/downloads'
+    remote_directory = '/home/www/editor_desktop_downloads/downloads/mac'
 
     upload_to_remote_server(zip_file, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory)
 
