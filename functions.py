@@ -2109,6 +2109,7 @@ def index_strings_in_text(
     # Check if whole words only should be matched
     if whole_words == True:
         search_text = r"\b(" + search_text + r")\b"
+        regular_expression = True
     # Convert text to bytes so that utf-8 characters will be parsed correctly
     if text_to_bytes == True:
         search_text = bytes(search_text, "utf-8")
