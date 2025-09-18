@@ -60,7 +60,7 @@ resources_directory = os.path.join(application_directory, "resources").replace(
 settings_directory = os.path.join(application_directory, ".exco").replace("\\", "/")
 
 # 文件临时存放目录
-temp_file_directory = os.path.join(application_directory, ".temp_file").replace("\\", "/")
+temp_file_directory = os.path.join(application_directory, "temp_file").replace("\\", "/")
 
 # Fonts directory
 fonts_directory = os.path.join(resources_directory, "fonts/").replace("\\", "/")

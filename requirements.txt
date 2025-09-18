@@ -25,6 +25,8 @@ ptyprocess>=0.7.0; platform_system == "Linux"
 pywin32>=306; platform_system == "Windows"
 pywinpty>=2.0.11; platform_system == "Windows"
 
+paramiko
+
 # pip3 install --no-binary black black 需要非二进制安装，否则打包有问题
 
 

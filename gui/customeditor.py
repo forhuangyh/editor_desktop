@@ -1362,145 +1362,32 @@ class CustomEditor(BaseEditor):
             ! THERE IS A BUG WHEN SEARCHING FOR UNICODE STRINGS, THESE ARE ALWAYS CASE SENSITIVE
         """
 
-        def focus_entire_found_text():
-            """
-            Nested function for selection the entire found text
-            """
-            # Save the currently found text selection attributes
-            position = self.getSelection()
-            # Set the cursor to the beginning of the line, so that in case the
-            # found string index is behind the previous cursor index, the whole
-            # found text is shown!
-            self.setCursorPosition(position[0], 0)
-            self.setSelection(position[0], position[1], position[2], position[3])
+        # def focus_entire_found_text():
+        #     """
+        #     Nested function for selection the entire found text
+        #     """
+        #     # Save the currently found text selection attributes
+        #     position = self.getSelection()
+        #     # Set the cursor to the beginning of the line, so that in case the
+        #     # found string index is behind the previous cursor index, the whole
+        #     # found text is shown!
+        #     self.setCursorPosition(position[0], 0)
+        #     self.setSelection(position[0], position[1], position[2], position[3])
 
         # Set focus to the tab that will be searched
         self._parent.setCurrentWidget(self)
-        if regular_expression == True:
-            # Get the absolute cursor index from line/index position
-            line, index = self.getCursorPosition()
-            absolute_position = self.positionFromLineIndex(line, index)
-            # Compile the search expression according to the case sensitivity
-            if case_sensitive == True:
-                compiled_search_re = re.compile(search_text)
-            else:
-                compiled_search_re = re.compile(search_text, re.IGNORECASE)
-            # Search based on the search direction
-            if search_forward == True:
-                # Regex search from the absolute position to the end for the search expression
-                search_result = re.search(
-                    compiled_search_re, self.text()[absolute_position:]
-                )
-                if search_result != None:
-                    # Select the found expression
-                    result_start = absolute_position + search_result.start()
-                    result_end = result_start + len(search_result.group(0))
-                    self.setCursorPosition(0, result_start)
-                    self.setSelection(0, result_start, 0, result_end)
-                    # Return successful find
-                    return constants.SearchResult.FOUND
-                else:
-                    # Begin a new search from the top of the document
-                    search_result = re.search(compiled_search_re, self.text())
-                    if search_result != None:
-                        # Select the found expression
-                        result_start = search_result.start()
-                        result_end = result_start + len(search_result.group(0))
-                        self.setCursorPosition(0, result_start)
-                        self.setSelection(0, result_start, 0, result_end)
-                        self.main_form.display.write_to_statusbar(
-                            "Reached end of document, started from the top again!"
-                        )
-                        # Return cycled find
-                        return constants.SearchResult.CYCLED
-                    else:
-                        self.main_form.display.write_to_statusbar("Text was not found!")
-                        return constants.SearchResult.NOT_FOUND
-            else:
-                # Move the cursor one character back when searching backard
-                # to not catch the same search result again
-                cursor_position = self.get_absolute_cursor_position()
-                search_text = self.text()[:cursor_position]
-                # Regex search from the absolute position to the end for the search expression
-                search_result = [
-                    m for m in re.finditer(compiled_search_re, search_text)
-                ]
-                if search_result != []:
-                    # Select the found expression
-                    result_start = search_result[-1].start()
-                    result_end = search_result[-1].end()
-                    self.setCursorPosition(0, result_start)
-                    self.setSelection(0, result_start, 0, result_end)
-                    # Return successful find
-                    return constants.SearchResult.FOUND
-                else:
-                    # Begin a new search from the top of the document
-                    search_result = [
-                        m for m in re.finditer(compiled_search_re, self.text())
-                    ]
-                    if search_result != []:
-                        # Select the found expression
-                        result_start = search_result[-1].start()
-                        result_end = search_result[-1].end()
-                        self.setCursorPosition(0, result_start)
-                        self.setSelection(0, result_start, 0, result_end)
-                        self.main_form.display.write_to_statusbar(
-                            "Reached end of document, started from the top again!"
-                        )
-                        # Return cycled find
-                        return constants.SearchResult.CYCLED
-                    else:
-                        self.main_form.display.write_to_statusbar("Text was not found!")
-                        return constants.SearchResult.NOT_FOUND
+        line, index = self.getCursorPosition()
+        wrap = True
+        show = True
+        # 从当前光标位置开始向前，循环搜索
+        found = self.findFirst(search_text, regular_expression, case_sensitive, whole_words,
+                               wrap, search_forward, line, index, show)
+        if found:
+            self.main_form.display.write_to_statusbar('匹配到: "' + self.selectedText() + '"')
+            return constants.SearchResult.CYCLED
         else:
-            # Move the cursor one character back when searching backard
-            # to not catch the same search result again
-            if search_forward == False:
-                line, index = self.getCursorPosition()
-                self.setCursorPosition(line, index - 1)
-            # "findFirst" is the QScintilla function for finding text in a document
-            search_result = self.findFirst(
-                search_text, False, case_sensitive, whole_words, False, forward=search_forward
-            )
-
-            if search_result == False:
-                # Try to find text again from the top or at the bottom of
-                # the scintilla document, depending on the search direction
-                if search_forward == True:
-                    s_line = 0
-                    s_index = 0
-                else:
-                    s_line = len(self.line_list) - 1
-                    s_index = len(self.text())
-
-                inner_result = self.findFirst(
-                    search_text,
-                    False,
-                    case_sensitive,
-                    whole_words,
-                    False,
-                    forward=search_forward,
-                    line=s_line,
-                    index=s_index,
-                )
-                if inner_result == False:
-                    self.main_form.display.write_to_statusbar("Text was not found!")
-                    return constants.SearchResult.NOT_FOUND
-                else:
-                    self.main_form.display.write_to_statusbar(
-                        "Reached end of document, started from the other end again!"
-                    )
-                    focus_entire_found_text()
-                    # Return cycled find
-                    return constants.SearchResult.CYCLED
-            else:
-                # Found text
-                self.main_form.display.write_to_statusbar(
-                    'Found text: "' + search_text + '"'
-                )
-                focus_entire_found_text()
-                # Return successful find
-                return constants.SearchResult.FOUND
+            self.main_form.display.write_to_statusbar("无匹配项")
+            return constants.SearchResult.NOT_FOUND
 
     def find_all(
         self,

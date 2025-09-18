@@ -2285,9 +2285,14 @@ def replace_part_and_index(
     but skips replacement for specified matches, and returns the
     line numbers and indexes of the replacements as a list.
     """
-    if search_text == replace_text:
+    # 1. 统一转换为二进制
+    input_string_bytes = bytes(input_string, "utf-8")
+    search_text_bytes = bytes(search_text, "utf-8")
+    replace_text_bytes = bytes(replace_text, "utf-8")
+
+    if search_text_bytes == replace_text_bytes:
         return [], input_string
-    if not case_sensitive and search_text.lower() == replace_text.lower():
+    if not case_sensitive and search_text_bytes.lower() == replace_text_bytes.lower():
         return None, input_string
 
     matches = index_strings_in_text(
@@ -2299,58 +2304,57 @@ def replace_part_and_index(
         whole_words=False,
     )
     if not matches:
-        return matches
+        return matches, input_string
 
     for index, match in not_repalce_match_dict.items():
         new_match = matches[index]
         if index >= len(matches):
             raise Exception("文本内容发生变化，请重新查找")
+        # 验证匹配的起始和结束字节位置是否一致
         if new_match[1] != match[1] or new_match[3] != match[3]:
             raise Exception("文本内容发生变化，请重新查找")
 
-    # # Perform a full replacement first
-    # if case_sensitive:
-    #     replaced_text = input_string.replace(search_text, replace_text)
-    # else:
-    #     search_re = re.escape(search_text)
-    #     replaced_text = re.sub(search_re, replace_text, input_string, flags=re.IGNORECASE)
-
-    # 逐段构建新字符串并计算新索引
+    # 2. 所有操作都在字节层面进行
     replaced_parts = []
     replaced_match_indexes = []
     last_end = 0
 
-    bl_search = bytes(search_text, "utf-8")
-    bl_search = len(bl_search.replace(b"\\", b" "))
-    bl_replace = bytes(replace_text, "utf-8")
-    bl_replace = len(bl_replace.replace(b"\\", b" "))
+    # 使用字节长度进行计算
+    len_search = len(search_text_bytes)
+    len_replace = len(replace_text_bytes)
 
     diff = 0
 
     for i, match in enumerate(matches):
-        # 将上一个匹配项和当前匹配项之间的文本添加到列表中
         start_pos = match[1]
-        replaced_parts.append(input_string[last_end:start_pos])
+        end_pos = match[3]
 
-        # 判断是否需要跳过此匹配
+        # 使用字节切片
+        replaced_parts.append(input_string_bytes[last_end:start_pos])
+
         if i in not_repalce_match_dict:
-            # 跳过，添加原始文本
-            replaced_parts.append(search_text)
-            # diff 不变
+            # 跳过，添加原始字节文本
+            replaced_parts.append(search_text_bytes)
         else:
-            # 不跳过，添加替换文本并计算新索引
-            replaced_parts.append(replace_text)
-            new_index = start_pos + diff
-            replaced_match_indexes.append((0, new_index, 0, new_index + bl_replace))
-            diff += bl_replace - bl_search
+            # 不跳过，添加替换字节文本并计算新索引
+            replaced_parts.append(replace_text_bytes)
 
-        last_end = match[3]
+            # 计算新的字节索引
+            new_start_index = start_pos + diff
+            new_end_index = new_start_index + len_replace
+            replaced_match_indexes.append((0, new_start_index, 0, new_end_index))
 
-    # 将最后一个匹配项之后的所有文本添加到列表中
-    replaced_parts.append(input_string[last_end:])
+            # 更新偏移量
+            diff += len_replace - len_search
 
-    # 4. 一次性拼接所有部分
-    replaced_text = "".join(replaced_parts)
+        last_end = end_pos
+
+    # 将最后一个匹配项之后的所有字节添加到列表中
+    replaced_parts.append(input_string_bytes[last_end:])
+    # 3. 一次性拼接所有字节部分
+    replaced_text_bytes = b"".join(replaced_parts)
+    # 4. 解码回字符串
+    replaced_text = replaced_text_bytes.decode("utf-8")
 
     return replaced_match_indexes, replaced_text
 

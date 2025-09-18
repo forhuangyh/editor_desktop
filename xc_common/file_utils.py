@@ -3,6 +3,7 @@ import functions
 from pathlib import Path
 import shutil
 import chardet
+from datetime import datetime
 
 
 def copy_file(platform, src_file_path, dst_dir_path):
@@ -43,7 +44,16 @@ def copy_file_and_save_utf(platform, src_file_path, dst_dir):
     dst_path.parent.mkdir(parents=True, exist_ok=True)
 
     if dst_path.exists():
-        dst_path.unlink()  # 删除目标文件
+        # 获取当前时间戳并格式化为字符串
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 分离文件名和扩展名
+        file_stem = dst_path.stem
+        file_suffix = dst_path.suffix
+        # 构建新文件名：原文件名_时间戳.扩展名
+        new_file_name = f"{file_stem}_{timestamp}{file_suffix}"
+        new_dst_path = dst_path.parent / new_file_name
+        # 重命名原文件
+        dst_path.rename(new_dst_path)
 
     shutil.copy2(src_file_path, dst_dir_path)
 

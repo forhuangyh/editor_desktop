@@ -106,7 +106,7 @@ class SpecialReplace(QWidget):
         self.result_view = QListView()
         self.result_view.setUniformItemSizes(True)
         self.result_view.setWordWrap(False)
-        self.result_view.setTextElideMode(Qt.TextElideMode.ElideRight)
+        self.result_view.setTextElideMode(Qt.TextElideMode.ElideNone)
 
         # 创建并设置自定义模型和代理
         self.model = SearchMatchModel()
@@ -124,7 +124,7 @@ class SpecialReplace(QWidget):
         self.search_button.clicked.connect(self._find_all)
         self.find_input.returnPressed.connect(self._find_all)
         self.replace_button.clicked.connect(self._replace_all)
-        self.result_view.doubleClicked.connect(self.on_item_clicked)
+        self.result_view.clicked.connect(self.on_item_clicked)
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
@@ -143,7 +143,9 @@ class SpecialReplace(QWidget):
             whole_words=False
         )
         match_list = []
-        for match in matches:
+        max_len_index = 0
+        line_text_len = 0
+        for index, match in enumerate(matches):
             line_number, _ = self._editor.lineIndexFromPosition(match[1])
             line_text = self._editor.line_list[line_number + 1]
             match_list.append(
@@ -151,11 +153,17 @@ class SpecialReplace(QWidget):
                     'line_number': line_number,
                     'line_text': line_text,
                     'match_data': match,
-                    'check_state': Qt.CheckState.Checked
+                    'check_state': Qt.CheckState.Checked,
                 }
             )
+            cur_len = len(line_text)
+            if cur_len > line_text_len:
+                max_len_index = index
+                line_text_len = cur_len
+
         self.model.setMatches(match_list)
         self.delegate.setSearchText(search_text)
+        self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
 
     def _replace_all(self):
         """替换所有匹配项"""
@@ -323,11 +331,18 @@ class SearchMatchModel(QAbstractListModel):
         super().__init__(parent)
         self.matches = matches if matches is not None else []
         self._highlight_line = -1
+        self.max_width_text = None
 
     def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
             return 0
         return len(self.matches)
+
+    def setMaxWidthText(self, text):
+        self.max_width_text = text
+
+    def getMaxWidthItem(self):
+        return self.max_width_text
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid() or not (0 <= index.row() < len(self.matches)):
@@ -387,9 +402,13 @@ class HighlightDelegate(QStyledItemDelegate):
         self.highlight_color = highlight_color
         self.search_text = ""
         self._parent = parent
+        self._max_len_text = ""
 
     def setSearchText(self, text):
         self.search_text = text.lower()
+
+    def setMaxLenText(self, text):
+        self._max_len_text = text
 
     def paint(self, painter, option, index):
         painter.save()
@@ -407,7 +426,7 @@ class HighlightDelegate(QStyledItemDelegate):
         # Get the item data
         text = index.data(Qt.ItemDataRole.DisplayRole)
         check_state = index.data(Qt.ItemDataRole.CheckStateRole)
-        line_number = index.data(Qt.ItemDataRole.UserRole)
+        row_num = index.row()
 
         # --- Draw Checkbox ---
         checkbox_rect = QStyle.alignedRect(
@@ -430,16 +449,16 @@ class HighlightDelegate(QStyledItemDelegate):
 
         # --- Draw Text with Highlighting ---
         text_rect = option.rect.adjusted(checkbox_rect.width() + 5, 0, 0, 0)
-        line_number = line_number + 1
-        lower_text = f"{line_number}: {text.lower()}"
-        text = f"{line_number}: {text}"
+        row_num = row_num + 1
+        lower_text = f"{row_num}: {text.lower()}"
+        text = f"{row_num}: {text}"
         last_pos = 0
         search_len = len(self.search_text)
-        line_number_len = len(f"{line_number}:") + 1
+        row_num_len = len(f"{row_num}:") + 1
 
         while True:
             if last_pos == 0:
-                pos = lower_text.find(self.search_text, last_pos + line_number_len)
+                pos = lower_text.find(self.search_text, last_pos + row_num_len)
             else:
                 pos = lower_text.find(self.search_text, last_pos)
 
@@ -476,7 +495,10 @@ class HighlightDelegate(QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        text = index.data(Qt.ItemDataRole.DisplayRole)
+        # 当self.result_view.setUniformItemSizes(True)，只计算一次，后续使用缓存的sizeHint，会导致listItem的width不够
+        # 这里计算最大长度的text的sizeHint
+        # text = index.data(Qt.ItemDataRole.DisplayRole)
+        text = self._max_len_text
 
         # Get the font metrics from the application's default font
         # This is the correct approach in PyQt6
@@ -486,7 +508,7 @@ class HighlightDelegate(QStyledItemDelegate):
         text_size = metrics.boundingRect(text).size()
 
         # Add a little padding and space for the checkbox
-        width = text_size.width() + 20 + 5  # Checkbox width + padding
+        width = text_size.width() + 20 + 25  # Checkbox width + padding
         height = metrics.height() + 5  # Some vertical padding
 
         return QSize(width, height)

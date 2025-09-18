@@ -104,9 +104,24 @@ class SearchReplaceDialog(QDialog):
         replace_btn.clicked.connect(self._replace)
         replace_all_btn.clicked.connect(self._replace_all)
         clear_highlight_btn.clicked.connect(self._clear_highlight)
+        self._case_sensitive.stateChanged.connect(self.on_case_sensitive_changed)
+        self._whole_word.stateChanged.connect(self.on_whole_word_changed)
+        self._regex.stateChanged.connect(self.on_regex_changed)
 
         # # 初始化高亮指示器
         # self._init_indicator()
+    def on_case_sensitive_changed(self, state):
+        if state == qt.Qt.CheckState.Checked.value:
+            self._regex.setChecked(False)
+
+    def on_whole_word_changed(self, state):
+        if state == qt.Qt.CheckState.Checked.value:
+            self._regex.setChecked(False)
+
+    def on_regex_changed(self, state):
+        if state == qt.Qt.CheckState.Checked.value:
+            self._case_sensitive.setChecked(False)
+            self._whole_word.setChecked(False)
 
     def _find_next(self):
         """查找下一个匹配项并高亮"""
