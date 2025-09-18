@@ -1994,10 +1994,11 @@ class CustomEditor(BaseEditor):
             # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
             # Get the filename from the QFileDialog window
             tab_text = self._parent.tabText(self._parent.indexOf(self))
+            save_path = "new" if not self.save_path else self.save_path
             temp_save_path, _ = qt.QFileDialog.getSaveFileName(
                 self,
                 "保存文件: '{}'".format(tab_text),
-                os.getcwd() + self.save_path,
+                os.path.join(os.getcwd(), save_path),
                 "Text Files (*.txt)",
             )
             # Check if the user has selected a file

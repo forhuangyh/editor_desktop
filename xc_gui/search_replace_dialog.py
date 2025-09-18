@@ -53,7 +53,7 @@ class SearchReplaceDialog(QDialog):
 
     def init_ui(self):
         self.setWindowTitle("搜索和替换")
-        self.setFixedSize(400, 200)
+        self.setFixedSize(460, 200)
 
         # 搜索部分
         search_layout = QHBoxLayout()
@@ -84,6 +84,7 @@ class SearchReplaceDialog(QDialog):
         replace_btn = QPushButton("替换")
         replace_all_btn = QPushButton("全部替换")
         clear_highlight_btn = QPushButton("清除高亮")
+
         button_layout.addWidget(find_next_btn)
         button_layout.addWidget(find_all_btn)
         button_layout.addWidget(replace_btn)
@@ -129,11 +130,14 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        self._editor.find_text(
+        result = self._editor.find_text(
             search_text, case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
         )
+        if result == constants.SearchResult.NOT_FOUND:
+            self._editor.clear_highlights()
+            QMessageBox.warning(self, "警告", "查询不到匹配项")
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
@@ -141,12 +145,14 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        editor = self._fixed_widget.editor
-        editor.highlight_text(
+        result = self._editor.highlight_text(
             search_text, case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
         )
+        if not result:
+            self._editor.clear_highlights()
+            QMessageBox.warning(self, "警告", "查询不到匹配项")
 
     def _replace(self):
         """替换当前匹配项"""
@@ -155,8 +161,7 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        editor = self._fixed_widget.editor
-        editor.find_and_replace(
+        self._editor.find_and_replace(
             search_text, replace_text,
             case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
@@ -170,74 +175,14 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        editor = self._fixed_widget.editor
-        editor.replace_all(
+        self._editor.replace_all(
             search_text, replace_text,
             case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
         )
+        QMessageBox.information(self, "信息", "替换完成")
 
     def _clear_highlight(self):
         """清除所有高亮"""
-        editor = self._fixed_widget.editor
-        editor.clear_highlights()
-
-    # def showEvent(self, event):
-    #     # self.center()
-    #     # super().showEvent(event)
-
-    #     event.accept()
-
-    # def center(self):
-    #     import functions
-    #     if self.parent() is not None:
-    #         qr = self.frameGeometry()
-    #         geo = self.parent().frameGeometry()
-    #         cp = functions.create_point(
-    #             int((geo.width() / 2) - (qr.width() / 2)),
-    #             int((geo.height() / 2) - (qr.height() / 2)),
-    #         )
-    #         self.move(cp)
-    #     else:
-    #         qr = self.frameGeometry()
-    #         cp = self.screen().geometry().center()
-    #         qr.moveCenter(cp)
-    #         self.move(qr.topLeft())
-
-    # def _init_indicator(self):
-    #     """初始化高亮指示器"""
-    #     # 使用 INDIC_ROUNDBOX（圆角框）或 INDIC_PLAIN（普通下划线）
-    #     self._editor.indicatorDefine(QsciScintilla.IndicatorStyle.RoundBoxIndicator, 0)  # 修正：使用枚举类型
-    #     self._editor.setIndicatorForegroundColor(QColor("#FFD700"), 0)  # 金色高亮
-    #     self._editor.setIndicatorHoverForegroundColor(QColor("#FFA500"), 0)  # 悬停颜色
-
-    # def _get_search_flags(self):
-    #     """获取搜索标志"""
-    #     flags = 0
-    #     if self._case_sensitive.isChecked():
-    #         flags |= QsciScintilla.SCFIND_MATCHCASE
-    #     if self._whole_word.isChecked():
-    #         flags |= QsciScintilla.SCFIND_WHOLEWORD
-    #     if self._regex.isChecked():
-    #         flags |= QsciScintilla.SCFIND_REGEXP
-    #     return flags
-
-    # def _highlight_all_matches(self, search_text):
-    #     """高亮所有匹配项"""
-    #     if not search_text:
-    #         return
-
-    #     flags = self._get_search_flags()
-    #     self._editor.clearIndicatorRange(0, 0, self._editor.lines(), 0, 0)  # 清除旧高亮
-
-    #     # 从头开始搜索
-    #     self._editor.setCursorPosition(0, 0)
-    #     found = True
-    #     while found:
-    #         found = self._editor.findFirst(search_text, False, False, False, True, flags)
-    #         if found:
-    #             start_pos = self._editor.getSelectionStart()
-    #             end_pos = self._editor.getSelectionEnd()
-    #             self._editor.fillIndicatorRange(0, start_pos, end_pos, 0)  # 高亮当前匹配项
-    #             self._editor.findNext()  # 继续搜索下一个
+        self._editor.clear_highlights()
