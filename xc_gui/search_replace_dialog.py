@@ -136,7 +136,7 @@ class SearchReplaceDialog(QDialog):
             whole_words=self._whole_word.isChecked()
         )
         if result == constants.SearchResult.NOT_FOUND:
-            self._editor.clear_highlights()
+            # self._editor.clear_highlights()
             QMessageBox.warning(self, "警告", "查询不到匹配项")
 
     def _find_all(self):
