@@ -188,34 +188,111 @@ class BaseDialog(qt.QDialog):
             self.done(self.state)
 
     def update_style(self):
-        self.setStyleSheet(
-            f"""
-QDialog {{
-    background-color: {settings.get_theme()["fonts"]["default"]["background"]};
-    color: {settings.get_theme()["fonts"]["default"]["color"]};
-    border: 1px solid {settings.get_theme()["indication"]["passiveborder"]};
-    margin: 0px;
-    padding: 0px;
-    spacing: 0px;
-}}
-QGroupBox, QFrame {{
-    background-color: {settings.get_theme()["fonts"]["default"]["background"]};
-    color: {settings.get_theme()["fonts"]["default"]["color"]};
-    border: none;
-    margin: 0px;
-    padding: 0px;
-    spacing: 0px;
-}}
-QLabel {{
-    background-color: {settings.get_theme()["fonts"]["default"]["background"]};
-    color: {settings.get_theme()["fonts"]["default"]["color"]};
-    border: none;
-    font-family: {settings.get("current_font_name")};
-    font-size: {settings.get("current_font_size")};
-}}
-{StyleSheetButton.standard()}
-        """
-        )
+        # 获取字体设置
+        # 获取字体设置
+        font_name = settings.get("current_font_name") or "Calibri, Segoe UI, Arial"
+        font_size = settings.get("current_font_size") or 11
+        button_font_size = font_size - 1
+
+        # 使用三引号字符串定义完整的样式表
+        style_sheet = """
+                /* 对话框主体样式 - Word办公软件风格 */
+                QDialog {
+                    background-color: #f8f8f8;
+                    color: #000000;
+                    border: 1px solid #d4d4d4;
+                    border-radius: 3px;
+                    margin: 0px;
+                    padding: 10px;
+                    spacing: 6px;
+                }
+
+                /* 框架和组框样式 - 移除按钮区域背景框 */
+                QGroupBox, QFrame {
+                    background-color: transparent;  /* 移除背景色 */
+                    color: #000000;
+                    border: none;  /* 移除边框 */
+                    border-radius: 3px;
+                    margin: 5px;
+                    padding: 8px;
+                    spacing: 5px;
+                }
+
+                /* 标签样式 - 默认标签保持黑色 */
+                QLabel {
+                    background-color: transparent;
+                    color: #000000;
+                    border: none;
+                    font-family: %s;
+                    font-size: %dpt;
+                    font-weight: 400;
+                    padding: 4px;
+                }
+
+                /* 提示标签样式 - 设置为红色 */
+                QLabel[warning="true"], QLabel[alert="true"], QLabel[error="true"] {
+                    color: #ff0000;  /* 红色字体 */
+                    font-weight: 600;  /* 加粗显示 */
+                }
+
+                /* 按钮样式 - 降低按钮高度 */
+                QPushButton {
+                    background-color: #f0f0f0;
+                    color: #000000;
+                    border: 1px solid #d4d4d4;
+                    border-radius: 2px;
+                    padding: 3px 10px;  /* 减少内边距降低高度 */
+                    font-family: %s;
+                    font-size: %dpt;
+                    font-weight: 400;
+                    min-width: 75px;
+                    min-height: 24px;  /* 明确设置最小高度 */
+                    max-height: 28px;  /* 明确设置最大高度 */
+                }
+
+                QPushButton:hover {
+                    background-color: #ebebeb;
+                    border: 1px solid #c0c0c0;
+                }
+
+                QPushButton[focused=true] {
+                    background-color: #ebebeb;
+                    border: 1px solid #2b579a;
+                }
+
+                QPushButton:pressed {
+                    background-color: #d4d4d4;
+                    border: 1px solid #a0a0a0;
+                    padding: 4px 9px 2px 11px;
+                }
+
+                /* 主要按钮样式 */
+                QPushButton#primary-button {
+                    background-color: #2b579a;
+                    color: white;
+                    border: 1px solid #1f3c6b;
+                }
+
+                QPushButton#primary-button:hover {
+                    background-color: #1f3c6b;
+                    border: 1px solid #142643;
+                }
+
+                QPushButton#primary-button:pressed {
+                    background-color: #142643;
+                    border: 1px solid #0a1526;
+                }
+
+                /* 禁用状态样式 */
+                QPushButton:disabled {
+                    background-color: #f4f4f4;
+                    color: #a0a0a0;
+                    border: 1px solid #e0e0e0;
+                }
+                """ % (font_name, font_size, font_name, button_font_size)
+
+        # 应用样式表
+        self.setStyleSheet(style_sheet)
         for button in self.button_cache:
             button.update_style()
 
