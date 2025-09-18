@@ -1212,7 +1212,7 @@ class MainWindow(qt.QMainWindow):
             temp_string = "Copy any selected text in the currently "
             temp_string += "selected window to the clipboard"
             copy_action = create_action(
-                "Copy\t" + settings.get("keyboard-shortcuts")["editor"]["copy"],
+                "复制\t" + settings.get("keyboard-shortcuts")["editor"]["copy"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["copy"],
                 temp_string,
                 "tango_icons/edit-copy.png",
@@ -1226,7 +1226,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             cut_action = create_action(
-                "Cut\t" + settings.get("keyboard-shortcuts")["editor"]["cut"],
+                "剪切\t" + settings.get("keyboard-shortcuts")["editor"]["cut"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["cut"],
                 "Cut any selected text in the currently selected window to the clipboard",
                 "tango_icons/edit-cut.png",
@@ -1240,7 +1240,7 @@ class MainWindow(qt.QMainWindow):
                     pass
 
             paste_action = create_action(
-                "Paste\t" + settings.get("keyboard-shortcuts")["editor"]["paste"],
+                "粘贴\t" + settings.get("keyboard-shortcuts")["editor"]["paste"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["paste"],
                 "Paste the text in the clipboard to the currenty selected window",
                 "tango_icons/edit-paste.png",
@@ -1254,9 +1254,9 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             undo_action = create_action(
-                "Undo\t" + settings.get("keyboard-shortcuts")["editor"]["undo"],
+                "撤销\t" + settings.get("keyboard-shortcuts")["editor"]["undo"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["undo"],
-                "Undo last editor action in the currenty selected window",
+                "撤销上一个编辑器操作",
                 "tango_icons/edit-undo.png",
                 undo,
             )
@@ -1268,9 +1268,9 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             redo_action = create_action(
-                "Redo\t" + settings.get("keyboard-shortcuts")["editor"]["redo"],
+                "重做\t" + settings.get("keyboard-shortcuts")["editor"]["redo"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["redo"],
-                "Redo last undone editor action in the currenty selected window",
+                "重做上一个撤销的编辑器操作",
                 "tango_icons/edit-redo.png",
                 redo,
             )
@@ -1394,7 +1394,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             go_to_start_action = create_action(
-                "Go to start\t"
+                "跳转至文档开头\t"
                 + settings.get("keyboard-shortcuts")["editor"]["go_to_start"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["go_to_start"],
                 "Move cursor up to the start of the currently selected document",
@@ -1410,7 +1410,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             go_to_end_action = create_action(
-                "Go to end\t"
+                "跳转至文档结尾\t"
                 + settings.get("keyboard-shortcuts")["editor"]["go_to_end"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["go_to_end"],
                 "Move cursor down to the end of the currently selected document",
@@ -1522,7 +1522,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_cut_action = create_action(
-                "Line Cut\t" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
+                "行剪切\t" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
                 "Cut out the current line/lines of the currently selected document",
                 "tango_icons/edit-line-cut.png",
@@ -1537,7 +1537,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_copy_action = create_action(
-                "Line Copy\t"
+                "行复制\t"
                 + settings.get("keyboard-shortcuts")["editor"]["line_copy"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_copy"],
                 "Copy the current line/lines of the currently selected document",
@@ -1553,7 +1553,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_delete_action = create_action(
-                "Line Delete\t"
+                "行删除\t"
                 + settings.get("keyboard-shortcuts")["editor"]["line_delete"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_delete"],
                 "Delete the current line of the currently selected document",
