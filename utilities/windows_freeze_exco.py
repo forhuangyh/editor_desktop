@@ -164,7 +164,7 @@ def main():
 
     base = None
     excludes = ["tkinter"]
-    executable_name = "ExCo"
+    executable_name = "EditorDesktop"
 
     if platform.system().lower() == "windows":
         base = "Win32GUI"
@@ -179,18 +179,24 @@ def main():
             "PyQt5.Qsci",
             "PyQt5.QtTest",
         ]
-        executable_name = "ExCo.exe"
+        executable_name = "EditorDesktop.exe"
 
     elif platform.system().lower() == "linux":
         builtin_modules.extend(["ptyprocess"])
 
     # 要冻结的可执行文件
+    # 确保使用绝对路径并添加更多诊断输出
+    icon_path_absolute = os.path.abspath(os.path.join(file_directory, "resources", "exco-icon-win.ico"))
+    print(f"[配置] 使用图标路径: {icon_path_absolute}")
+
     executables = [
         Executable(
             os.path.join(file_directory, "exco.py"),
             base=base,
-            icon="resources/exco-icon-win.ico",
-            target_name=executable_name,
+            icon=icon_path_absolute,  # 使用绝对路径
+            target_name=executable_name
+            # shortcut_name="Editor Desktop",  # 快捷方式名称
+            # shortcut_dir="DesktopFolder"  # 可选：在桌面创建快捷方式
         )
     ]
 
@@ -212,10 +218,29 @@ def main():
 
     # 拷贝资源
     resources_dir = os.path.join(file_directory, "resources")
+    target_resources_dir = os.path.join(output_directory, "resources")
+    # 确保目标目录不存在，避免复制失败
+    if os.path.exists(target_resources_dir):
+        shutil.rmtree(target_resources_dir)
+        print(f"已删除旧的资源目录: {target_resources_dir}")
+
     if os.path.exists(resources_dir):
-        shutil.copytree(resources_dir, os.path.join(output_directory, "resources"))
+        print(f"开始复制资源目录: {resources_dir} 到 {target_resources_dir}")
+        shutil.copytree(resources_dir, target_resources_dir)
+        print(f"资源复制完成")
     else:
         print(f"[警告] 未找到资源目录: {resources_dir}")
+
+    # 额外检查图标文件是否存在
+    icon_path = os.path.join(file_directory, "resources", "exco-icon-win.ico")
+    if os.path.exists(icon_path):
+        print(f"图标文件存在: {icon_path}")
+    else:
+        print(f"[错误] 未找到图标文件: {icon_path}")
+        # 尝试使用默认图标作为备选
+        default_icon = os.path.join(file_directory, "resources", "exco-icon-win.ico")
+        if os.path.exists(default_icon):
+            print(f"使用默认图标替代: {default_icon}")
 
     # 调用压缩和上传功能
     # 1. 压缩目录
@@ -228,7 +253,7 @@ def main():
     ssh_username = 'root'
     ssh_password = '123,abc'  # 或者使用密钥文件
     # ssh_key_file = '/path/to/your/private_key'
-    remote_directory = '/home/www/editor_desktop_downloads/downloads'
+    remote_directory = '/home/www/editor_desktop_downloads/downloads/windows'
 
     upload_to_remote_server(zip_file, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory)
 
