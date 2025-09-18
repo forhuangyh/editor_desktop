@@ -45,7 +45,7 @@ def copy_file_and_save_utf(platform, src_file_path, dst_dir):
 
     if dst_path.exists():
         # 获取当前时间戳并格式化为字符串
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         # 分离文件名和扩展名
         file_stem = dst_path.stem
         file_suffix = dst_path.suffix
