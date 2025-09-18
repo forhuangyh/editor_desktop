@@ -1405,14 +1405,10 @@ class CustomEditor(BaseEditor):
                     char_start = search_result.start()
                     char_end = search_result.end()
 
-                if search_result:
-                    self.setCursorPosition(0, char_start)
-                    self.setSelection(0, char_start, 0, char_end)
-                    self.main_form.display.write_to_statusbar(f"查找到匹配项：{search_result.group(0)}")
-                    return constants.SearchResult.FOUND
-                else:
-                    self.main_form.display.write_to_statusbar("查找不到匹配项")
-                    return constants.SearchResult.NOT_FOUND
+                self.setCursorPosition(0, char_start)
+                self.setSelection(0, char_start, 0, char_end)
+                self.main_form.display.write_to_statusbar(f"查找到匹配项：{search_result.group(0)}")
+                return constants.SearchResult.FOUND
 
             # else:  # search_forward == False
             #     # 向后搜索，从当前位置向前切片，并找到最后一个匹配

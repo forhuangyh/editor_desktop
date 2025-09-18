@@ -62,7 +62,10 @@ class SpecialReplace(QWidget):
 
     def update_editor_reference(self, new_editor):
         """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
+        if self._editor == new_editor:
+            return
         self._editor = new_editor
+        self.model.setMatches([])
 
     def init_ui(self):
         # 直接设置自身属性
@@ -161,9 +164,12 @@ class SpecialReplace(QWidget):
                 max_len_index = index
                 line_text_len = cur_len
 
-        self.model.setMatches(match_list)
-        self.delegate.setSearchText(search_text)
-        self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
+        if match_list:
+            self.model.setMatches(match_list)
+            self.delegate.setSearchText(search_text)
+            self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
+        else:
+            self.model.setMatches([])
 
     def _replace_all(self):
         """替换所有匹配项"""
@@ -194,7 +200,7 @@ class SpecialReplace(QWidget):
             case_sensitive=False,
         )
         if not matches:
-            self.result_view.clear()
+            self.model.setMatches([])
             # list_item = QListWidgetItem("文本内容有更新，无匹配项被替换")
             # list_item.setData(Qt.ItemDataRole.UserRole, 0)  # 例如存储行号
             # self.result_list.addItem(list_item)

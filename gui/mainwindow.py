@@ -4810,13 +4810,13 @@ QSplitter::handle {{
             self._parent.recent_files_menu = None
 
         def clear_recent_file_list(self):
-            warning = "Are you sure you wish to delete\n" + "the recent files list?"
+            warning = "确认清理最近文件列表的记录?"
             reply = YesNoDialog.warning(warning)
             if reply == constants.DialogResult.No.value:
                 return
             self._parent.settings.clear_recent_list()
             self._parent.settings.update_recent_list()
-            self._parent.display.repl_display_success("Recent file list cleared.")
+            # self._parent.display.repl_display_success("Recent file list cleared.")
 
         """
         Layout

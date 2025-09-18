@@ -51,11 +51,13 @@ def get_editor_font():
 
 
 # Exposed API
-exposed_api_names = ["load", "save", "save_last_layout", "add_recent_file"]
+exposed_api_names = ["load", "save", "save_last_layout", "add_recent_file", "clear_recent_files"]
 exposed_api_map = [
     {"method": "load_settings", "exposed_function": "load"},
     {"method": "save_last_layout", "exposed_function": "save_last_layout"},
     {"method": "add_recent_file", "exposed_function": "add_recent_file"},
+    {"method": "clear_recent_files", "exposed_function": "clear_recent_files"},
+    {"method": "update_recent_list", "exposed_function": "update_recent_list"},
 ]
 # Dynamically define global functions
 for mapping in exposed_api_map:
