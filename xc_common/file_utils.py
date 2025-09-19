@@ -2,7 +2,7 @@ import os
 import functions
 from pathlib import Path
 import shutil
-import chardet
+# import chardet
 from datetime import datetime
 from charset_normalizer import from_bytes
 
@@ -70,7 +70,7 @@ def save_as_utf(file_with_path, encoding='utf-8'):
     """
     try:
         encoding = None
-        read_len = 8192
+        read_len = 18192
         # Use binary mode to read the file's content
         with open(file_with_path, 'rb') as f:
             raw_data = f.read(read_len)
@@ -84,8 +84,9 @@ def save_as_utf(file_with_path, encoding='utf-8'):
             text = raw_data.decode(encoding, errors='replace')
             if text.find("\r") > -1:
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
-                with open(file_with_path, 'r') as f:
-                    text = f.read()
+                with open(file_with_path, 'rb') as f:
+                    raw_data = f.read()
+                text = raw_data.decode(encoding, errors='replace')
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
                 text = text.replace("\r", "")
                 # Write the decoded text back to the file, using UTF-8 encoding
