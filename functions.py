@@ -2706,7 +2706,7 @@ def output_redirect() -> None:
         shutil.copy(output_file, output_file_with_date)
         error_dialog = qt.QMessageBox()
         error_dialog.setIcon(qt.QMessageBox.Icon.Critical)
-        error_dialog.setWindowTitle("程序崩溃")
+        error_dialog.setWindowTitle("程序异常")
         error_dialog.setText("执行操作产生异常，请联系管理员。")
         # error_dialog.setDetailedText(tb)  # 显示详细错误信息（调试用）
         error_dialog.addButton("关闭", qt.QMessageBox.ButtonRole.AcceptRole)
