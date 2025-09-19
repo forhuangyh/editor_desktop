@@ -30,3 +30,4 @@ paramiko
 # pip3 install --no-binary black black 需要非二进制安装，否则打包有问题
 
 
+chardet
