@@ -1,0 +1,41 @@
+用户: chenjiatan 信息初始化成功
+Setting 'context_menu_functions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'editor' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'keyboard-shortcuts' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'settings_control_font' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Settings updated without saving to disk.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/galaxy/project/editor_desktop/xc_common/file_utils.py", line 81, in save_as_utf
+    encoding = result['encoding']
+               ~~~~~~^^^^^^^^^^^^
+TypeError: 'CharsetMatch' object is not subscriptable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 983, in special_open_file
+    self.file_open()
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 787, in file_open
+    self.open_file_with_dialog(tab_widget=self.last_focused_widget)
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 3479, in open_file_with_dialog
+    self.open_files(files, tab_widget)
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 3495, in open_files
+    new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/galaxy/project/editor_desktop/xc_common/file_utils.py", line 61, in copy_file_and_save_utf
+    save_as_utf(dst_dir_path)
+  File "/Users/galaxy/project/editor_desktop/xc_common/file_utils.py", line 115, in save_as_utf
+    raise Exception(f"无法识别的编码: encoding={encoding}, {str(ex)}")
+Exception: 无法识别的编码: encoding=None, 'CharsetMatch' object is not subscriptable
+--------------------------------------------------------------------------------

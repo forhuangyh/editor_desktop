@@ -72,6 +72,7 @@ def upload_to_remote_server(local_file_path, ssh_host, ssh_port, ssh_username, s
         print(f"上传文件时出错: {str(e)}")
         return False
 
+
 def main():
     # 工程根目录
     file_directory = os.path.join(
@@ -241,6 +242,16 @@ def main():
         default_icon = os.path.join(file_directory, "resources", "exco-icon-win.ico")
         if os.path.exists(default_icon):
             print(f"使用默认图标替代: {default_icon}")
+
+    target_exco_dir = os.path.join(output_directory, ".exco")
+    exco_dir = os.path.join(file_directory, "exco")
+    if os.path.exists(exco_dir):
+        print(f"开始复制配置文件目录: {exco_dir} 到 {target_exco_dir}")
+        shutil.copytree(exco_dir, target_exco_dir)
+        print("配置文件复制完成")
+        # 构建新的隐藏目录路径
+    else:
+        print(f"[警告] 未找到配置文件目录: {exco_dir}")
 
     # 调用压缩和上传功能
     # 1. 压缩目录

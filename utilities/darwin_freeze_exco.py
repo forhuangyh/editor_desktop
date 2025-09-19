@@ -218,6 +218,16 @@ def main():
     else:
         print(f"[警告] 未找到资源目录: {resources_dir}")
 
+    target_exco_dir = os.path.join(output_directory, ".exco")
+    exco_dir = os.path.join(file_directory, "exco")
+    if os.path.exists(exco_dir):
+        print(f"开始复制配置文件目录: {exco_dir} 到 {target_exco_dir}")
+        shutil.copytree(exco_dir, target_exco_dir)
+        print("配置文件复制完成")
+        # 构建新的隐藏目录路径
+    else:
+        print(f"[警告] 未找到配置文件目录: {exco_dir}")
+
     # 调用压缩和上传功能
     # 1. 压缩目录
     zip_file = compress_directory(output_directory)

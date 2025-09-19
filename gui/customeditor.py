@@ -147,6 +147,7 @@ class CustomEditor(BaseEditor):
         self.setMarginsFont(settings.get_editor_font())
         # Reset the modified status of the document
         self.setModified(False)
+        # self.setWrapMode(qt.QsciScintilla.WrapMode.WrapWord)
         # Set brace matching
         self.setBraceMatching(qt.QsciScintilla.BraceMatch.SloppyBraceMatch)
         self.setMatchedBraceBackgroundColor(
@@ -2523,7 +2524,8 @@ class CustomEditor(BaseEditor):
         """
         if state:
             self.setWrapMode(qt.QsciScintilla.WrapMode.WrapWord)
-            self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagByText)
+            # self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagByText)
+            self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagNone)
             self.setWrapIndentMode(qt.QsciScintilla.WrapIndentMode.WrapIndentSame)
         else:
             self.setWrapMode(qt.QsciScintilla.WrapMode.WrapNone)

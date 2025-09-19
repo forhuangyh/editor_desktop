@@ -1,0 +1,31 @@
+用户: chenjiatan 信息初始化成功
+Setting 'context_menu_functions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'editor' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'keyboard-shortcuts' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'settings_control_font' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Settings updated without saving to disk.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+File moved from /Users/galaxy/project/editor_desktop/temp_file/换行.txt to /Users/galaxy/project/editor_desktop/temp_file/换行_20250918163028.txt
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+File moved from /Users/galaxy/project/editor_desktop/temp_file/换行.txt to /Users/galaxy/project/editor_desktop/temp_file/换行_20250918163232.txt
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 4817, in clear_recent_file_list
+    self._parent.settings.clear_recent_list()
+  File "/Users/galaxy/project/editor_desktop/gui/mainwindow.py", line 4025, in clear_recent_list
+    settings.clear_recent_files()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'settings' has no attribute 'clear_recent_files'. Did you mean: 'add_recent_file'?
+--------------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+用户: chenjiatan 信息初始化成功
+Setting 'context_menu_functions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'editor' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'keyboard-shortcuts' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'settings_control_font' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Settings updated without saving to disk.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+Setting 'stored_sessions' (nested dict) updated.
+Settings saved to '/Users/galaxy/project/editor_desktop/.exco/exco.mk3.ini'.
+File moved from /Users/galaxy/project/editor_desktop/temp_file/换行.txt to /Users/galaxy/project/editor_desktop/temp_file/换行_20250918162755.txt
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/galaxy/project/editor_desktop/xc_gui/special_replace.py", line 169, in _find_all
+    self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
+                                ~~~~~~~~~~^^^^^^^^^^^^^^^
+IndexError: list index out of range
+--------------------------------------------------------------------------------
