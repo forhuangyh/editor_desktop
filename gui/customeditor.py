@@ -1405,15 +1405,29 @@ class CustomEditor(BaseEditor):
                     char_start = search_result.start()
                     char_end = search_result.end()
 
+                byte_start = len(doc_text[:char_start].encode('utf-8'))
+                byte_end = len(doc_text[:char_end].encode('utf-8'))
+
+                # 2. Get the line and index for the start and end of the selection
+                start_line = self.lineIndexFromPosition(byte_start)
+                # start_index = self.lineIndexFromPosition(byte_start)
+                end_line = self.lineIndexFromPosition(byte_end)
+                # end_index = self.lineIndexFromPosition(byte_end)
+
+                # 3. Use the correct, 4-argument setSelection method
+                self.setSelection(start_line[0], start_line[1], end_line[0], end_line[1])
+                # You can also use setCursorPosition to scroll to the found text
+                # self.setCursorPosition(start_line[0], start_line[1])
+
                 # line, line_index = self.lineIndexFromPosition(char_start)
                 # byte_char_start = len(doc_text[:char_start].encode('utf-8'))
                 # self.setCursorPosition(start_line_number, end_line_number)
                 # self.setSelection(0, char_start, 0, char_end)
 
-                byte_char_start = len(bytearray(doc_text[:char_start], "utf-8"))
-                byte_end_index = byte_char_start + len(bytearray(search_result.group(0), "utf-8"))
+                # byte_char_start = len(bytearray(doc_text[:char_start], "utf-8"))
+                # byte_end_index = byte_char_start + len(bytearray(search_result.group(0), "utf-8"))
 
-                self.setSelection(0, byte_char_start, 0, byte_end_index)
+                # self.setSelection(start_line, start_col, end_line, end_col)
 
                 self.main_form.display.write_to_statusbar(f"查找到匹配项：{search_result.group(0)}")
                 return constants.SearchResult.FOUND
