@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import chardet
 from datetime import datetime
+from charset_normalizer import from_bytes
 
 
 def copy_file(platform, src_file_path, dst_dir_path):
@@ -75,10 +76,11 @@ def save_as_utf(file_with_path, encoding='utf-8'):
             raw_data = f.read(read_len)
 
         # Detect the encoding
-        result = chardet.detect(raw_data)
-        encoding = result['encoding']
+        # result = chardet.detect(raw_data)
+        result = from_bytes(raw_data).best()
+        encoding = result.encoding
 
-        if encoding == "utf-8":
+        if encoding == "utf_8":
             text = raw_data.decode(encoding, errors='replace')
             if text.find("\r") > -1:
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
