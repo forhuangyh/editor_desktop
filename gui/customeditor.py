@@ -1405,7 +1405,8 @@ class CustomEditor(BaseEditor):
                     char_start = search_result.start()
                     char_end = search_result.end()
 
-                self.setCursorPosition(0, char_start)
+                line, line_index = self.lineIndexFromPosition(char_start)
+                self.setCursorPosition(line, line_index)
                 self.setSelection(0, char_start, 0, char_end)
                 self.main_form.display.write_to_statusbar(f"查找到匹配项：{search_result.group(0)}")
                 return constants.SearchResult.FOUND
