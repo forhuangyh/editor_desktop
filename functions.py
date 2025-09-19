@@ -2698,11 +2698,19 @@ def output_redirect() -> None:
             end="",
         )
         print("-" * 80)
-        qt.QApplication.quit()
-        f.close()
+
+        # qt.QApplication.quit()
+        # f.close()
         # Create backup with timestamp
         output_file_with_date: str = output_get_file_with_timestamp()
         shutil.copy(output_file, output_file_with_date)
+        error_dialog = qt.QMessageBox()
+        error_dialog.setIcon(qt.QMessageBox.Icon.Critical)
+        error_dialog.setWindowTitle("程序崩溃")
+        error_dialog.setText("执行操作产生异常，请联系管理员。")
+        # error_dialog.setDetailedText(tb)  # 显示详细错误信息（调试用）
+        error_dialog.addButton("关闭", qt.QMessageBox.ButtonRole.AcceptRole)
+        error_dialog.exec()
 
     sys.excepthook = exception_hook
     init_original: Callable = threading.Thread.__init__

@@ -2,9 +2,10 @@ import os
 import functions
 from pathlib import Path
 import shutil
-# import chardet
+import chardet
 from datetime import datetime
-from charset_normalizer import from_bytes
+# from charset_normalizer import from_bytes
+# from charset_normalizer import detect
 
 
 def copy_file(platform, src_file_path, dst_dir_path):
@@ -29,6 +30,7 @@ def copy_file(platform, src_file_path, dst_dir_path):
 
 
 def copy_file_and_save_utf(platform, src_file_path, dst_dir):
+    """复制需要打开的文件，并按utf-8编码统一保存"""
 
     file_name = os.path.basename(src_file_path)
     dst_dir_path = os.path.join(dst_dir, file_name)
@@ -70,17 +72,21 @@ def save_as_utf(file_with_path, encoding='utf-8'):
     """
     try:
         encoding = None
-        read_len = 18192
+        read_len = 8192
         # Use binary mode to read the file's content
         with open(file_with_path, 'rb') as f:
             raw_data = f.read(read_len)
 
         # Detect the encoding
-        # result = chardet.detect(raw_data)
-        result = from_bytes(raw_data).best()
-        encoding = result.encoding
+        result = chardet.detect(raw_data)
+        if result["confidence"] < 0.9:  # 如果置信度低，尝试读取更多数据
+            with open(file_with_path, 'rb') as f:
+                raw_data = f.read(read_len * 2)
+            result = chardet.detect(raw_data)
 
-        if encoding == "utf_8":
+        encoding = result["encoding"]
+
+        if encoding == "utf-8":
             text = raw_data.decode(encoding, errors='replace')
             if text.find("\r") > -1:
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
