@@ -131,7 +131,7 @@ class SpecialReplace(QWidget):
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
-        search_text = self.find_input.text().strip()
+        search_text = self.find_input.text()
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
@@ -173,8 +173,8 @@ class SpecialReplace(QWidget):
 
     def _replace_all(self):
         """替换所有匹配项"""
-        search_text = self.find_input.text().strip()
-        replace_text = self.replace_input.text().strip()
+        search_text = self.find_input.text()
+        replace_text = self.replace_input.text()
 
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
