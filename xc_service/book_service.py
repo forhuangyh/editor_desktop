@@ -1,5 +1,5 @@
-from common.utils import http_form_post
-from entity.account import user_info
+from xc_common.utils import http_form_post
+from xc_entity.account import user_info
 import settings
 
 class BookService:
