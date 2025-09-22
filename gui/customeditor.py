@@ -1395,7 +1395,7 @@ class CustomEditor(BaseEditor):
 
                 if search_result:
                     char_start = current_char_pos + search_result.start()
-                    char_end = current_char_pos + search_result.end()
+                    # char_end = current_char_pos + search_result.end()
                 else:
                     # 循环搜索，从文档开头开始
                     search_result = re.search(compiled_search_re, doc_text)
@@ -1404,7 +1404,7 @@ class CustomEditor(BaseEditor):
                         return constants.SearchResult.NOT_FOUND
 
                     char_start = search_result.start()
-                    char_end = search_result.end()
+                    # char_end = search_result.end()
 
                 byte_start = len(doc_text[:char_start].encode('utf-8'))
                 byte_end = byte_start + len(bytearray(search_result.group(0), "utf-8"))
