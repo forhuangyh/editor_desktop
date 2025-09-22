@@ -606,11 +606,11 @@ class CustomEditor(BaseEditor):
         """Set focus and cursor to the selected line"""
         # Check if the selected line is within the line boundaries of the current document
         line_number = self.check_line_numbering(line_number)
+        # Move the first displayed line to the top of the viewing area minus an offset
+        self.set_first_visible_line(line_number + 8)
+        # Disable REPL focus after the REPL evaluation
         # Move the cursor to the start of the selected line
         self.setCursorPosition(line_number, 0)
-        # Move the first displayed line to the top of the viewing area minus an offset
-        self.set_first_visible_line(line_number - 10)
-        # Disable REPL focus after the REPL evaluation
         if skip_repl_focus == True:
             self._skip_next_repl_focus()
 
@@ -624,7 +624,10 @@ class CustomEditor(BaseEditor):
         """Move the top of the viewing area to the selected line"""
         if line_number < 0:
             line_number = 0
-        self.SendScintilla(qt.QsciScintillaBase.SCI_SETFIRSTVISIBLELINE, line_number)
+        # self.SendScintilla(qt.QsciScintillaBase.SCI_SETFIRSTVISIBLELINE, line_number)
+        self.SendScintilla(qt.QsciScintillaBase.SCI_GOTOLINE, line_number)
+        # for _ in range(3):
+        #     self.SendScintilla(qt.QsciScintillaBase.SCI_LINESCROLLDOWN)
 
     def remove_line(self, line_number):
         """Remove a line from the custom editor"""
