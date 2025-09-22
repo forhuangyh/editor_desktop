@@ -267,7 +267,7 @@ class BookService:
             # 多线程下载与合并
             success = True
             chapters_content = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
                 futures = {executor.submit(download_single_chapter, info): info for info in chapters_to_download}
                 for future in concurrent.futures.as_completed(futures):
                     if not success:
