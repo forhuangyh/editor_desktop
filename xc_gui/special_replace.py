@@ -14,7 +14,8 @@ from qt import (
     QStyledItemDelegate,
     QStyleOptionButton, QApplication,
     QListView, QEvent, QStyle, QColor, QFontMetrics,
-    QAbstractListModel, QModelIndex, QVariant, QRect, Qt
+    QAbstractListModel, QModelIndex, QVariant, QRect, Qt,
+    QLabel
 )
 
 import constants
@@ -117,9 +118,15 @@ class SpecialReplace(QWidget):
         self.delegate = HighlightDelegate(self.result_view)
         self.result_view.setItemDelegate(self.delegate)
 
+        self.info_label = QLabel("匹配项：")
+        self.info_label.setWordWrap(True)  # 允许自动换行
+        self.info_label.setMinimumHeight(10)  # 设置最小高度
+        self.info_label.setStyleSheet("color: gray;")  # 可以设置样式
+
         # 4. 添加组件到主布局
         main_layout.addLayout(find_layout)
         main_layout.addLayout(replace_layout)
+        main_layout.addWidget(self.info_label)
         main_layout.addWidget(self.result_view)
         self.setLayout(main_layout)
 
@@ -168,8 +175,10 @@ class SpecialReplace(QWidget):
             self.model.setMatches(match_list)
             self.delegate.setSearchText(search_text)
             self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
+            self.info_label.setText(f"匹配项：{len(match_list)}个结果")
         else:
             self.model.setMatches([])
+            self.info_label.setText("匹配项：0个结果")
 
     def _replace_all(self):
         """替换所有匹配项"""
@@ -189,6 +198,10 @@ class SpecialReplace(QWidget):
             QMessageBox.warning(self, "警告", "替换内容中有换行符号")
             return
 
+        if not self.model.matches:
+            QMessageBox.warning(self, "警告", "无匹配项可替换")
+            return
+
         not_repalce_match_dict = {}
         for index, match in self.model.getNotCheckedMatches():
             not_repalce_match_dict[index] = match['match_data']
@@ -199,11 +212,10 @@ class SpecialReplace(QWidget):
             not_repalce_match_dict,
             case_sensitive=False,
         )
-        if not matches:
-            self.model.setMatches([])
-            # list_item = QListWidgetItem("文本内容有更新，无匹配项被替换")
-            # list_item.setData(Qt.ItemDataRole.UserRole, 0)  # 例如存储行号
-            # self.result_list.addItem(list_item)
+        if matches:
+            QMessageBox.information(self, "替换成功", f"共替换{len(matches)}个匹配项")
+        else:
+            QMessageBox.warning(self, "警告", "共替换0个匹配项")
 
     def _clear_highlight(self):
         """清除所有高亮"""
