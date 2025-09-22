@@ -1407,8 +1407,7 @@ class CustomEditor(BaseEditor):
                     char_end = search_result.end()
 
                 byte_start = len(doc_text[:char_start].encode('utf-8'))
-                byte_end = len(doc_text[:char_end].encode('utf-8'))
-
+                byte_end = byte_start + len(bytearray(search_result.group(0), "utf-8"))
                 # 2. Get the line and index for the start and end of the selection
                 start_line, start_index = self.lineIndexFromPosition(byte_start)
                 end_line, end_index = self.lineIndexFromPosition(byte_end)
