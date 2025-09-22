@@ -15,7 +15,62 @@ import platform
 import glob
 import black
 import cx_Freeze
+import zipfile
+import paramiko
 from cx_Freeze import Executable
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from data import application_version
+
+
+def compress_directory(directory_path):
+    """将指定目录压缩成zip文件"""
+    zip_filename = f"{directory_path}.zip"
+    print(f"正在创建压缩文件: {zip_filename}")
+
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(directory_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(directory_path)))
+
+    print(f"压缩文件创建成功: {zip_filename}")
+    return zip_filename
+
+
+# 修改upload_to_remote_server方法中的路径构造部分
+def upload_to_remote_server(local_file_path, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory):
+    """通过SSH将本地文件上传到远程服务器"""
+    try:
+        # 建立SSH连接
+        print(f"正在连接到远程服务器: {ssh_host}")
+        transport = paramiko.Transport((ssh_host, ssh_port))
+        transport.connect(username=ssh_username, password=ssh_password)
+        # 如果使用密钥文件，请使用以下代码
+        # transport.connect(username=ssh_username, pkey=paramiko.RSAKey.from_private_key_file(ssh_key_file))
+
+        # 创建SFTP客户端
+        sftp = paramiko.SFTPClient.from_transport(transport)
+
+        # 上传文件 - 修复路径分隔符问题
+        file_name = os.path.basename(local_file_path)
+        # 确保远程目录以正斜杠结尾
+        if not remote_directory.endswith('/'):
+            remote_directory += '/'
+        # 使用字符串连接而不是os.path.join，确保使用正斜杠
+        remote_file_path = f"{remote_directory}{file_name}"
+        print(f"正在上传文件到: {remote_file_path}")
+        sftp.put(local_file_path, remote_file_path)
+
+        # 关闭连接
+        sftp.close()
+        transport.close()
+
+        print("文件上传成功！")
+        return True
+
+    except Exception as e:
+        print(f"上传文件时出错: {str(e)}")
+        return False
 
 
 def main():
@@ -24,11 +79,27 @@ def main():
         os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))),
         "..",
     )
-    output_directory = "frozen_exco_{}_{}".format(
+    # 修改输出目录定义
+    output_directory = "editor_desktop_v{}_{}_{}".format(
+        application_version,
         platform.system().lower(),
         platform.architecture()[0],
     )
+    # 添加删除旧编译文件的功能
+    print(f"检查是否存在旧的编译文件和文件夹...")
 
+    # 检查并删除文件夹
+    if os.path.exists(output_directory):
+        print(f"删除旧的文件夹: {output_directory}")
+        shutil.rmtree(output_directory)
+
+    # 检查并删除zip文件
+    zip_filename = f"{output_directory}.zip"
+    if os.path.exists(zip_filename):
+        print(f"删除旧的zip文件: {zip_filename}")
+        os.remove(zip_filename)
+
+    print(f"旧文件清理完成")
     # 内置模块
     builtin_modules = [
         "PyQt6",
@@ -94,7 +165,7 @@ def main():
 
     base = None
     excludes = ["tkinter"]
-    executable_name = "ExCo"
+    executable_name = "EditorDesktop"
 
     if platform.system().lower() == "windows":
         base = "Win32GUI"
@@ -109,7 +180,7 @@ def main():
             "PyQt5.Qsci",
             "PyQt5.QtTest",
         ]
-        executable_name = "ExCo.exe"
+        executable_name = "EditorDesktop.exe"
 
     elif platform.system().lower() == "linux":
         builtin_modules.extend(["ptyprocess"])
@@ -146,6 +217,31 @@ def main():
         shutil.copytree(resources_dir, os.path.join(output_directory, "resources"))
     else:
         print(f"[警告] 未找到资源目录: {resources_dir}")
+
+    target_exco_dir = os.path.join(output_directory, ".exco")
+    exco_dir = os.path.join(file_directory, "exco")
+    if os.path.exists(exco_dir):
+        print(f"开始复制配置文件目录: {exco_dir} 到 {target_exco_dir}")
+        shutil.copytree(exco_dir, target_exco_dir)
+        print("配置文件复制完成")
+        # 构建新的隐藏目录路径
+    else:
+        print(f"[警告] 未找到配置文件目录: {exco_dir}")
+
+    # 调用压缩和上传功能
+    # 1. 压缩目录
+    zip_file = compress_directory(output_directory)
+
+    # 2. 上传到远程服务器
+    # 请根据实际情况修改以下配置
+    ssh_host = '192.168.3.7'
+    ssh_port = 22
+    ssh_username = 'root'
+    ssh_password = '123,abc'  # 或者使用密钥文件
+    # ssh_key_file = '/path/to/your/private_key'
+    remote_directory = '/home/www/editor_desktop_downloads/downloads/mac'
+
+    upload_to_remote_server(zip_file, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory)
 
 
 if __name__ == "__main__":

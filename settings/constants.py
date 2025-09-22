@@ -10,6 +10,12 @@ import data
 import functions
 
 """
+自定义属性行
+"""
+editor_api_base_url = "https://editor.inovelclub.com/"
+# editor_api_base_url = "http://101.47.131.70:8087"
+
+"""
 Sessions
 """
 session_structures = {
@@ -32,7 +38,7 @@ editor = {
     "default": {
         "autocompletion": False,
         "brace_color": "#80ff9900",
-        "cursor_line_visible": False,
+        "cursor_line_visible": True,
         "edge_marker_color": "#ffb4b4b4",
         "edge_marker_column": 90,
         "edge_marker_visible": False,
@@ -137,6 +143,9 @@ keyboard_shortcuts = {
             "settings_manipulator_toggle": "F2",
             "select_tab_left": "Ctrl+,",
             "select_tab_right": "Ctrl+.",
+            "open_chapter_list": "Ctrl+Shift+P",
+            "find_dialog": "Ctrl+Shift+S",
+            "open_special_replace": "Ctrl+Shift+S",
         },
         "editor": {
             "cancel": "Escape",
@@ -301,6 +310,7 @@ one_window_layout = """
 }}
 """
 
+
 """
 General
 """
@@ -310,6 +320,17 @@ settings_filename = {
     "mark-2": "exco.mk2.ini",
     "mark-3": "exco.mk3.ini",
 }
+if data.platform.lower() == "windows":
+    settings_control_font = {
+        "QLineEdit": "font: 14px 'Segoe UI';",
+        "QListWidget": "font: 14px 'SF Pro';",
+    }
+else:
+    settings_control_font = {
+        "QLineEdit": "font: 14px 'SF Pro';",
+        "QListWidget": "SF Pro;14px",
+    }
+
 default_settings = {
     "application-directory": data.application_directory,
     "resources-directory": data.resources_directory,
@@ -319,9 +340,9 @@ default_settings = {
     "terminal": "x-terminal-emulator",  # Terminal console program used on GNU/Linux
     "tree_display_icon_size": 16,  # Default tree display icon size
     "current_font_name": "Selawik",
-    "current_font_size": 10,
+    "current_font_size": 14,
     "current_editor_font_name": "Source Code Pro",
-    "current_editor_font_size": 10,
+    "current_editor_font_size": 14,
     "toplevel_menu_scale": 100.0,
     "standard_button_size": 50,
     "restore_last_session": True,
@@ -343,4 +364,6 @@ default_settings = {
     "last-layout-filename": "last_layout.json",
     "editor": editor["default"].copy(),
     "keyboard-shortcuts": keyboard_shortcuts["default"].copy(),
+    "editor_api_base_url": editor_api_base_url,
+    "settings_control_font": settings_control_font,
 }

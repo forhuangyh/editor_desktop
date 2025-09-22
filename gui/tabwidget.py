@@ -211,10 +211,10 @@ QTabBar::tab:selected {{
                     functions.create_icon("tango_icons/update-cwd.png")
                 )
                 update_cwd_action.triggered.connect(update_cwd)
-                self.addAction(update_cwd_action)
-                self.addSeparator()
+                # self.addAction(update_cwd_action)
+                # self.addSeparator()
             # Add the 'copy file name to clipboard' action
-            clipboard_copy_action = qt.QAction("Copy tab name to clipboard", self)
+            clipboard_copy_action = qt.QAction("复制文件名", self)
 
             def clipboard_copy():
                 cb = data.application.clipboard()
@@ -229,7 +229,7 @@ QTabBar::tab:selected {{
             # Copy path
             if self.__check_for_editor(tab_widget):
                 clipboard_copy_path_action = qt.QAction(
-                    "Copy document path to clipboard", self
+                    "复制文件路径", self
                 )
 
                 def clipboard_path_copy():
@@ -270,9 +270,9 @@ QTabBar::tab:selected {{
                 action_open_hex.triggered.connect(open_hex)
                 icon = functions.create_icon("various/node_template.png")
                 action_open_hex.setIcon(icon)
-                self.addAction(action_open_hex)
+                # self.addAction(action_open_hex)
 
-                open_in_explorer_action = qt.QAction("Open document in explorer", self)
+                open_in_explorer_action = qt.QAction("打开文件目录", self)
 
                 def open_in_explorer():
                     path = widget.save_path
@@ -293,7 +293,7 @@ QTabBar::tab:selected {{
 
             # Closing
             self.addSeparator()
-            close_other_action = qt.QAction("Close all other tabs in this window", self)
+            close_other_action = qt.QAction("关闭其它所有窗口", self)
             close_other_action.setIcon(
                 functions.create_icon("tango_icons/close-all-tabs.png")
             )
@@ -399,11 +399,11 @@ QTabBar::tab:selected {{
         self.custom_tab_bar = self.CustomTabBar(self)
         self.setTabBar(self.custom_tab_bar)
         # Enable drag&drop events
-        self.setAcceptDrops(True)
+        self.setAcceptDrops(False)
         # Add close buttons to tabs
         self.setTabsClosable(True)
         # Set tabs as movable, so that you can move tabs with the mouse
-        self.setMovable(True)
+        self.setMovable(False)
         # Add signal for coling a tab to the EVT_tabCloseRequested function
         self.tabCloseRequested.connect(self._signal_editor_tabclose)
         # Connect signal that fires when the tab index changes
@@ -515,37 +515,39 @@ QTabBar::tab:selected {{
             self.main_form.view.indication_check()
 
         if source == self.tabBar():
-            if (
-                event.type() == qt.QEvent.Type.MouseButtonPress
-                and event.buttons() == qt.Qt.MouseButton.LeftButton
-            ):
-                qt.QTimer.singleShot(0, self._setmove_range)
-            elif event.type() == qt.QEvent.Type.MouseButtonRelease:
-                self.move_range = None
-            elif (
-                event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
-            ):
-                pos = event.pos()
-                if self.tabBar().rect().contains(pos):
-                    self.drag_lock = False
-                else:
-                    buttons = data.application.mouseButtons()
-                    if buttons == qt.Qt.MouseButton.LeftButton:
-                        if self.drag_lock == False:
-                            if hasattr(self.main_form.display, "docking_overlay_show"):
-                                self.drag_lock = True
-                                self.main_form.display.docking_overlay_show()
-                                self.__init_drag_data(event)
-                                self.__start_tab_drag()
-                    else:
-                        self.drag_lock = False
+            # tab 可移动
+            pass
+            # if (
+            #     event.type() == qt.QEvent.Type.MouseButtonPress
+            #     and event.buttons() == qt.Qt.MouseButton.LeftButton
+            # ):
+            #     qt.QTimer.singleShot(0, self._setmove_range)
+            # elif event.type() == qt.QEvent.Type.MouseButtonRelease:
+            #     self.move_range = None
+            # elif (
+            #     event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
+            # ):
+            #     pos = event.pos()
+            #     if self.tabBar().rect().contains(pos):
+            #         self.drag_lock = False
+            #     else:
+            #         buttons = data.application.mouseButtons()
+            #         if buttons == qt.Qt.MouseButton.LeftButton:
+            #             if self.drag_lock == False:
+            #                 if hasattr(self.main_form.display, "docking_overlay_show"):
+            #                     self.drag_lock = True
+            #                     self.main_form.display.docking_overlay_show()
+            #                     self.__init_drag_data(event)
+            #                     self.__start_tab_drag()
+            #         else:
+            #             self.drag_lock = False
 
-                if (self.move_range is not None) and (pos.x() < self.move_range[0]):
-                    return True
-                elif (self.move_range is not None) and (
-                    pos.x() > self.tabBar().width() - self.move_range[1]
-                ):
-                    return True
+            #     if (self.move_range is not None) and (pos.x() < self.move_range[0]):
+            #         return True
+            #     elif (self.move_range is not None) and (
+            #         pos.x() > self.tabBar().width() - self.move_range[1]
+            #     ):
+            #         return True
         return qt.QTabWidget.eventFilter(self, source, event)
 
     def dragEnterEvent(self, event):
@@ -683,6 +685,7 @@ QTabBar::tab:selected {{
         self._set_save_status()
         # Check if there is a tab in the tab widget
         current_tab = self.currentWidget()
+
         # Update the icons of the tabs
         for i in range(self.count()):
             self.update_tab_icon(self.widget(i))
@@ -702,6 +705,8 @@ QTabBar::tab:selected {{
 
         # Update window title
         data.signal_dispatcher.update_title.emit()
+        # xc:当标签变化后，切换固定组件的editor
+        self.main_form.fixed_widget.change_editor(current_tab)
 
     def _signal_editor_tabclose(self, emmited_tab_number, force=False):
         """
@@ -718,12 +723,14 @@ QTabBar::tab:selected {{
 
         # Store the tab reference
         tab = self.widget(emmited_tab_number)
+        # xc:当标签变化后，切换固定组件的editor
+        self.main_form.fixed_widget.close_editor(tab)
         # Check if the document is modified
         if tab.savable == constants.CanSave.YES:
             if tab.save_status == constants.FileStatus.MODIFIED and force == False:
                 # Display the close notification
-                close_message = "Document '" + self.tabText(emmited_tab_number)
-                close_message += "' has been modified!\nWhat do you wish to do?"
+                close_message = "文件 '" + self.tabText(emmited_tab_number)
+                close_message += "' 已修改!\n是否保存?"
                 reply = CloseEditorDialog.question(close_message)
                 if reply == constants.DialogResult.SaveAndClose.value:
                     result = tab.save_document()
@@ -943,7 +950,7 @@ QTabBar::tab:selected {{
     def editor_add_document(self, document_name, type=None, bypass_check=False):
         """Check tab type and add a document to self(QTabWidget)"""
         if type == "file":
-            ## New tab is a file on disk
+            # New tab is a file on disk
             file_type = "unknown"
             if bypass_check == False:
                 file_type = functions.get_file_type(document_name)
@@ -975,7 +982,7 @@ QTabBar::tab:selected {{
                 )
                 return None
         else:
-            ## New tab is an empty tab
+            # New tab is an empty tab
             # Create new scintilla object
             new_editor_tab = self.editor_create_document(document_name)
             # Add the scintilla document to the tab widget
@@ -984,6 +991,14 @@ QTabBar::tab:selected {{
             self.setCurrentIndex(new_editor_tab_index)
             # Return the reference to the new added scintilla tab widget
             return self.widget(new_editor_tab_index)
+
+    def chapter_list_add(self, document_name=""):
+        """chapter_list_add"""
+        return self.main_form.fixed_widget.open_chapter_list(self, document_name)
+
+    def special_replace_add(self, document_name=""):
+        """special_replace_add"""
+        return self.main_form.fixed_widget.open_special_replace(self, document_name)
 
     def hexview_add(self, file_path):
         # Initialize the hex-view

@@ -6,11 +6,10 @@ For more information check the 'LICENSE.txt' file.
 For complete license information of the dependencies, check the 'additional_licenses' directory.
 """
 
-##  FILE DESCRIPTION:
-##      Execute this file to start Ex.Co.
+# FILE DESCRIPTION:
+# Execute this file to start Ex.Co.
 
 
-import os
 import sys
 import argparse
 import traceback
@@ -24,6 +23,8 @@ import components.processcontroller
 import components.communicator
 import components.thesquid
 import gui.mainwindow
+import xc_gui.login_window
+from xc_entity import account
 
 
 def parse_arguments():
@@ -42,7 +43,7 @@ def parse_arguments():
         "-v",
         "--version",
         action="version",
-        version="Ex.Co. Version: {:s}".format(data.application_version),
+        version="Editor Version: {:s}".format(data.application_version),
     )
     # Debug mode
     arg_parser.add_argument(
@@ -165,11 +166,23 @@ def main():
     # Global signal dispatcher
     data.signal_dispatcher = components.signaldispatcher.GlobalSignalDispatcher()
 
+    # 在创建MainWindow之前显示登录窗口
+    login_window = xc_gui.login_window.LoginWindow()
+    if login_window.exec() != qt.QDialog.DialogCode.Accepted:
+        # 如果用户取消登录或关闭窗口，直接退出应用程序
+        sys.exit(0)
+
+    # 登录成功后，确保用户信息已正确加载
+    if not account.user_info.token:
+        print("登录验证失败，退出应用程序")
+        sys.exit(0)
+
     # Create the main window, pass the filename that may have been passed as an argument
     main_window = gui.mainwindow.MainWindow(
         new_document=options.new_document,
         logging=data.logging_mode,
         file_arguments=file_arguments,
+        user_info=account.user_info,  # 传递用户信息
     )
     components.thesquid.TheSquid.init_objects(main_window)
     main_window.import_user_functions()

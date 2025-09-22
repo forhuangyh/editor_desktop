@@ -50,10 +50,11 @@ class ThemeIndicator(qt.QLabel):
             self.main_form.view.refresh_theme()
             self.main_form.display.update_theme_taskbar_icon()
             current_theme = settings.get_theme()["name"]
-            self.main_form.display.repl_display_message(
-                "Changed theme to: {}".format(current_theme),
-                message_type=constants.MessageType.SUCCESS,
-            )
+            # 去掉变更主题message通知
+            # self.main_form.display.repl_display_message(
+            #     "Changed theme to: {}".format(current_theme),
+            #     message_type=constants.MessageType.SUCCESS,
+            # )
 
         if self.theme_menu is not None:
             # Clear the menu actions from memory

@@ -1,3 +1,4 @@
+
 """
 Copyright (c) 2013-present Matic Kukovec.
 Released under the GNU GPL3 license.
@@ -24,6 +25,7 @@ from gui import (
     terminal,
     treedisplays,
 )
+from xc_gui import chapter_list, special_replace
 
 
 class TheBox(qt.QSplitter):
@@ -204,6 +206,26 @@ class TheBox(qt.QSplitter):
                             j,
                             (
                                 w.current_working_directory,
+                                w.internals.get_id(),
+                            ),
+                        )
+                    elif isinstance(w, chapter_list.ChapterList):
+                        # ChapterList
+                        terminal_name = "{}-{}".format(name, j)
+                        tabs[terminal_name] = (
+                            inverted_classes[w.__class__],
+                            j,
+                            (
+                                w.internals.get_id(),
+                            ),
+                        )
+                    elif isinstance(w, special_replace.SpecialReplace):
+                        # SpecialReplace
+                        terminal_name = "{}-{}".format(name, j)
+                        tabs[terminal_name] = (
+                            inverted_classes[w.__class__],
+                            j,
+                            (
                                 w.internals.get_id(),
                             ),
                         )

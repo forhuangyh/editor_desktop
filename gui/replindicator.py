@@ -54,29 +54,29 @@ class ReplIndicator(qt.QLabel):
         Initialization of the REPL type menu used by the REPL indicator
         """
 
-        if self.selection_menu is not None:
-            # Clear the menu actions from memory
-            self.selection_menu.clear()
-            for action in self.selection_menu.actions():
-                self.selection_menu.removeAction(action)
-                action.setParent(None)
-                action.deleteLater()
-                action = None
-        self.selection_menu = Menu(self)
+        # if self.selection_menu is not None:
+        #     # Clear the menu actions from memory
+        #     self.selection_menu.clear()
+        #     for action in self.selection_menu.actions():
+        #         self.selection_menu.removeAction(action)
+        #         action.setParent(None)
+        #         action.deleteLater()
+        #         action = None
+        # self.selection_menu = Menu(self)
         # Add the menu label
-        action_theme = qt.QAction("Select interpreter:", self.selection_menu)
-        action_theme.setEnabled(False)
-        self.selection_menu.addAction(action_theme)
-        # Add the type actions
-        for lang in constants.ReplLanguage:
-            action_theme = qt.QAction(lang.name, self.selection_menu)
-            action_theme.triggered.connect(
-                functools.partial(self.choose_repl_type, lang)
-            )
-            icon = functions.create_icon(self.ICONS[lang])
-            action_theme.setIcon(icon)
-            action_theme.setToolTip(self.TOOLTIPS[lang])
-            self.selection_menu.addAction(action_theme)
+        # action_theme = qt.QAction("Select interpreter:", self.selection_menu)
+        # action_theme.setEnabled(False)
+        # self.selection_menu.addAction(action_theme)
+        # # Add the type actions
+        # for lang in constants.ReplLanguage:
+        #     action_theme = qt.QAction(lang.name, self.selection_menu)
+        #     action_theme.triggered.connect(
+        #         functools.partial(self.choose_repl_type, lang)
+        #     )
+        #     icon = functions.create_icon(self.ICONS[lang])
+        #     action_theme.setIcon(icon)
+        #     action_theme.setToolTip(self.TOOLTIPS[lang])
+        #     self.selection_menu.addAction(action_theme)
 
     def set_image(self, image):
         raw_picture = qt.QPixmap(os.path.join(data.resources_directory, image))
@@ -84,8 +84,9 @@ class ReplIndicator(qt.QLabel):
         self.setPixmap(picture)
 
     def set_language(self, lang):
-        self.set_image(self.ICONS[lang])
-        self.setToolTip(lang.name)
+        pass
+        # self.set_image(self.ICONS[lang])
+        # self.setToolTip(lang.name)
 
     def choose_repl_type(self, lang):
         self.repl_box.set_repl(self.repl_box.repl_state, lang)

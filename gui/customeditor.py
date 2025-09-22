@@ -24,7 +24,8 @@ import settings
 import gui.contextmenu
 
 from gui.baseeditor import BaseEditor
-from gui.dialogs import YesNoDialog
+from gui.dialogs import YesNoDialog, OkDialog
+from xc_common.file_utils import copy_file
 
 
 class CustomEditor(BaseEditor):
@@ -146,6 +147,7 @@ class CustomEditor(BaseEditor):
         self.setMarginsFont(settings.get_editor_font())
         # Reset the modified status of the document
         self.setModified(False)
+        # self.setWrapMode(qt.QsciScintilla.WrapMode.WrapWord)
         # Set brace matching
         self.setBraceMatching(qt.QsciScintilla.BraceMatch.SloppyBraceMatch)
         self.setMatchedBraceBackgroundColor(
@@ -212,9 +214,9 @@ class CustomEditor(BaseEditor):
         self.internals = components.internals.Internals(parent=self, tab_widget=parent)
         # Set the lexer to the default Plain Text
         self.choose_lexer("text")
-        self.add_corner_buttons()
+        # self.add_corner_buttons()
         # Setup autocompletion
-        self.init_autocompletions()
+        # self.init_autocompletions()
         # Setup the LineList object that will hold the custom editor text as a list of lines
         self.line_list = components.linelist.LineList(self, self.text())
         # Reset the selection anti-recursion lock
@@ -413,7 +415,7 @@ class CustomEditor(BaseEditor):
         when using the goto_line function for example.
         """
         # Disable REPL focus after the REPL evaluation
-        self.main_form.repl.skip_next_repl_focus()
+        # self.main_form.repl.skip_next_repl_focus()
         # Set focus to the basic widget that holds this document
         self.main_form.view.set_window_focus(self._parent)
 
@@ -604,11 +606,11 @@ class CustomEditor(BaseEditor):
         """Set focus and cursor to the selected line"""
         # Check if the selected line is within the line boundaries of the current document
         line_number = self.check_line_numbering(line_number)
+        # Move the first displayed line to the top of the viewing area minus an offset
+        self.set_first_visible_line(line_number + 8)
+        # Disable REPL focus after the REPL evaluation
         # Move the cursor to the start of the selected line
         self.setCursorPosition(line_number, 0)
-        # Move the first displayed line to the top of the viewing area minus an offset
-        self.set_first_visible_line(line_number - 10)
-        # Disable REPL focus after the REPL evaluation
         if skip_repl_focus == True:
             self._skip_next_repl_focus()
 
@@ -622,7 +624,10 @@ class CustomEditor(BaseEditor):
         """Move the top of the viewing area to the selected line"""
         if line_number < 0:
             line_number = 0
-        self.SendScintilla(qt.QsciScintillaBase.SCI_SETFIRSTVISIBLELINE, line_number)
+        # self.SendScintilla(qt.QsciScintillaBase.SCI_SETFIRSTVISIBLELINE, line_number)
+        self.SendScintilla(qt.QsciScintillaBase.SCI_GOTOLINE, line_number)
+        # for _ in range(3):
+        #     self.SendScintilla(qt.QsciScintillaBase.SCI_LINESCROLLDOWN)
 
     def remove_line(self, line_number):
         """Remove a line from the custom editor"""
@@ -1174,11 +1179,11 @@ class CustomEditor(BaseEditor):
             # Get the selected line list
             lines = self.line_list[line_from:line_to]
 
-            ## Remove the leading tab-width number of spaces in every line
-            ## for i in range(0, len(lines)):
-            ##     for j in range(0, tab_width):
-            ##         if lines[i].startswith(" "):
-            ##             lines[i] = lines[i].replace(" ", "", 1)
+            # Remove the leading tab-width number of spaces in every line
+            # for i in range(0, len(lines)):
+            # for j in range(0, tab_width):
+            # if lines[i].startswith(" "):
+            # lines[i] = lines[i].replace(" ", "", 1)
             # Smart unindentation that unindents each line to the nearest tab column
             def unindent_func(line):
                 if line.startswith(" "):
@@ -1266,7 +1271,7 @@ class CustomEditor(BaseEditor):
             # Text is selected
             start_line_number = self.getSelection()[0] + 1
             first_selected_chars = self.selectedText()[
-                0 : len(self.lexer().comment_string)
+                0: len(self.lexer().comment_string)
             ]
             end_line_number = self.getSelection()[2] + 1
             # Choose un/commenting according to the first line in selection
@@ -1351,6 +1356,7 @@ class CustomEditor(BaseEditor):
         case_sensitive=False,
         search_forward=True,
         regular_expression=False,
+        whole_words=False
     ):
         """
         (SAME AS THE QSciScintilla.find, BUT THIS RETURNS A RESULT)
@@ -1375,81 +1381,66 @@ class CustomEditor(BaseEditor):
         # Set focus to the tab that will be searched
         self._parent.setCurrentWidget(self)
         if regular_expression == True:
-            # Get the absolute cursor index from line/index position
+            doc_text = self.text()
             line, index = self.getCursorPosition()
-            absolute_position = self.positionFromLineIndex(line, index)
-            # Compile the search expression according to the case sensitivity
-            if case_sensitive == True:
-                compiled_search_re = re.compile(search_text)
-            else:
-                compiled_search_re = re.compile(search_text, re.IGNORECASE)
-            # Search based on the search direction
-            if search_forward == True:
-                # Regex search from the absolute position to the end for the search expression
-                search_result = re.search(
-                    compiled_search_re, self.text()[absolute_position:]
-                )
-                if search_result != None:
-                    # Select the found expression
-                    result_start = absolute_position + search_result.start()
-                    result_end = result_start + len(search_result.group(0))
-                    self.setCursorPosition(0, result_start)
-                    self.setSelection(0, result_start, 0, result_end)
-                    # Return successful find
-                    return constants.SearchResult.FOUND
+            # Find the byte position of the cursor
+            byte_pos = self.positionFromLineIndex(line, index)
+            # Convert byte position to character index
+            current_char_pos = len(doc_text.encode('utf-8')[:byte_pos].decode('utf-8'))
+
+            flags = re.IGNORECASE if not case_sensitive else 0
+            compiled_search_re = re.compile(search_text, flags)
+
+            if search_forward:
+                # 向前搜索，从当前位置开始
+                search_slice = doc_text[current_char_pos:]
+                search_result = re.search(compiled_search_re, search_slice)
+
+                if search_result:
+                    char_start = current_char_pos + search_result.start()
+                    # char_end = current_char_pos + search_result.end()
                 else:
-                    # Begin a new search from the top of the document
-                    search_result = re.search(compiled_search_re, self.text())
-                    if search_result != None:
-                        # Select the found expression
-                        result_start = search_result.start()
-                        result_end = result_start + len(search_result.group(0))
-                        self.setCursorPosition(0, result_start)
-                        self.setSelection(0, result_start, 0, result_end)
-                        self.main_form.display.write_to_statusbar(
-                            "Reached end of document, started from the top again!"
-                        )
-                        # Return cycled find
-                        return constants.SearchResult.CYCLED
-                    else:
-                        self.main_form.display.write_to_statusbar("Text was not found!")
+                    # 循环搜索，从文档开头开始
+                    search_result = re.search(compiled_search_re, doc_text)
+                    if not search_result:
+                        self.main_form.display.write_to_statusbar("查找不到匹配项")
                         return constants.SearchResult.NOT_FOUND
-            else:
-                # Move the cursor one character back when searching backard
-                # to not catch the same search result again
-                cursor_position = self.get_absolute_cursor_position()
-                search_text = self.text()[:cursor_position]
-                # Regex search from the absolute position to the end for the search expression
-                search_result = [
-                    m for m in re.finditer(compiled_search_re, search_text)
-                ]
-                if search_result != []:
-                    # Select the found expression
-                    result_start = search_result[-1].start()
-                    result_end = search_result[-1].end()
-                    self.setCursorPosition(0, result_start)
-                    self.setSelection(0, result_start, 0, result_end)
-                    # Return successful find
-                    return constants.SearchResult.FOUND
-                else:
-                    # Begin a new search from the top of the document
-                    search_result = [
-                        m for m in re.finditer(compiled_search_re, self.text())
-                    ]
-                    if search_result != []:
-                        # Select the found expression
-                        result_start = search_result[-1].start()
-                        result_end = search_result[-1].end()
-                        self.setCursorPosition(0, result_start)
-                        self.setSelection(0, result_start, 0, result_end)
-                        self.main_form.display.write_to_statusbar(
-                            "Reached end of document, started from the top again!"
-                        )
-                        # Return cycled find
-                        return constants.SearchResult.CYCLED
-                    else:
-                        self.main_form.display.write_to_statusbar("Text was not found!")
-                        return constants.SearchResult.NOT_FOUND
+
+                    char_start = search_result.start()
+                    # char_end = search_result.end()
+
+                byte_start = len(doc_text[:char_start].encode('utf-8'))
+                byte_end = byte_start + len(bytearray(search_result.group(0), "utf-8"))
+                # 2. Get the line and index for the start and end of the selection
+                start_line, start_index = self.lineIndexFromPosition(byte_start)
+                end_line, end_index = self.lineIndexFromPosition(byte_end)
+                self.setCursorPosition(start_line, start_index)
+                # 3. Use the correct, 4-argument setSelection method
+                self.setSelection(start_line, start_index, end_line, end_index)
+
+                self.main_form.display.write_to_statusbar(f"查找到匹配项：{search_result.group(0)}")
+                return constants.SearchResult.FOUND
+
+            # else:  # search_forward == False
+            #     # 向后搜索，从当前位置向前切片，并找到最后一个匹配
+            #     search_slice = doc_text[:current_char_pos]
+            #     all_matches = list(re.finditer(compiled_search_re, search_slice))
+
+            #     if all_matches:
+            #         last_match = all_matches[-1]
+            #         char_start = last_match.start()
+            #         char_end = last_match.end()
+            #     else:
+            #         # 循环搜索，从文档末尾开始
+            #         all_matches = list(re.finditer(compiled_search_re, doc_text))
+            #         if not all_matches:
+            #             self.main_form.display.write_to_statusbar("查找不到匹配项")
+            #             return constants.SearchResult.NOT_FOUND
+
+            #         last_match = all_matches[-1]
+            #         char_start = last_match.start()
+            #         char_end = last_match.end()
+
         else:
             # Move the cursor one character back when searching backard
             # to not catch the same search result again
@@ -1458,8 +1449,9 @@ class CustomEditor(BaseEditor):
                 self.setCursorPosition(line, index - 1)
             # "findFirst" is the QScintilla function for finding text in a document
             search_result = self.findFirst(
-                search_text, False, case_sensitive, False, False, forward=search_forward
+                search_text, False, case_sensitive, whole_words, False, forward=search_forward
             )
+
             if search_result == False:
                 # Try to find text again from the top or at the bottom of
                 # the scintilla document, depending on the search direction
@@ -1469,11 +1461,12 @@ class CustomEditor(BaseEditor):
                 else:
                     s_line = len(self.line_list) - 1
                     s_index = len(self.text())
+
                 inner_result = self.findFirst(
                     search_text,
                     False,
                     case_sensitive,
-                    False,
+                    whole_words,
                     False,
                     forward=search_forward,
                     line=s_line,
@@ -1525,12 +1518,13 @@ class CustomEditor(BaseEditor):
         case_sensitive=False,
         search_forward=True,
         regular_expression=False,
+        whole_words=False
     ):
         """Find next instance of the search string and replace it with the replace string"""
         if regular_expression == True:
             # Check if expression exists in the document
             search_result = self.find_text(
-                search_text, case_sensitive, search_forward, regular_expression
+                search_text, case_sensitive, search_forward, regular_expression, whole_words
             )
             if search_result != constants.SearchResult.NOT_FOUND:
                 if case_sensitive == True:
@@ -1560,7 +1554,7 @@ class CustomEditor(BaseEditor):
                 return False
         else:
             # Check if string exists in the document
-            search_result = self.find_text(search_text, case_sensitive)
+            search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
             if search_result != constants.SearchResult.NOT_FOUND:
                 # Save the found selected text line/index information
                 saved_selection = self.getSelection()
@@ -1576,11 +1570,11 @@ class CustomEditor(BaseEditor):
                 return True
             else:
                 # Search text not found
-                self.main_form.display.write_to_statusbar("Text was not found!")
+                # self.main_form.display.write_to_statusbar("Text was not found!")
                 return False
 
     def replace_all(
-        self, search_text, replace_text, case_sensitive=False, regular_expression=False
+        self, search_text, replace_text, case_sensitive=False, regular_expression=False, whole_words=False
     ):
         """
         Replace all occurences of a string in a scintilla document
@@ -1591,8 +1585,7 @@ class CustomEditor(BaseEditor):
         self.setCursorPosition(0, 0)
         # Clear all previous highlights
         self.clear_highlights()
-        # Setup the indicator style, the replace indicator is 1
-        self.set_indicator("replace")
+
         # Correct the displayed file name
         if self.save_path == None or self.save_path == "":
             file_name = self._parent.tabText(self._parent.currentIndex())
@@ -1609,12 +1602,12 @@ class CustomEditor(BaseEditor):
                 compiled_search_re = re.compile(search_text, re.IGNORECASE)
             search_result = re.search(compiled_search_re, self.text())
         else:
-            search_result = self.find_text(search_text, case_sensitive)
+            search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
         if search_result == constants.SearchResult.NOT_FOUND:
             message = "No matches were found in '{}'!".format(file_name)
-            self.main_form.display.repl_display_message(
-                message, message_type=constants.MessageType.WARNING
-            )
+            # self.main_form.display.repl_display_message(
+            #     message, message_type=constants.MessageType.WARNING
+            # )
             return
         # Use the re module to replace the text
         text = self.text()
@@ -1624,12 +1617,15 @@ class CustomEditor(BaseEditor):
             replace_text,
             case_sensitive,
             regular_expression,
+            whole_words=whole_words,
         )
         # Check if there were any matches or
         # if the search and replace text were equivalent!
         if matches != None:
             # Replace the text
             self.replace_entire_text(replaced_text)
+            # Setup the indicator style, the replace indicator is 1
+            self.set_indicator("replace")
             # Matches can only be displayed for non-regex functionality
             if regular_expression == True:
                 # Build the list of matches used by the highlight_raw function
@@ -1650,50 +1646,50 @@ class CustomEditor(BaseEditor):
                     < settings.get("editor")["maximum_highlights"]
                 ):
                     message = "{} replacements:".format(file_name)
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.SUCCESS
-                    )
-                    for match in corrected_matches:
-                        line = self.lineIndexFromPosition(match[1])[0] + 1
-                        index = self.lineIndexFromPosition(match[1])[1]
-                        message = "    replacement made in line:{:d}".format(line)
-                        self.main_form.display.repl_display_message(
-                            message, message_type=constants.MessageType.SUCCESS
-                        )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
+                    # for match in corrected_matches:
+                    #     line = self.lineIndexFromPosition(match[1])[0] + 1
+                    #     index = self.lineIndexFromPosition(match[1])[1]
+                    #     message = "    replacement made in line:{:d}".format(line)
+                    #     self.main_form.display.repl_display_message(
+                    #         message, message_type=constants.MessageType.SUCCESS
+                    #     )
                 else:
                     message = "{:d} replacements made in {}!\n".format(
                         len(corrected_matches), file_name
                     )
                     message += "Too many to list individually!"
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.WARNING
-                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.WARNING
+                    # )
                 # Highlight and display the line difference between the old and new texts
                 self.highlight_raw(corrected_matches)
             else:
                 # Display the replacements in the REPL tab
                 if len(matches) < settings.get("editor")["maximum_highlights"]:
                     message = "{} replacements:".format(file_name)
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.SUCCESS
-                    )
-                    for match in matches:
-                        line = self.lineIndexFromPosition(match[1])[0] + 1
-                        index = self.lineIndexFromPosition(match[1])[1]
-                        message = '    replaced "{}" in line:{:d} column:{:d}'.format(
-                            search_text, line, index
-                        )
-                        self.main_form.display.repl_display_message(
-                            message, message_type=constants.MessageType.SUCCESS
-                        )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
+                    # for match in matches:
+                    #     line = self.lineIndexFromPosition(match[1])[0] + 1
+                    #     index = self.lineIndexFromPosition(match[1])[1]
+                    #     message = '    replaced "{}" in line:{:d} column:{:d}'.format(
+                    #         search_text, line, index
+                    #     )
+                    #     self.main_form.display.repl_display_message(
+                    #         message, message_type=constants.MessageType.SUCCESS
+                    #     )
                 else:
                     message = "{:d} replacements made in {}!\n".format(
                         len(matches), file_name
                     )
                     message += "Too many to list individually!"
-                    self.main_form.display.repl_display_message(
-                        message, message_type=constants.MessageType.WARNING
-                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.WARNING
+                    # )
                 # Highlight and display the replaced text
                 self.highlight_raw(matches)
             # Restore the previous cursor position
@@ -1706,6 +1702,90 @@ class CustomEditor(BaseEditor):
             self.main_form.display.repl_display_message(
                 message, message_type=constants.MessageType.ERROR
             )
+
+    def replace_part(self, search_text, replace_text, not_repalce_match_dict, case_sensitive=False):
+        """
+        Replace part occurences of a string in a scintilla document
+        """
+        # Store the current cursor position
+        current_position = self.getCursorPosition()
+        # Move cursor to the top of the document, so all the search string instances will be found
+        self.setCursorPosition(0, 0)
+        # Clear all previous highlights
+        self.clear_highlights()
+        # Setup the indicator style, the replace indicator is 1
+        # self.set_indicator("replace")
+
+        # Correct the displayed file name
+        if not self.save_path:
+            file_name = self._parent.tabText(self._parent.currentIndex())
+        else:
+            file_name = os.path.basename(self.save_path)
+        # Check if there are any instances of the search text in the document
+        # based on the regular expression flag
+        # search_result = self.find_text(search_text, case_sensitive, whole_words=False)
+        # if search_result == constants.SearchResult.NOT_FOUND:
+        #     message = "No matches were found in '{}'!".format(file_name)
+        #     self.main_form.display.repl_display_message(
+        #         message, message_type=constants.MessageType.WARNING
+        #     )
+        #     return
+        # Use the re module to replace the text
+        text = self.text()
+        matches, replaced_text = functions.replace_part_and_index(
+            text,
+            search_text,
+            replace_text,
+            not_repalce_match_dict,
+            case_sensitive,
+        )
+        if not matches:
+            return []
+        # Check if there were any matches or
+        # if the search and replace text were equivalent!
+        if matches:
+            # Replace the text
+            self.replace_entire_text(replaced_text)
+            # replace_entire_text清除了样式，重新设置
+            self.set_indicator("replace")
+
+            # Matches can only be displayed for non-regex functionality
+            # Display the replacements in the REPL tab
+            if len(matches) < settings.get("editor")["maximum_highlights"]:
+                message = "{} replacements:".format(file_name)
+                # self.main_form.display.repl_display_message(
+                #     message, message_type=constants.MessageType.SUCCESS
+                # )
+                for match in matches:
+                    line = self.lineIndexFromPosition(match[1])[0] + 1
+                    index = self.lineIndexFromPosition(match[1])[1]
+                    message = '    replaced "{}" in line:{:d} column:{:d}'.format(
+                        search_text, line, index
+                    )
+                    # self.main_form.display.repl_display_message(
+                    #     message, message_type=constants.MessageType.SUCCESS
+                    # )
+            else:
+                message = "{:d} replacements made in {}!\n".format(
+                    len(matches), file_name
+                )
+                message += "Too many to list individually!"
+                # self.main_form.display.repl_display_message(
+                #     message, message_type=constants.MessageType.WARNING
+                # )
+            # Highlight and display the replaced text
+            self.highlight_raw(matches)
+            # Restore the previous cursor position
+            self.setCursorPosition(current_position[0], current_position[1])
+        # else:
+        #     message = "The search string and replace string are equivalent!\n"
+        #     message += (
+        #         "Change the search/replace string or change the case sensitivity!"
+        #     )
+        #     self.main_form.display.repl_display_message(
+        #         message, message_type=constants.MessageType.ERROR
+        #     )
+        return matches
 
     def replace_in_selection(
         self, search_text, replace_text, case_sensitive=False, regular_expression=False
@@ -1763,7 +1843,7 @@ class CustomEditor(BaseEditor):
     """
 
     def highlight_text(
-        self, highlight_text, case_sensitive=False, regular_expression=False
+        self, highlight_text, case_sensitive=False, regular_expression=False, whole_words=False
     ):
         """
         Highlight all instances of the selected text with a selected colour
@@ -1772,21 +1852,27 @@ class CustomEditor(BaseEditor):
         self.set_indicator("highlight")
         # Get all instances of the text using list comprehension and the re module
         matches = self.find_all(
-            highlight_text, case_sensitive, regular_expression, text_to_bytes=True
+            highlight_text, case_sensitive, regular_expression, text_to_bytes=True, whole_words=whole_words
         )
         # Check if the match list is empty
         if matches:
             # Use the raw highlight function to set the highlight indicators
             self.highlight_raw(matches)
-            self.main_form.display.repl_display_message(
-                "{:d} matches highlighted".format(len(matches))
-            )
+            # self.main_form.display.repl_display_message(
+            #     "{:d} matches highlighted".format(len(matches))
+            # )
+            return matches
             # Set the cursor to the first highlight (I don't like this feature)
         #            self.find_text(highlight_text, case_sensitive, True, regular_expression)
-        else:
-            self.main_form.display.repl_display_message(
-                "No matches found!", message_type=constants.MessageType.WARNING
-            )
+        # else:
+        #     return
+            # OkDialog.error("查找不到匹配的文本")
+
+            # self.main_form.display.repl_display_message(
+            #     "No matches found!", message_type=constants.MessageType.WARNING
+            # )
+
+        return []
 
     def highlight_raw(self, highlight_list):
         """
@@ -1919,15 +2005,13 @@ class CustomEditor(BaseEditor):
             # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
             # Get the filename from the QFileDialog window
             tab_text = self._parent.tabText(self._parent.indexOf(self))
-            temp_save_path = qt.QFileDialog.getSaveFileName(
+            save_path = "new" if not self.save_path else self.save_path
+            temp_save_path, _ = qt.QFileDialog.getSaveFileName(
                 self,
-                "Save File: '{}'".format(tab_text),
-                os.getcwd() + self.save_path,
-                "All Files(*)",
+                "保存文件: '{}'".format(tab_text),
+                os.path.join(os.getcwd(), save_path),
+                "Text Files (*.txt)",
             )
-            # PyQt6's getOpenFileNames returns a tuple (files_list, selected_filter),
-            # so pass only the files to the function
-            temp_save_path = temp_save_path[0]
             # Check if the user has selected a file
             if temp_save_path == "":
                 return False
@@ -1983,6 +2067,99 @@ class CustomEditor(BaseEditor):
                 "Saving to file failed, check path and disk space!"
             )
             return False
+
+    def save_document_and_export(self, encoding="utf-8", line_ending=None):
+        """
+        Save a document to a file
+        """
+
+        if not self.save_path:
+            if self.save_document(saveas=True, encoding=encoding):
+                tab_text = self._parent.tabText(self._parent.indexOf(self))
+                temp_save_path, _ = qt.QFileDialog.getSaveFileName(
+                    self,
+                    "导出文件: '{}'".format(tab_text),
+                    os.getcwd() + self.save_path,
+                    "All Files(*)",
+                )
+                # Check if the user has selected a file
+                if temp_save_path == "":
+                    return False
+                # Replace back-slashes to forward-slashes on Windows
+                if data.platform == "Windows":
+                    temp_save_path = functions.unixify_path(temp_save_path)
+                copy_file(data.platform, self.save_path, temp_save_path)
+        else:
+            # Tab has an empty directory attribute or "SaveAs" was invoked, select file using the QFileDialog
+            # Get the filename from the QFileDialog window
+            tab_text = self._parent.tabText(self._parent.indexOf(self))
+            temp_save_path, _ = qt.QFileDialog.getSaveFileName(
+                self,
+                "导出文件: '{}'".format(tab_text),
+                os.getcwd() + self.save_path,
+                "All Files(*)",
+            )
+            # Check if the user has selected a file
+            if temp_save_path == "":
+                return False
+            # Replace back-slashes to forward-slashes on Windows
+            if data.platform == "Windows":
+                temp_save_path = functions.unixify_path(temp_save_path)
+
+            if self.save_document(saveas=False, encoding=encoding):
+                copy_file(data.platform, self.save_path, temp_save_path)
+            else:
+                raise Exception("保存失败")
+
+    # def save_to_temp_directory(self, encoding="utf-8", line_ending=None):
+    #     """
+    #     新打开文件，主动存到临时文件夹
+    #     """
+    #     temp_file_dir =
+    #     temp_save_path = os.path.join(temp_file_dir, self.name)
+    #     # Replace back-slashes to forward-slashes on Windows
+    #     if data.platform == "Windows":
+    #         temp_save_path = functions.unixify_path(temp_save_path)
+    #     # Save the chosen file name to the document "save_path" attribute
+    #     self.save_path = temp_save_path
+    #     # Set the tab name by filtering it out from the QFileDialog result
+    #     self.name = os.path.basename(self.save_path)
+    #     # Change the displayed name of the tab in the basic widget
+    #     self._parent.set_tab_name(self, self.name)
+    #     # Check if a line ending was specified
+    #     if line_ending == None:
+    #         # Write contents of the tab into the specified file
+    #         save_result = functions.write_to_file(self.text(), self.save_path, encoding)
+    #     else:
+    #         # The line ending has to be a string
+    #         if isinstance(line_ending, str) == False:
+    #             self.main_form.display.repl_display_message(
+    #                 "Line ending has to be a string!",
+    #                 message_type=constants.MessageType.ERROR,
+    #             )
+    #             return False
+    #         else:
+    #             # Convert the text into a list and join it together with the specified line ending
+    #             text_list = self.line_list
+    #             converted_text = line_ending.join(text_list)
+    #             save_result = functions.write_to_file(
+    #                 converted_text, self.save_path, encoding
+    #             )
+    #     # Store the modification time
+    #     self.modification_time = os.path.getmtime(self.save_path)
+    #     # Check save result
+    #     if save_result == True:
+    #         # Saving has succeded
+    #         self.reset_text_changed()
+    #         # Update the lexer for the document only if the lexer is not set
+    #         if isinstance(self.lexer(), lexers.Text):
+    #             file_type = functions.get_file_type(self.save_path)
+    #             self.choose_lexer(file_type)
+    #         # Update the settings manipulator with the new file
+    #         self.main_form.settings.update_recent_list(self.save_path)
+    #         return True
+    #     else:
+    #         return False
 
     def refresh_lexer(self):
         """
@@ -2349,7 +2526,8 @@ class CustomEditor(BaseEditor):
         """
         if state:
             self.setWrapMode(qt.QsciScintilla.WrapMode.WrapWord)
-            self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagByText)
+            # self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagByText)
+            self.setWrapVisualFlags(qt.QsciScintilla.WrapVisualFlag.WrapFlagNone)
             self.setWrapIndentMode(qt.QsciScintilla.WrapIndentMode.WrapIndentSame)
         else:
             self.setWrapMode(qt.QsciScintilla.WrapMode.WrapNone)

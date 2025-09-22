@@ -1,3 +1,5 @@
+
+
 """
 Copyright (c) 2013-present Matic Kukovec.
 Released under the GNU GPL3 license.
@@ -29,6 +31,7 @@ import libraryfunctions
 import qt
 import settings
 import settings.constants
+import xc_gui.font_resize_func
 from gui.custombuttons import CustomButton
 from gui.customeditor import CustomEditor
 from gui.dialogs import (
@@ -78,6 +81,11 @@ import components.communicator
 import components.processcontroller
 import components.thesquid
 from components.pathwatcher import FileEvent, PathWatcher
+from xc_gui.chapter_list import ChapterList
+from xc_gui.special_replace import SpecialReplace
+from xc_gui.fixed_widget import FixedWidget
+from xc_common.file_utils import copy_file_and_save_utf
+
 
 if data.platform == "Windows":
     import win32gui
@@ -149,16 +157,24 @@ class MainWindow(qt.QMainWindow):
     editing = None
     display = None
     bookmarks = None
+    fixed_widget = None
 
     # External program reference
     external_program = None
 
-    def __init__(self, new_document=False, logging=False, file_arguments=None):
+    def __init__(self, new_document=False, logging=False, file_arguments=None, user_info=None):
         """
         Initialization routine for the main form
         """
         # Initialize superclass, from which the main form is inherited
         super().__init__()
+        # 存储用户信息作为MainWindow的属性
+        self.user_info = user_info
+        # 如果用户信息存在，可以在控制台显示欢迎信息
+        if self.user_info:
+            welcome_message = f"用户: {self.user_info.user_name} 信息初始化成功"
+            print(welcome_message)
+
         # Initialize the namespace references
         self.settings = self.Settings(self)
         self.sessions = self.Sessions(self)
@@ -168,6 +184,11 @@ class MainWindow(qt.QMainWindow):
         self.display = self.Display(self)
         self.bookmarks = self.Bookmarks(self)
         self.tools = self.Tools(self)
+        self.fixed_widget = FixedWidget(self)
+
+        # 添加这一行来初始化字体设置
+        self.font_resizer = xc_gui.font_resize_func.FontResizeFunc(self)
+        self.font_resizer.initialize_font_settings()
         # Set the name of the main window
         self.name = "{} - PID:{}".format(self.get_default_title(), os.getpid())
         self.setObjectName("Form")
@@ -190,18 +211,23 @@ class MainWindow(qt.QMainWindow):
         self.init_menubar()
         # Initialize the docking overlay
         self.docking_overlay = DockingOverlay(self)
+        # 初始化上次打开的目录为当前工作目录
+        try:
+            self.last_opened_directory = settings.get("last_opened_directory")
+        except (KeyError, ValueError):
+            self.last_opened_directory = os.getcwd()
 
         # Initialize the debug print function
-        def repl_print(*message):
-            if len(message) == 1 and isinstance(message, str):
-                message = ["REPL PRINT:\n", message[0]]
-            else:
-                message = ["REPL PRINT:\n"] + [str(x) for x in message]
-            self.display.repl_display_message(
-                *message, message_type=constants.MessageType.WARNING
-            )
-
-        functions.repl_print = repl_print
+        # def repl_print(*message):
+        #     if len(message) == 1 and isinstance(message, str):
+        #         message = ["REPL PRINT:\n", message[0]]
+        #     else:
+        #         message = ["REPL PRINT:\n"] + [str(x) for x in message]
+        #     self.display.repl_display_message(
+        #         *message, message_type=constants.MessageType.WARNING
+        #     )
+        #
+        # functions.repl_print = repl_print
         # Initialize layout
         self.view.layout_init()
         # Set the initial window size according to the system resolution
@@ -217,12 +243,12 @@ class MainWindow(qt.QMainWindow):
         # Initialize the theme indicator
         self.display.init_theme_indicator()
         # Initialize repl interpreter
-        self.init_interpreter()
+        # self.init_interpreter()
         # Set the main window icon if it exists
         if os.path.isfile(data.application_icon) == True:
             self.setWindowIcon(qt.QIcon(data.application_icon))
         # Set the repl type to a single line
-        self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
+        # self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
         self.view.reset_entire_style_sheet()
         # Add a custom event filter
         self.installEventFilter(self)
@@ -262,6 +288,15 @@ class MainWindow(qt.QMainWindow):
         last_layout_filepath = functions.unixify_join(
             data.settings_directory, settings.get("last-layout-filename")
         )
+        # 检查文件是否存在，如果不存在则创建默认的布局文件
+        if not os.path.exists(last_layout_filepath):
+            # 确保.settings目录存在
+            functions.create_directory(data.settings_directory)
+            # 解析settings.constants中预定义的default_layout JSON字符串
+            default_layout = json.loads(settings.constants.default_layout)
+            # 保存默认布局到文件
+            import filefunctions
+            filefunctions.write_json_file(last_layout_filepath, default_layout)
         last_layout = functions.load_json_file(last_layout_filepath)
         self.view.layout_restore(last_layout)
 
@@ -271,12 +306,16 @@ class MainWindow(qt.QMainWindow):
 
     def eventFilter(self, object, event):
         if event.type() == qt.QEvent.Type.Enter:
-            self.display.docking_overlay_hide()
+            # 防止查找等模态窗口出现挪动现象
+            if qt.QApplication.activeModalWidget() is None:
+                self.display.docking_overlay_hide()
 
         if event.type() == qt.QEvent.Type.WindowActivate:
             pass
         elif event.type() == qt.QEvent.Type.WindowDeactivate:
-            self.display.docking_overlay_hide()
+            # 防止查找等模态窗口出现挪动现象
+            if qt.QApplication.activeModalWidget() is None:
+                self.display.docking_overlay_hide()
 
         if event.type() in (
             qt.QEvent.Type.Enter,
@@ -328,7 +367,8 @@ class MainWindow(qt.QMainWindow):
                     self.activateWindow()
 
     def get_default_title(self):
-        return "Ex.Co. {}".format(data.application_version)
+        # return "Ex.Co. {}".format(data.application_version)
+        return "Editor Desktop {}".format(data.application_version)
 
     def reset_title(self):
         self.setWindowTitle(self.get_default_title())
@@ -384,6 +424,30 @@ class MainWindow(qt.QMainWindow):
                 if isinstance(widget, CustomEditor):
                     editors.append(widget)
         return editors
+
+    def get_last_used_editor(self):
+        """获取最后使用的editor
+        """
+        last_used_editor, _, _ = self.get_last_used_editor_info()
+        return last_used_editor
+
+    def get_last_used_editor_info(self):
+        """获取最后使用的editor info
+        """
+        windows = self.get_all_windows()
+        last_used_editor = None
+        last_tab = None
+        index = 0
+        for w in windows:
+            for i in range(w.count()):
+                widget = w.widget(i)
+                if isinstance(widget, CustomEditor) and widget.hasFocus():
+                    last_used_editor = widget
+                    index = i
+                    last_tab = w
+                    break
+
+        return last_used_editor, index, last_tab
 
     def get_largest_window(self):
         largest_window = None
@@ -549,6 +613,7 @@ class MainWindow(qt.QMainWindow):
 
     def set_cwd(self, directory):
         """Set the current working directory and display it"""
+        return
         os.chdir(directory)
         # Store the current REPL text
         repl_text = self.repl.text()
@@ -591,9 +656,12 @@ class MainWindow(qt.QMainWindow):
         """
         Event that fires when the main window is closed
         """
+        # 保存上次打开的目录到settings
+        settings.set("last_opened_directory", self.last_opened_directory)
+
         # Check if there are any modified documents
         if self.check_document_states() == True:
-            quit_message = "You have modified documents!\nWhat do you wish to do?"
+            quit_message = "文档已修改！\n是否保存退出？"
             reply = QuitDialog.question(quit_message)
             if reply == constants.DialogResult.Quit.value:
                 pass
@@ -753,6 +821,18 @@ class MainWindow(qt.QMainWindow):
                 self.update_menubar()
                 self.import_user_functions()
 
+    def file_save_and_export(self, encoding="utf-8"):
+        """The function name says it all"""
+        focused_tab = self.get_tab_by_focus()
+        if focused_tab is not None:
+            focused_tab.save_document_and_export(encoding=encoding)
+            # Set the icon if it was set by the lexer
+            focused_tab.internals.update_icon(focused_tab)
+            # Reimport the user configuration file and update the menubar
+            if functions.is_config_file(focused_tab.save_path) == True:
+                self.update_menubar()
+                self.import_user_functions()
+
     def file_save_all(self, encoding="utf-8"):
         """
         Save all open modified files
@@ -882,7 +962,7 @@ class MainWindow(qt.QMainWindow):
         # File menu
         def construct_file_menu():
             #            file_menu = self.menubar.addMenu("&File")
-            file_menu = Menu("&File", self.menubar)
+            file_menu = Menu("&文件", self.menubar)
             self.menubar.addMenu(file_menu)
             file_menu.installEventFilter(click_filter)
 
@@ -891,9 +971,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_create_new()
 
             new_file_action = create_action(
-                "New",
+                "新建",
                 settings.get("keyboard-shortcuts")["general"]["new_file"],
-                "Create new empty file",
+                "新建文件",
                 "tango_icons/document-new.png",
                 special_create_new_file,
             )
@@ -903,9 +983,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_open()
 
             open_file_action = create_action(
-                "Open",
+                "打开",
                 settings.get("keyboard-shortcuts")["general"]["open_file"],
-                "Open file",
+                "打开文件",
                 "tango_icons/document-open.png",
                 special_open_file,
             )
@@ -916,9 +996,9 @@ class MainWindow(qt.QMainWindow):
                 self.file_save()
 
             self.save_file_action = create_action(
-                "Save",
+                "保存",
                 settings.get("keyboard-shortcuts")["general"]["save_file"],
-                "Save current file in the UTF-8 encoding",
+                "保存当前文件",
                 "tango_icons/document-save.png",
                 special_save_file,
                 enabled=False,
@@ -928,12 +1008,16 @@ class MainWindow(qt.QMainWindow):
             def special_saveas_file():
                 self.file_saveas()
 
+            def special_save_and_export_file():
+                self.file_save_and_export()
+
+            # todo 增加一个保存
             self.saveas_file_action = create_action(
-                "Save As",
+                "保存并导出",
                 settings.get("keyboard-shortcuts")["general"]["saveas_file"],
-                "Save current file as a new file in the UTF-8 encoding",
+                "保存并导出为新文件",
                 "tango_icons/document-save-as.png",
-                special_saveas_file,
+                special_save_and_export_file,
                 enabled=False,
             )
 
@@ -1071,36 +1155,52 @@ class MainWindow(qt.QMainWindow):
             # Add recent file list in the file menu
             recent_file_list_menu = self.view.create_recent_file_list_menu()
             clear_recent_file_list_action = create_action(
-                "Clear recent files",
+                "清理最近文件",
                 None,
-                "Clear the recent files list",
+                "清理最近文件列表",
                 "tango_icons/edit-clear.png",
                 self.view.clear_recent_file_list,
             )
+
+            def special_open_chapter_list():
+                self.open_chapter_list()
+
+            open_chapter_list_action = create_action(
+                "打开章节列表",
+                settings.get("keyboard-shortcuts")["general"]["open_chapter_list"],
+                "打开章节列表",
+                "tango_icons/document-open.png",
+                special_open_chapter_list,
+            )
+
             # Add the actions to the File menu
             file_menu.addAction(new_file_action)
             file_menu.addAction(open_file_action)
             file_menu.addAction(self.save_file_action)
             file_menu.addAction(self.saveas_file_action)
-            add_save_in_different_encoding_submenu()
-            file_menu.addAction(self.save_all_action)
-            file_menu.addSeparator()
-            file_menu.addAction(close_tab_action)
-            file_menu.addAction(close_all_action)
-            file_menu.addSeparator()
-            file_menu.addAction(edit_functions_action)
-            file_menu.addAction(reload_functions_action)
+            # add_save_in_different_encoding_submenu()
+            # file_menu.addAction(self.save_all_action)
+            # file_menu.addSeparator()
+            # file_menu.addAction(close_tab_action)
+            # file_menu.addAction(close_all_action)
+            # file_menu.addSeparator()
+            # file_menu.addAction(edit_functions_action)
+            # file_menu.addAction(reload_functions_action)
             file_menu.addSeparator()
             file_menu.addMenu(recent_file_list_menu)
             file_menu.addAction(clear_recent_file_list_action)
             file_menu.addSeparator()
+            # file_menu.addAction(open_chapter_list_action)
+            # file_menu.addSeparator()
+            # file_menu.addSeparator()
             file_menu.addAction(exit_action)
 
         # Edit Menus
         # Adding the basic options to the menu
+
         def construct_edit_basic_menu():
             edit_menu = Menu("&Editing", self.menubar)
-            self.menubar.addMenu(edit_menu)
+            # self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
             def copy():
@@ -1112,7 +1212,7 @@ class MainWindow(qt.QMainWindow):
             temp_string = "Copy any selected text in the currently "
             temp_string += "selected window to the clipboard"
             copy_action = create_action(
-                "Copy\t" + settings.get("keyboard-shortcuts")["editor"]["copy"],
+                "复制\t" + settings.get("keyboard-shortcuts")["editor"]["copy"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["copy"],
                 temp_string,
                 "tango_icons/edit-copy.png",
@@ -1126,7 +1226,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             cut_action = create_action(
-                "Cut\t" + settings.get("keyboard-shortcuts")["editor"]["cut"],
+                "剪切\t" + settings.get("keyboard-shortcuts")["editor"]["cut"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["cut"],
                 "Cut any selected text in the currently selected window to the clipboard",
                 "tango_icons/edit-cut.png",
@@ -1140,7 +1240,7 @@ class MainWindow(qt.QMainWindow):
                     pass
 
             paste_action = create_action(
-                "Paste\t" + settings.get("keyboard-shortcuts")["editor"]["paste"],
+                "粘贴\t" + settings.get("keyboard-shortcuts")["editor"]["paste"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["paste"],
                 "Paste the text in the clipboard to the currenty selected window",
                 "tango_icons/edit-paste.png",
@@ -1154,9 +1254,9 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             undo_action = create_action(
-                "Undo\t" + settings.get("keyboard-shortcuts")["editor"]["undo"],
+                "撤销\t" + settings.get("keyboard-shortcuts")["editor"]["undo"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["undo"],
-                "Undo last editor action in the currenty selected window",
+                "撤销上一个编辑器操作",
                 "tango_icons/edit-undo.png",
                 undo,
             )
@@ -1168,9 +1268,9 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             redo_action = create_action(
-                "Redo\t" + settings.get("keyboard-shortcuts")["editor"]["redo"],
+                "重做\t" + settings.get("keyboard-shortcuts")["editor"]["redo"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["redo"],
-                "Redo last undone editor action in the currenty selected window",
+                "重做上一个撤销的编辑器操作",
                 "tango_icons/edit-redo.png",
                 redo,
             )
@@ -1294,7 +1394,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             go_to_start_action = create_action(
-                "Go to start\t"
+                "跳转至文档开头\t"
                 + settings.get("keyboard-shortcuts")["editor"]["go_to_start"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["go_to_start"],
                 "Move cursor up to the start of the currently selected document",
@@ -1310,7 +1410,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             go_to_end_action = create_action(
-                "Go to end\t"
+                "跳转至文档结尾\t"
                 + settings.get("keyboard-shortcuts")["editor"]["go_to_end"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["go_to_end"],
                 "Move cursor down to the end of the currently selected document",
@@ -1422,7 +1522,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_cut_action = create_action(
-                "Line Cut\t" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
+                "行剪切\t" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_cut"],
                 "Cut out the current line/lines of the currently selected document",
                 "tango_icons/edit-line-cut.png",
@@ -1437,7 +1537,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_copy_action = create_action(
-                "Line Copy\t"
+                "行复制\t"
                 + settings.get("keyboard-shortcuts")["editor"]["line_copy"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_copy"],
                 "Copy the current line/lines of the currently selected document",
@@ -1453,7 +1553,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             line_delete_action = create_action(
-                "Line Delete\t"
+                "行删除\t"
                 + settings.get("keyboard-shortcuts")["editor"]["line_delete"],
                 "#" + settings.get("keyboard-shortcuts")["editor"]["line_delete"],
                 "Delete the current line of the currently selected document",
@@ -1538,8 +1638,12 @@ class MainWindow(qt.QMainWindow):
             edit_menu.addAction(select_to_end_action)
             edit_menu.addAction(rect_block_action)
 
+        def open_find_replace_dialog():
+            """初始化查找替换"""
+            self.fixed_widget.open_find_replace_dialog()
+
         def construct_edit_advanced_menu():
-            edit_menu = Menu("&Advanced", self.menubar)
+            edit_menu = Menu("&编辑", self.menubar)
             self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
@@ -1566,10 +1670,38 @@ class MainWindow(qt.QMainWindow):
 
             find_action = create_action(
                 "Find",
-                settings.get("keyboard-shortcuts")["general"]["find"],
+                settings.get("keyboard-shortcuts")["general"]["find_dialog"],
                 "Find text in the currently selected document",
                 "tango_icons/edit-find.png",
                 special_find,
+            )
+
+            def special_dialog_find():
+                try:
+                    open_find_replace_dialog()
+                except:
+                    pass
+                # self.view.set_repl_type(constants.ReplType.SINGLE_LINE)
+                # self.repl.setFocus()
+                # self.repl.setCursorPosition(self.repl.text().find('",case_sensitive'))
+
+            dialog_find_action = create_action(
+                "查找",
+                settings.get("keyboard-shortcuts")["general"]["find"],
+                "查找&替换",
+                "tango_icons/edit-find.png",
+                special_dialog_find,
+            )
+
+            def special_open_special_replace():
+                self.open_special_replace()
+
+            open_special_replace_action = create_action(
+                "特殊替换",
+                settings.get("keyboard-shortcuts")["general"]["open_special_replace"],
+                "特殊替换",
+                "tango_icons/document-open.png",
+                special_open_special_replace,
             )
 
             # Nested special function for finding text in the currentlly focused
@@ -2116,37 +2248,41 @@ class MainWindow(qt.QMainWindow):
                 open_in_browser,
             )
             # Adding the edit menu and constructing all of the options
-            edit_menu.addAction(find_action)
-            edit_menu.addAction(regex_find_action)
-            edit_menu.addAction(find_and_replace_action)
-            edit_menu.addAction(regex_find_and_replace_action)
-            edit_menu.addAction(goto_line_action)
-            edit_menu.addAction(indent_to_cursor_action)
-            edit_menu.addAction(highlight_action)
-            edit_menu.addAction(regex_highlight_action)
-            edit_menu.addAction(clear_highlights_action)
-            edit_menu.addAction(replace_selection_action)
-            edit_menu.addAction(regex_replace_selection_action)
-            edit_menu.addAction(replace_all_action)
-            edit_menu.addAction(regex_replace_all_action)
-            edit_menu.addAction(toggle_comment_action)
-            edit_menu.addAction(toggle_autocompletion_action)
-            edit_menu.addAction(toggle_wrap_action)
-            edit_menu.addAction(to_uppercase_action)
-            edit_menu.addAction(to_lowercase_action)
-            edit_menu.addAction(node_tree_action)
-            edit_menu.addAction(reload_file_action)
-            edit_menu.addAction(open_in_browser_action)
-            edit_menu.addAction(reset_context_menu_action)
+            # edit_menu.addAction(find_action)
+            edit_menu.addAction(dialog_find_action)
             edit_menu.addSeparator()
-            edit_menu.addAction(find_in_documents_action)
-            edit_menu.addAction(find_replace_in_documents_action)
-            edit_menu.addAction(replace_all_in_documents_action)
+            edit_menu.addAction(open_special_replace_action)
+
+            # edit_menu.addAction(regex_find_action)
+            # edit_menu.addAction(find_and_replace_action)
+            # edit_menu.addAction(regex_find_and_replace_action)
+            # edit_menu.addAction(goto_line_action)
+            # edit_menu.addAction(indent_to_cursor_action)
+            # edit_menu.addAction(highlight_action)
+            # edit_menu.addAction(regex_highlight_action)
+            # edit_menu.addAction(clear_highlights_action)
+            # edit_menu.addAction(replace_selection_action)
+            # edit_menu.addAction(regex_replace_selection_action)
+            # edit_menu.addAction(replace_all_action)
+            # edit_menu.addAction(regex_replace_all_action)
+            # edit_menu.addAction(toggle_comment_action)
+            # edit_menu.addAction(toggle_autocompletion_action)
+            # edit_menu.addAction(toggle_wrap_action)
+            # edit_menu.addAction(to_uppercase_action)
+            # edit_menu.addAction(to_lowercase_action)
+            # edit_menu.addAction(node_tree_action)
+            # edit_menu.addAction(reload_file_action)
+            # edit_menu.addAction(open_in_browser_action)
+            # edit_menu.addAction(reset_context_menu_action)
+            # edit_menu.addSeparator()
+            # edit_menu.addAction(find_in_documents_action)
+            # edit_menu.addAction(find_replace_in_documents_action)
+            # edit_menu.addAction(replace_all_in_documents_action)
 
         # System menu
         def construct_system_menu():
             system_menu = Menu("S&ystem", self.menubar)
-            self.menubar.addMenu(system_menu)
+            # self.menubar.addMenu(system_menu)
             system_menu.installEventFilter(click_filter)
 
             def special_find_in():
@@ -2401,21 +2537,21 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(message)
                     self.display.write_to_statusbar(message)
 
-            lexers_menu = self.display.create_lexers_menu(
-                "Change lexer",
-                set_lexer,
-                store_menu_to_mainform=False,
-                custom_parent=parent,
-            )
-            lexers_menu.installEventFilter(click_filter)
-            temp_icon = functions.create_icon("tango_icons/lexers.png")
-            lexers_menu.setIcon(temp_icon)
-            parent.addMenu(lexers_menu)
+            # lexers_menu = self.display.create_lexers_menu(
+            #     "Change lexer",
+            #     set_lexer,
+            #     store_menu_to_mainform=False,
+            #     custom_parent=parent,
+            # )
+            # lexers_menu.installEventFilter(click_filter)
+            # temp_icon = functions.create_icon("tango_icons/lexers.png")
+            # lexers_menu.setIcon(temp_icon)
+            # parent.addMenu(lexers_menu)
 
         # View menu
         def construct_view_menu():
             view_menu = Menu("&View", self.menubar)
-            self.menubar.addMenu(view_menu)
+            # self.menubar.addMenu(view_menu)
             view_menu.installEventFilter(click_filter)
             # Show/hide the function wheel
             function_wheel_toggle_action = create_action(
@@ -2596,7 +2732,7 @@ class MainWindow(qt.QMainWindow):
                     self.display.repl_display_error(traceback.format_exc())
 
             bookmark_menu = Menu("&Bookmarks", self.menubar)
-            view_menu.addMenu(bookmark_menu)
+            # view_menu.addMenu(bookmark_menu)
             bookmark_menu.installEventFilter(click_filter)
             temp_icon = functions.create_icon("tango_icons/bookmarks.png")
             bookmark_menu.setIcon(temp_icon)
@@ -2696,32 +2832,33 @@ class MainWindow(qt.QMainWindow):
                 toggle_cursor_line_highlighting,
             )
             # Add all actions and menus
-            view_menu.addAction(function_wheel_toggle_action)
-            view_menu.addAction(settings_manipulator_toggle_action)
-            view_menu.addSeparator()
-            view_menu.addMenu(bookmark_menu)
-            view_menu.addSeparator()
-            construct_lexers_menu(view_menu)
-            view_menu.addSeparator()
-            view_menu.addAction(main_focus_action)
-            view_menu.addAction(upper_focus_action)
-            view_menu.addAction(lower_focus_action)
-            view_menu.addAction(toggle_one_window_mode_action)
-            view_menu.addAction(maximize_window_action)
-            view_menu.addAction(select_tab_right_action)
-            view_menu.addAction(select_tab_left_action)
-            view_menu.addAction(move_tab_right_action)
-            view_menu.addAction(move_tab_left_action)
-            view_menu.addAction(toggle_edge_action)
-            view_menu.addAction(reset_zoom_action)
-            view_menu.addAction(toggle_lineend_action)
-            view_menu.addAction(toggle_cursor_line_action)
+            # view_menu.addAction(function_wheel_toggle_action)
+            # view_menu.addAction(settings_manipulator_toggle_action)
+            # view_menu.addSeparator()
+            # view_menu.addMenu(bookmark_menu)
+            # view_menu.addSeparator()
+            # construct_lexers_menu(view_menu)
+            # view_menu.addSeparator()
+            # view_menu.addAction(main_focus_action)
+            # view_menu.addAction(upper_focus_action)
+            # view_menu.addAction(lower_focus_action)
+            # view_menu.addAction(toggle_one_window_mode_action)
+            # view_menu.addAction(maximize_window_action)
+            # view_menu.addAction(select_tab_right_action)
+            # view_menu.addAction(select_tab_left_action)
+            # view_menu.addAction(move_tab_right_action)
+            # view_menu.addAction(move_tab_left_action)
+            # view_menu.addAction(toggle_edge_action)
+            # view_menu.addAction(reset_zoom_action)
+            # view_menu.addAction(toggle_lineend_action)
+            # view_menu.addAction(toggle_cursor_line_action)
 
         # REPL menu
         def construct_repl_menu():
             repl_menu = Menu("&REPL", self.menubar)
-            self.menubar.addMenu(repl_menu)
+            # self.menubar.addMenu(repl_menu)
             repl_menu.installEventFilter(click_filter)
+            return
             repeat_eval_action = create_action(
                 "REPL Repeat Command",
                 settings.get("keyboard-shortcuts")["general"]["repeat_eval"],
@@ -2775,7 +2912,7 @@ class MainWindow(qt.QMainWindow):
         # Sessions menu
         def construct_sessions_menu():
             sessions_menu = Menu("Sessions", self.menubar)
-            self.menubar.addMenu(sessions_menu)
+            # self.menubar.addMenu(sessions_menu)
             sessions_menu.installEventFilter(click_filter)
 
             def add_session():
@@ -2824,25 +2961,65 @@ class MainWindow(qt.QMainWindow):
         # Settings menu
         def construct_settings_menu():
             settings_menu = Menu("Settings", self.menubar)
+            settings_menu = Menu("设置", self.menubar)
             self.menubar.addMenu(settings_menu)
+
             settings_menu.installEventFilter(click_filter)
 
-            def show_settings():
-                self.view.show_settings_manipulator()
+            # def show_settings():
+            #     self.view.show_settings_manipulator()
+            #
+            # show_gui_action = create_action(
+            #     "Graphical Settings Editor",
+            #     None,
+            #     "Graphical user friendly settings editor",
+            #     "tango_icons/settings-png",
+            #     show_settings,
+            # )
+            # # Add the items
+            # settings_menu.addAction(show_gui_action)
 
-            show_gui_action = create_action(
-                "Graphical Settings Editor",
-                None,
-                "Graphical user friendly settings editor",
-                "tango_icons/settings-png",
-                show_settings,
-            )
-            # Add the items
-            settings_menu.addAction(show_gui_action)
+            # 添加字体大小子菜单
+            font_size_menu = Menu("字体大小", settings_menu)
+            settings_menu.addMenu(font_size_menu)
+            font_size_menu.installEventFilter(click_filter)
 
+            # 添加常用字体大小选项（这里使用更实用的大号字体）
+            for size in [12, 14, 16, 18, 20, 22, 24, 26, 28, 30]:
+                size_action = create_action(
+                    f"{size}pt",
+                    None,
+                    f"设置字号 {size}pt",
+                    None,
+                    lambda checked, size=size: self.font_resizer.set_font_size(size),
+                )
+                # 将菜单项添加到菜单
+                font_size_menu.addAction(size_action)
+                # 将菜单项注册到FontResizeFunc类中进行统一管理
+                self.font_resizer.register_font_size_action(size, size_action)
+            # 添加字体选择子菜单（简化版，直接列出所有字体）
+            font_menu = Menu("字体", settings_menu)
+            settings_menu.addMenu(font_menu)
+            font_menu.installEventFilter(click_filter)
+
+            # 获取可用字体
+            available_fonts = self.font_resizer.get_available_fonts()
+
+            # 直接列出所有可用字体
+            for font_name in available_fonts:
+                font_action = create_action(
+                    font_name,
+                    None,
+                    f"使用 {font_name} 字体",
+                    None,
+                    lambda checked, name=font_name: self.font_resizer.set_font_name(name),
+                )
+                font_menu.addAction(font_action)
+                self.font_resizer.register_font_name_action(font_name, font_action)
         # Help menu
+
         def construct_help_menu():
-            help_menu = Menu("&Help", self.menubar)
+            help_menu = Menu("&关于", self.menubar)
             self.menubar.addMenu(help_menu)
             help_menu.installEventFilter(click_filter)
             self.fm = help_menu
@@ -2858,7 +3035,7 @@ class MainWindow(qt.QMainWindow):
         # Tools menu
         def construct_tools_menu():
             tools_menu = Menu("&Tools", self.menubar)
-            self.menubar.addMenu(tools_menu)
+            # self.menubar.addMenu(tools_menu)
             tools_menu.installEventFilter(click_filter)
 
             # Print indicated editor to PDF
@@ -2896,7 +3073,7 @@ class MainWindow(qt.QMainWindow):
             temp_icon = functions.create_icon("language_icons/logo_python.png")
             formatting_menu_python.setIcon(temp_icon)
 
-            ## Formatting Python code
+            # Formatting Python code
             formatting_libraries = (
                 "black",
                 "autopep8",
@@ -3121,8 +3298,10 @@ class MainWindow(qt.QMainWindow):
         construct_repl_menu()
         construct_tools_menu()
         construct_sessions_menu()
-        # construct_settings_menu()
-        construct_help_menu()
+        construct_settings_menu()
+
+        # 去掉help菜单
+        # construct_help_menu()
 
         # Connect the triggered signal for hiding the function wheel on menubar clicks
         def hide_fw(action):
@@ -3141,10 +3320,13 @@ class MainWindow(qt.QMainWindow):
         Initialize everything that concerns the REPL
         """
         # Initialize the groupbox that the REPL will be in, and place the REPL widget into it
-        self.repl_box = ReplBox(self, self.get_form_references())
-        # Initialize the Python REPL widget
-        self.repl = self.repl_box.repl
-        self.repl_helper = self.repl_box.repl_helper
+        # self.repl_box = ReplBox(self, self.get_form_references())
+        # # Initialize the Python REPL widget
+        # self.repl = self.repl_box.repl
+        # self.repl_helper = self.repl_box.repl_helper
+        self.repl_box = None
+        self.repl = None
+        self.repl_helper = None
 
     def init_interpreter(self):
         """
@@ -3166,6 +3348,7 @@ class MainWindow(qt.QMainWindow):
         self.import_user_functions()
 
     def import_user_functions(self):
+        return
         """Import the user defined functions form the userfunctions.cfg file"""
         self.repl.skip_next_repl_focus()
         user_file_path = os.path.join(data.application_directory, data.config_file)
@@ -3262,6 +3445,7 @@ class MainWindow(qt.QMainWindow):
             tab_name = "new_" + str(next(self.new_file_count))
         # Create the new scintilla document in the selected basic widget
         return_widget = None
+        # todo 需要给editor的tab容器起个名，所有editor统一放到容器中
         if tab_widget is None:
             return_widget = self.get_largest_window().editor_add_document(
                 tab_name, type="new"
@@ -3277,27 +3461,39 @@ class MainWindow(qt.QMainWindow):
         """Open a file for editing using a file dialog"""
         # Create and show a file dialog window, restore last browsed directory and set the file filter
         file_dialog = qt.QFileDialog
-        files = file_dialog.getOpenFileNames(
+        files, _ = file_dialog.getOpenFileNames(
             self,
             "Open File",
-            os.getcwd(),
-            "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
+            self.last_opened_directory,  # 使用上次打开的目录作为初始目录
+            "Text Files (*.txt *.text);;All Files (*)",
+            # "All Files (*);;Ex.Co. Files({})".format(" ".join(self.exco_file_exts)),
         )
+        # 如果用户选择了文件，更新上次打开的目录
+        if files and files[0]:
+            # 获取第一个选中文件的目录
+            selected_file = files[0][0] if isinstance(files[0], list) else files[0]
+            if selected_file:
+                self.last_opened_directory = os.path.dirname(selected_file)
+
         # Check and then add the selected file to the main TabWidget if the window parameter is unspecified
         self.open_files(files, tab_widget)
 
     def open_files(self, files=None, tab_widget=None):
         """Cheach and read valid files to the selected TabWidget"""
+
+        #  先把文件复制到临时目录中，然后打开
         # Check if the files are valid
         if files is None or files == "":
             return
         if isinstance(files, str):
             # Single file
-            self.open_file(files, tab_widget)
+            new_file_path = copy_file_and_save_utf(data.platform, files, data.temp_file_directory)
+            self.open_file(new_file_path, tab_widget)
         else:
             # List of files
             for file in files:
-                self.open_file(file, tab_widget)
+                new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
+                self.open_file(new_file_path, tab_widget)
 
     def open_file(self, file=None, tab_widget=None, save_layout=False):
         """
@@ -3423,6 +3619,31 @@ class MainWindow(qt.QMainWindow):
                 message_type=constants.MessageType.ERROR,
             )
             return None
+
+    def open_chapter_list(self):
+        """初始化树形tab"""
+        # 创建新的树形tab
+        # Create the new scintilla document in the selected basic widget
+        return_widget = self.get_largest_window().chapter_list_add(
+            "章节目录"
+        )
+        # Set focus to the new widget
+        return_widget.setFocus()
+        # Return the widget reference
+        return return_widget
+
+    def open_special_replace(self):
+        """特殊替换"""
+        # 创建新的树形tab
+        # Create the new scintilla document in the selected basic widget
+        return_widget = self.get_largest_window().special_replace_add(
+            "特殊替换"
+        )
+        # Set focus to the new widget
+        return_widget.setFocus()
+        return_widget.find_input.setFocus()
+        # Return the widget reference
+        return return_widget
 
     def open_file_hex(self, file_path, tab_widget=None, save_layout=False):
         # Check if file exists
@@ -3560,10 +3781,10 @@ class MainWindow(qt.QMainWindow):
         """Enable or disable the save functionality and save options under "File" in the menubar"""
         self.save_file_action.setEnabled(enable)
         self.saveas_file_action.setEnabled(enable)
-        self.save_ascii_file_action.setEnabled(enable)
-        self.save_ansiwin_file_action.setEnabled(enable)
-        self.save_in_encoding.setEnabled(enable)
-        self.save_all_action.setEnabled(enable)
+        # self.save_ascii_file_action.setEnabled(enable)
+        # self.save_ansiwin_file_action.setEnabled(enable)
+        # self.save_in_encoding.setEnabled(enable)
+        # self.save_all_action.setEnabled(enable)
         # Set the save state flag accordingly
         self.save_state = enable
 
@@ -3621,8 +3842,8 @@ class MainWindow(qt.QMainWindow):
                 else:
                     if window.widget(i).hasFocus() == True:
                         return window.widget(i)
-            if self.repl_helper.hasFocus() == True:
-                return self.repl_helper
+            # if self.repl_helper.hasFocus() == True:
+            #     return self.repl_helper
         # No tab in the basic widgets has focus
         return None
 
@@ -3764,7 +3985,8 @@ class MainWindow(qt.QMainWindow):
             # Nested function for opening the recent file
             def new_file_function(file):
                 try:
-                    self._parent.open_file(file=file, tab_widget=None)
+                    new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
+                    self._parent.open_file(file=new_file_path, tab_widget=None)
                     self._parent.get_largest_window().currentWidget().setFocus()
                 except:
                     pass
@@ -4037,7 +4259,7 @@ class MainWindow(qt.QMainWindow):
             self._parent.sessions_menu.addAction(exco_session_action)
             self._parent.sessions_menu.addSeparator()
 
-            ## Create the Sessions menu
+            # Create the Sessions menu
             # Group processing function
             def process_group(in_group, in_menu, create_menu=True):
                 # Create the new group and attach it to the parent menu
@@ -4147,7 +4369,7 @@ class MainWindow(qt.QMainWindow):
 
             # Vertically split edit fields with the REPL
             main_splitter.addWidget(boxes_groupbox)
-            main_splitter.addWidget(self._parent.repl_box)
+            # main_splitter.addWidget(self._parent.repl_box)
             # Set the sizes for the main splitter
             main_splitter.setStretchFactor(0, 1)
             # Initialize the main groupbox
@@ -4563,7 +4785,7 @@ QSplitter::handle {{
                         window.widget(i).refresh_lexer()
                     elif hasattr(window.widget(i), "set_theme") == True:
                         window.widget(i).set_theme(settings.get_theme())
-            self._parent.repl_helper.refresh_lexer()
+            # self._parent.repl_helper.refresh_lexer()
             self.reset_entire_style_sheet()
             self._parent.statusbar.setStyleSheet(
                 gui.stylesheets.StyleSheetStatusbar.standard()
@@ -4578,7 +4800,7 @@ QSplitter::handle {{
             CustomButton.stored_hex = None
 
         def create_recent_file_list_menu(self):
-            self._parent.recent_files_menu = Menu("Recent Files", self._parent.menubar)
+            self._parent.recent_files_menu = Menu("最近文件", self._parent.menubar)
             temp_icon = functions.create_icon("tango_icons/file-recent-files.png")
             self._parent.recent_files_menu.setIcon(temp_icon)
             return self._parent.recent_files_menu
@@ -4588,13 +4810,13 @@ QSplitter::handle {{
             self._parent.recent_files_menu = None
 
         def clear_recent_file_list(self):
-            warning = "Are you sure you wish to delete\n" + "the recent files list?"
+            warning = "确认清理最近文件列表的记录?"
             reply = YesNoDialog.warning(warning)
             if reply == constants.DialogResult.No.value:
                 return
             self._parent.settings.clear_recent_list()
             self._parent.settings.update_recent_list()
-            self._parent.display.repl_display_success("Recent file list cleared.")
+            # self._parent.display.repl_display_success("Recent file list cleared.")
 
         """
         Layout
@@ -4614,6 +4836,8 @@ QSplitter::handle {{
                 "TreeExplorer": TreeExplorer,
                 "HexView": HexView,
                 "Terminal": Terminal,
+                "ChapterList": ChapterList,
+                "SpecialReplace": SpecialReplace,
             }
             inverted_classes = {v: k for k, v in classes.items()}
             return classes, inverted_classes
@@ -4830,6 +5054,11 @@ QSplitter::handle {{
                                         working_path
                                     ):
                                         new_terminal.set_cwd(working_path)
+                                elif cls == "ChapterList":
+                                    new_tabs.chapter_list_add("章节列表")
+
+                                elif cls == "SpecialReplace":
+                                    new_tabs.special_replace_add("特殊替换")
 
                                 elif cls == constants.SpecialTabNames.Messages.value:
                                     self._parent.repl_messages_tab = (

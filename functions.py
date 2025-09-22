@@ -452,7 +452,7 @@ def get_nim_node_tree(nim_code):
                 )
                 or (
                     len(current_line.split("=")) > 2
-                    and current_line[current_line.rfind(")") :].split("=")[1] != ""
+                    and current_line[current_line.rfind(")"):].split("=")[1] != ""
                 )
             ):
                 # One-liner
@@ -1141,7 +1141,7 @@ def remove_comments_from_c_code(c_code):
                         stringing = True
                     elif ch == '"' and line[i - 1] != "\\" and stringing == True:
                         stringing = False
-                    elif stringing == False and line[i : i + 2] == "//":
+                    elif stringing == False and line[i: i + 2] == "//":
                         line = line[:i]
                         break
                 no_comment_code_list.append(line)
@@ -1152,7 +1152,7 @@ def remove_comments_from_c_code(c_code):
                         stringing = True
                     elif ch == '"' and line[i - 1] != "\\" and stringing == True:
                         stringing = False
-                    elif stringing == False and line[i : i + 2] == "/*":
+                    elif stringing == False and line[i: i + 2] == "/*":
                         # Remove the closed comments
                         rest_line = re.sub(r"/\*.*?\*/", "", line[i:], flags=re.DOTALL)
                         line = line[:i] + rest_line
@@ -1189,7 +1189,7 @@ def remove_comments_from_c_code(c_code):
                     if line.strip().endswith("*/"):
                         commenting = False
                     else:
-                        line = line[line.find("/*") + 2 :]
+                        line = line[line.find("/*") + 2:]
                         no_comment_code_list.append(line)
                         commenting = False
     # Return the result
@@ -1973,7 +1973,7 @@ def get_c_node_tree(c_code):
                             i,
                         )
                     node_list, skip_to_token = parse_loop(
-                        tokens[i + 1 :], node_list, current_line, i + 1, next_level
+                        tokens[i + 1:], node_list, current_line, i + 1, next_level
                     )
                     current_statement_tokens.append("{ ... }")
                     if func_found:
@@ -1995,21 +1995,21 @@ def get_c_node_tree(c_code):
                     function_flag = False
                     previous_t = None
                     next_t = None
-                    for j, t in enumerate(tokens[i + 1 :]):
+                    for j, t in enumerate(tokens[i + 1:]):
                         print(paren_count)
                         skip_to_token += 1
                         paren_tokens.append(t)
                         if j > 0:
-                            previous_t = tokens[i + 1 :][j - 1]
-                        if j < len(tokens[i + 1 :]) - 1:
-                            next_t = tokens[i + 1 :][j + 1]
+                            previous_t = tokens[i + 1:][j - 1]
+                        if j < len(tokens[i + 1:]) - 1:
+                            next_t = tokens[i + 1:][j + 1]
                         if t == "(" and previous_t != "'" and next_t != "'":
                             paren_count += 1
                         if t == ")" and previous_t != "'" and next_t != "'":
                             if paren_count == 0:
                                 #                                repl_print(previous_t, t, next_t)
                                 try:
-                                    tks = tokens[i + 1 :]
+                                    tks = tokens[i + 1:]
                                     for k in range(3):
                                         if "{" in tks[j + 1 + k].strip():
                                             function_flag = True
@@ -2109,6 +2109,7 @@ def index_strings_in_text(
     # Check if whole words only should be matched
     if whole_words == True:
         search_text = r"\b(" + search_text + r")\b"
+        regular_expression = True
     # Convert text to bytes so that utf-8 characters will be parsed correctly
     if text_to_bytes == True:
         search_text = bytes(search_text, "utf-8")
@@ -2123,7 +2124,7 @@ def index_strings_in_text(
         compiled_search_re = re.compile(search_text, re.IGNORECASE)
     # Create the list with all of the matches
     list_of_matches = [
-        (0, match.start(), 0, match.end())
+        (0, match.start(), 0, match.end(), match.group())
         for match in re.finditer(compiled_search_re, text)
     ]
     return list_of_matches
@@ -2183,6 +2184,7 @@ def replace_and_index(
     replace_text,
     case_sensitive=False,
     regular_expression=False,
+    whole_words=False
 ):
     """
     Function that replaces the search text with replace text in a string,
@@ -2205,6 +2207,7 @@ def replace_and_index(
             case_sensitive,
             regular_expression,
             text_to_bytes=True,
+            whole_words=whole_words,
         )
     # Create a matches list according to regular expression selection
     if regular_expression == True:
@@ -2234,8 +2237,11 @@ def replace_and_index(
             # Standard string replace
             replaced_text = input_string.replace(search_text, replace_text)
         else:
-            # Escape the regex special characters
-            new_search_text = re.escape(search_text)
+            if whole_words == True:
+                new_search_text = r"\b(" + search_text + r")\b"
+            else:
+                # Escape the regex special characters
+                new_search_text = re.escape(search_text)
             # Replace backslashes with double backslashes, so that the
             # regular expression treats backslashes the same as standard
             # Python string replace!
@@ -2268,6 +2274,92 @@ def replace_and_index(
     return replaced_match_indexes, replaced_text
 
 
+def replace_part_and_index(
+    input_string,
+    search_text,
+    replace_text,
+    not_repalce_match_dict,
+    case_sensitive=False,
+):
+    """
+    Function that replaces the search text with replace text in a string,
+    but skips replacement for specified matches, and returns the
+    line numbers and indexes of the replacements as a list.
+    """
+    # 1. 统一转换为二进制
+    input_string_bytes = bytes(input_string, "utf-8")
+    search_text_bytes = bytes(search_text, "utf-8")
+    replace_text_bytes = bytes(replace_text, "utf-8")
+
+    if search_text_bytes == replace_text_bytes:
+        return [], input_string
+    if not case_sensitive and search_text_bytes.lower() == replace_text_bytes.lower():
+        return None, input_string
+
+    matches = index_strings_in_text(
+        search_text,
+        input_string,
+        case_sensitive,
+        regular_expression=False,
+        text_to_bytes=True,
+        whole_words=False,
+    )
+    if not matches:
+        return matches, input_string
+
+    for index, match in not_repalce_match_dict.items():
+        new_match = matches[index]
+        if index >= len(matches):
+            raise Exception("文本内容发生变化，请重新查找")
+        # 验证匹配的起始和结束字节位置是否一致
+        if new_match[1] != match[1] or new_match[3] != match[3]:
+            raise Exception("文本内容发生变化，请重新查找")
+
+    # 2. 所有操作都在字节层面进行
+    replaced_parts = []
+    replaced_match_indexes = []
+    last_end = 0
+
+    # 使用字节长度进行计算
+    len_search = len(search_text_bytes)
+    len_replace = len(replace_text_bytes)
+
+    diff = 0
+
+    for i, match in enumerate(matches):
+        start_pos = match[1]
+        end_pos = match[3]
+
+        # 使用字节切片
+        replaced_parts.append(input_string_bytes[last_end:start_pos])
+
+        if i in not_repalce_match_dict:
+            # 跳过，添加原始字节文本
+            replaced_parts.append(search_text_bytes)
+        else:
+            # 不跳过，添加替换字节文本并计算新索引
+            replaced_parts.append(replace_text_bytes)
+
+            # 计算新的字节索引
+            new_start_index = start_pos + diff
+            new_end_index = new_start_index + len_replace
+            replaced_match_indexes.append((0, new_start_index, 0, new_end_index))
+
+            # 更新偏移量
+            diff += len_replace - len_search
+
+        last_end = end_pos
+
+    # 将最后一个匹配项之后的所有字节添加到列表中
+    replaced_parts.append(input_string_bytes[last_end:])
+    # 3. 一次性拼接所有字节部分
+    replaced_text_bytes = b"".join(replaced_parts)
+    # 4. 解码回字符串
+    replaced_text = replaced_text_bytes.decode("utf-8")
+
+    return replaced_match_indexes, replaced_text
+
+
 def regex_replace_text(
     input_string,
     search_text,
@@ -2287,7 +2379,7 @@ def regex_replace_text(
         if case_sensitive == True:
             replaced_text = input_string.replace(search_text, replace_text)
         else:
-            #'re.escape' replaces the re module special characters with literals,
+            # 're.escape' replaces the re module special characters with literals,
             # so that the search_text is treated as a string literal
             compiled_re = re.compile(re.escape(search_text), re.IGNORECASE)
             replaced_text = re.sub(compiled_re, replace_text, input_string)
@@ -2606,11 +2698,19 @@ def output_redirect() -> None:
             end="",
         )
         print("-" * 80)
-        qt.QApplication.quit()
-        f.close()
+
+        # qt.QApplication.quit()
+        # f.close()
         # Create backup with timestamp
         output_file_with_date: str = output_get_file_with_timestamp()
         shutil.copy(output_file, output_file_with_date)
+        error_dialog = qt.QMessageBox()
+        error_dialog.setIcon(qt.QMessageBox.Icon.Critical)
+        error_dialog.setWindowTitle("程序异常")
+        error_dialog.setText("执行操作产生异常，请联系管理员。")
+        # error_dialog.setDetailedText(tb)  # 显示详细错误信息（调试用）
+        error_dialog.addButton("关闭", qt.QMessageBox.ButtonRole.AcceptRole)
+        error_dialog.exec()
 
     sys.excepthook = exception_hook
     init_original: Callable = threading.Thread.__init__

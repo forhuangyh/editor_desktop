@@ -22,26 +22,28 @@ class ReplBox(qt.QGroupBox):
 
     def __init__(self, parent, interpreter_references, *args, **kwargs):
         super().__init__(parent)
-        self.setObjectName("REPL_Box")
-        self.main_form = parent
-        self.repl = ReplLineEdit(
-            self, parent, interpreter_references=interpreter_references
-        )
-        self.repl.setObjectName("REPL_line")
-        self.repl_helper = ReplHelper(self, parent, self.repl)
-        self.repl_helper.setObjectName("REPL_multiline")
+        # self.setObjectName("REPL_Box")
+        # self.main_form = parent
+        # self.repl = ReplLineEdit(
+        #     self, parent, interpreter_references=interpreter_references
+        # )
+        self.repl = None
+        # self.repl.setObjectName("REPL_line")
+        # self.repl_helper = ReplHelper(self, parent, self.repl)
+        # self.repl_helper.setObjectName("REPL_multiline")
         # Create layout and children
-        repl_layout = qt.QVBoxLayout()
-        repl_layout.setContentsMargins(4, 4, 4, 4)
-        repl_layout.setSpacing(0)
-        repl_layout.addWidget(self.repl)
-        repl_layout.addWidget(self.repl_helper)
-        self.setLayout(repl_layout)
+        # repl_layout = qt.QVBoxLayout()
+        # repl_layout.setContentsMargins(4, 4, 4, 4)
+        # repl_layout.setSpacing(0)
+        # repl_layout.addWidget(self.repl)
+        # repl_layout.addWidget(self.repl_helper)
+        # self.setLayout(repl_layout)
         # Set the defaults
-        self.set_repl(constants.ReplType.SINGLE_LINE, constants.ReplLanguage.Python)
-        self.indication_reset()
-        # Set default font
-        self.setFont(settings.get_current_font())
+        # self.set_repl(constants.ReplType.SINGLE_LINE, constants.ReplLanguage.Python)
+        # self.indication_reset()
+        # # Set default font
+        # self.setFont(settings.get_current_font())
+        self.isVisible = False
 
     def set_repl(
         self, _type: constants.ReplType, language: constants.ReplLanguage

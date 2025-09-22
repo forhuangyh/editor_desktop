@@ -6,8 +6,8 @@ For more information check the 'LICENSE.txt' file.
 For complete license information of the dependencies, check the 'additional_licenses' directory.
 """
 
-##  FILE DESCRIPTION:
-##      Module that holds objects that will be used across modules.
+# FILE DESCRIPTION:
+# Module that holds objects that will be used across modules.
 
 import enum
 import inspect
@@ -36,7 +36,7 @@ These are the DEFAULT values, override them in the user
 configuration file!
 --------------------------------------------------------
 """
-application_version = "7.9"
+application_version = "1.0"
 # Global variables
 command_line_options = None
 debug_mode = False
@@ -57,7 +57,11 @@ resources_directory = os.path.join(application_directory, "resources").replace(
     "\\", "/"
 )
 # Global settings directory
-settings_directory = os.path.join(home_directory, ".exco").replace("\\", "/")
+settings_directory = os.path.join(application_directory, ".exco").replace("\\", "/")
+
+# 文件临时存放目录
+temp_file_directory = os.path.join(application_directory, "temp_file").replace("\\", "/")
+
 # Fonts directory
 fonts_directory = os.path.join(resources_directory, "fonts/").replace("\\", "/")
 # Global string variable for the current platform name ("Windows", "Linux", ...),
@@ -85,7 +89,7 @@ LIBRARY_VERSIONS = "PyQt{} / QScintilla{}".format(
 )
 
 # Store all Qt keys as a dictionary
-keys = {} 
+keys = {}
 
 global_function_information = {}
 
