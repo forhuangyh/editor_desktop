@@ -68,7 +68,7 @@ def http_post(url, data=None, json_data=None, headers=None, timeout=60):
 
 
 # 添加专门的表单请求函数
-def http_form_post(url, form_data, headers=None, timeout=60):
+def http_form_post(url, form_data, headers=None, timeout=120):
     """
     专门用于发送表单请求的函数
 
