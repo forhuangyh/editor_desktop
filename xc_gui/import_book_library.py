@@ -78,7 +78,7 @@ class BookLibraryHistoryDialog(QDialog):
         button_layout.addWidget(refresh_button)
 
         button_layout.addStretch(1)
-        self.confirm_button = QPushButton("确认")
+        self.confirm_button = QPushButton("打开编辑")
         self.confirm_button.setEnabled(False)
         self.confirm_button.clicked.connect(self.accept)
 

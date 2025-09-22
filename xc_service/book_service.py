@@ -165,27 +165,20 @@ class BookService:
         print(f"书籍ID:{cp_book_id}未获取到书籍基本信息数据")
         return None
 
-    # 检查目录是否存在，不存在则创建，目录放入和editor_desktop同一个目录下的.exco文件夹中
-    def check_download_dir(self, book_file_path):
-        # 获取.exco目录路径（与editor_desktop同一目录）
+        # 完善目录检查方法（确保正确创建文件夹）
+
+    def check_download_dir(self, book_id, cp_book_id):
+        """检查并创建下载目录（仅保留down_load_books根目录）"""
         exco_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco')
+        # 仅创建down_load_books根目录，不添加书籍子目录
+        download_dir = os.path.join(exco_dir, 'down_load_books')
 
-        # 确保.exco目录存在
-        if not os.path.exists(exco_dir):
-            os.makedirs(exco_dir)
-            print(f"创建.exco目录: {exco_dir}")
+        print(f"【下载目录】检查 | 目标根目录: '{download_dir}'")
 
-        # 构建下载书籍的目录路径: .exco/down_load_books/xxx/
-        # 这里book_file_path可能是一个文件名或路径，我们取其基本名称作为子目录名
-        book_dir_name = os.path.splitext(os.path.basename(book_file_path))[0]  # 去掉扩展名
-        download_dir = os.path.join(exco_dir, 'down_load_books', book_dir_name)
+        # 确保根目录存在（递归创建所有不存在的父目录）
+        os.makedirs(download_dir, exist_ok=True)
+        print(f"【下载目录】根目录准备完成 | 路径: '{download_dir}'")
 
-        # 确保下载目录存在
-        if not os.path.exists(download_dir):
-            os.makedirs(download_dir, exist_ok=True)  # 使用exist_ok=True避免重复创建时的异常
-            print(f"创建下载目录: {download_dir}")
-
-        # 返回完整的下载目录路径
         return download_dir
 
     def download_book(self, id):
@@ -209,10 +202,10 @@ class BookService:
             print(f"【下载】本地记录加载成功 | 本地ID: {id} | 书籍ID: {book_id} | 来源ID: {cp_book_id} | 标题: '{title}'")
 
             # 检查文件是否已存在
-            exco_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco')
-            down_load_books_dir = os.path.join(exco_dir, 'down_load_books')
+            # 新增：调用目录检查方法，确保文件夹存在
+            download_dir = self.check_download_dir(book_id, cp_book_id)  # 假设新增此方法参数
             file_name = f"{cp_book_id}_{id}.txt"
-            file_path = os.path.join(down_load_books_dir, file_name)
+            file_path = os.path.join(download_dir, file_name)  # 使用检查后的目录
 
             if os.path.exists(file_path):
                 print(f"【下载】文件已存在 | 跳过下载 | 路径: '{file_path}'")
