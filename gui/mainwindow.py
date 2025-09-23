@@ -1215,6 +1215,8 @@ class MainWindow(qt.QMainWindow):
             def upload_file():
                 """调用外部上传逻辑处理文件上传"""
                 try:
+                    # todo 保持选中文件
+
                     # 获取当前活动标签页
                     focused_tab = self.get_used_tab() or self.get_tab_by_focus()
                     if not focused_tab:

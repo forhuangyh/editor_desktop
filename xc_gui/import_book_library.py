@@ -207,7 +207,9 @@ class BookLibraryHistoryDialog(QDialog):
         if selected_rows:
             row = selected_rows[0].row()
             self.selected_book = self.book_table.rowData(row)
-            self.confirm_button.setEnabled(True)
+            # 【新增】检查下载状态，仅"已完成"状态可打开（download_state=2）
+            download_state = self.selected_book.get('download_state', 0)
+            self.confirm_button.setEnabled(download_state == 2)  # 状态为2时启用按钮
         else:
             self.selected_book = None
             self.confirm_button.setEnabled(False)
