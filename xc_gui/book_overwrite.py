@@ -69,7 +69,7 @@ def handle_book_upload(main_window, file_path):
 
         # 【第二处使用公共组件】上传进度遮罩（轮询期间保持）
         upload_dialog = UploadProgressDialog(main_window, file_name)
-        upload_dialog.update_status("上传覆盖文件中", "上传覆盖文件正在处理中...")  # 动态更新文本
+        upload_dialog.update_status("书籍覆盖", "上传覆盖文件正在处理中...")  # 动态更新文本
         upload_dialog.setModal(True)
         upload_dialog.show()
         # 强制刷新UI，确保遮罩框显示（关键修复）
