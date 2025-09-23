@@ -1211,6 +1211,39 @@ class MainWindow(qt.QMainWindow):
             # self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
+            # 上传文件菜单项（仅显示，无功能实现）
+            def upload_file():
+                """调用外部上传逻辑处理文件上传"""
+                try:
+                    # 获取当前活动标签页
+                    focused_tab = self.get_used_tab() or self.get_tab_by_focus()
+                    if not focused_tab:
+                        self.display.repl_display_error("没有找到当前活动的标签页")
+                        return
+
+                    # 获取当前文件路径
+                    if not focused_tab.save_path:
+                        self.display.repl_display_error("当前文件未保存，无法上传")
+                        return
+
+                    # 调用外部上传逻辑
+                    from xc_gui.book_overwrite import handle_book_upload
+                    handle_book_upload(self, focused_tab.save_path)
+
+                except Exception as e:
+                    self.display.repl_display_error(f"上传处理失败: {str(e)}")
+
+            upload_temp_string = "上传文件到服务器"
+            # 使用已知存在的图标确保菜单项显示（避免因图标不存在导致隐藏）
+            upload_action = create_action(
+                "上传覆盖书籍",
+                None,  # 无快捷键
+                upload_temp_string,
+                "tango_icons/document-open.png",  # 复用现有有效图标
+                upload_file,  # 绑定占位函数
+            )
+            # 添加到编辑菜单
+            edit_menu.addAction(upload_action) #加上传文件菜单项
             def copy():
                 try:
                     self.get_tab_by_focus().copy()

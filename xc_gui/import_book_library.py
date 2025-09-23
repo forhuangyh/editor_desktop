@@ -18,17 +18,7 @@ from .q_message_box import CustomMessageBox
 from .extended_table_widget import ExtendedTableWidget
 from .form_components import SimpleInputForm
 from xc_service.sqlite_service import sqlite_service
-
-
-# ================= 工具函数 =================
-def now_timestamp():
-    """返回当前时间戳（秒）"""
-    return int(QDateTime.currentSecsSinceEpoch())
-
-
-def now_datetime_str():
-    """返回当前时间字符串（ISO格式）"""
-    return QDateTime.currentDateTime().toString(Qt.DateFormat.ISODate)
+from xc_gui.progress_dialog import UploadProgressDialog  # 导入公共遮罩组件
 
 
 # ================= 历史对话框 =================
@@ -67,7 +57,7 @@ class BookLibraryHistoryDialog(QDialog):
         main_layout.addWidget(self.book_id_form)
 
         # 表格
-        self.book_table = ExtendedTableWidget(0, 6, ["书籍ID", "标题", "语言", "总章节数", "提交时间","下载状态"])
+        self.book_table = ExtendedTableWidget(0, 6, ["书籍ID", "书名", "语言", "章节数", "下载时间","下载状态"])
         self.book_table.applyBookTableStyle()
         main_layout.addWidget(self.book_table, 1)
 
@@ -90,28 +80,6 @@ class BookLibraryHistoryDialog(QDialog):
         main_layout.addLayout(button_layout)
         self.book_table.itemSelectionChanged.connect(self.on_item_selected)
 
-    # 新增：网络请求 worker 线程（独立于GUI线程）
-    class BookInfoWorker(QThread):
-        # 定义信号：请求完成后返回结果
-        result_ready = pyqtSignal(dict)  # 成功时返回book_info
-        error_occurred = pyqtSignal(str)  # 失败时返回错误信息
-
-        def __init__(self, book_service, cp_book_id):
-            super().__init__()
-            self.book_service = book_service
-            self.cp_book_id = cp_book_id
-
-        def run(self):
-            """在线程中执行网络请求"""
-            try:
-                book_info = self.book_service.book_info(self.cp_book_id)
-                if book_info:
-                    self.result_ready.emit(book_info)
-                else:
-                    self.error_occurred.emit(f"无法获取书籍ID为 '{self.cp_book_id}' 的信息")
-            except Exception as e:
-                self.error_occurred.emit(f"获取书籍信息时发生错误：{str(e)}")
-
     def on_confirm_id(self):
         cp_book_id = self.book_id_form.get_value()
         if not cp_book_id:
@@ -124,36 +92,40 @@ class BookLibraryHistoryDialog(QDialog):
         confirm_button.setEnabled(False)
         confirm_button.setText("加载中...")  # 立即显示加载状态
 
-        # 创建并启动网络请求线程（不阻塞GUI）
-        self.worker = self.BookInfoWorker(self.book_service, cp_book_id)
+        # 显示查询书籍信息遮罩框
+        self.info_mask = UploadProgressDialog(self, "书籍信息查询")
+        self.info_mask.update_status("查询书籍信息中", "正在请求网络数据...")
+        self.info_mask.setModal(True)
+        self.info_mask.show()
 
-        # 连接线程信号：成功/失败后处理
-        self.worker.result_ready.connect(self.on_book_info_success)
-        self.worker.error_occurred.connect(self.on_book_info_error)
+        # 强制刷新UI，确保遮罩框显示
+        from PyQt6.QtWidgets import QApplication
+        QApplication.processEvents()
 
-        # 线程结束后清理并恢复按钮状态
-        self.worker.finished.connect(lambda: self.restore_button_state(confirm_button, original_text))
-        self.worker.finished.connect(self.worker.deleteLater)  # 释放线程资源
+        try:
+            # 同步调用书籍信息接口（无线程）
+            book_info = self.book_service.book_info(cp_book_id)
 
-        # 启动线程（网络请求在后台执行）
-        self.worker.start()
+            if book_info:
+                # 处理成功逻辑
+                flag = sqlite_service.add_book(book_data=book_info)
+                if not flag:
+                    CustomMessageBox.warning(self, text="书籍下载记录保存失败")
+                else:
+                    self.load_downs_book_to_table()
+            else:
+                CustomMessageBox.warning(self, "获取失败", f"无法获取书籍ID为 '{cp_book_id}' 的信息")
 
-    # 新增：请求成功处理
-    def on_book_info_success(self, book_info):
-        flag = sqlite_service.add_book(book_data=book_info)
-        if not flag:
-            CustomMessageBox.warning(self, text="书籍下载记录保存失败")
-            return
-        self.load_downs_book_to_table()
+        except Exception as e:
+            # 处理异常
+            CustomMessageBox.warning(self, "错误", f"获取书籍信息时发生错误：{str(e)}")
 
-    # 新增：请求失败处理
-    def on_book_info_error(self, error_msg):
-        CustomMessageBox.warning(self, "错误", error_msg)
+        finally:
+            # 无论成功失败，关闭遮罩并恢复按钮状态
+            self.info_mask.close()
+            confirm_button.setEnabled(True)
+            confirm_button.setText(original_text)
 
-    # 新增：恢复按钮状态
-    def restore_button_state(self, button, original_text):
-        button.setEnabled(True)
-        button.setText(original_text)
     def load_downs_book_to_table(self):
         """从数据库加载最近100条下载记录并渲染到表格中"""
         try:

@@ -1,6 +1,6 @@
 import os
 import concurrent.futures
-from xc_common.utils import http_form_post
+from xc_common.utils import http_form_post, http_file_post
 from xc_entity.account import user_info
 import settings
 from xc_service.sqlite_service import sqlite_service
@@ -26,6 +26,12 @@ class BookService:
         self.api_chapter_info = f"{self.base_url}/api/editor_v1/chapter/get_all_chapters"
         # 单章节内容下载
         self.api_chapter_content = f"{self.base_url}/api/editor_v1/chapter/chapter_content"
+        # 书籍基本信息列表查下
+        self.api_book_info_list = f"{self.base_url}/api/editor_v1/book/get_all_books"
+        # 书籍覆盖
+        self.api_book_overwrite = f"{self.base_url}/api/editor_v1/book/overwrite_book"
+        # 查下任务状态
+        self.api_book_overwrite_task = f"{self.base_url}/api/editor_v1/task_list_scope"
 
     # 统一校验结果
     def check_response(self, response):
@@ -105,7 +111,12 @@ class BookService:
         :param :form_data 包含的key: cp_book_id
         :return:
         """
-        form_data = {"book_id": cp_book_id}
+        bookinfo = self.get_book_info(cp_book_id=cp_book_id)
+        if not bookinfo:
+            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到书籍信息")
+            return None
+        bk_id = bookinfo.get("book_id")
+        form_data = {"book_id": bk_id}
         # 发送请求
         response = http_form_post(self.api_book_info, form_data=form_data, headers=self.headers)
         # 检查响应
@@ -204,7 +215,7 @@ class BookService:
             # 检查文件是否已存在
             # 新增：调用目录检查方法，确保文件夹存在
             download_dir = self.check_download_dir(book_id, cp_book_id)  # 假设新增此方法参数
-            file_name = f"{cp_book_id}_{id}.txt"
+            file_name = f"{cp_book_id}_{id}_{book_id}.txt"
             file_path = os.path.join(download_dir, file_name)  # 使用检查后的目录
 
             if os.path.exists(file_path):
@@ -302,4 +313,153 @@ class BookService:
             print(f"【下载】总异常 | 本地ID: {id} | 错误类型: {type(e).__name__} | 详情: {str(e)}")
         return False
 
+    # 获取书籍基本信息
+    def get_book_info(self, cp_book_id):
+        """获取书籍基本信息"""
+        if not cp_book_id:
+            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID不能为空")
+            return None
 
+        response = http_form_post(
+            self.api_book_info_list,
+            form_data={"book_id": cp_book_id, "account_id": self.account_id},
+            headers=self.headers
+        )
+
+        if not self.check_response(response) or "body" not in response:
+            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应无效: {response}")
+            return None
+
+        # 新增：从body中提取items数组并查找匹配记录
+        body = response["body"]
+        items = body.get("items", [])
+
+        # 验证items是否为列表
+        if not isinstance(items, list):
+            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应items格式错误")
+            return None
+
+        # 遍历items查找oper_book_id完全匹配的记录
+        for item in items:
+            if item.get("oper_book_id") == cp_book_id:
+                print(f"【获取书籍基本信息】成功 | 平台书籍ID: {cp_book_id} | 找到匹配记录")
+                return item
+
+        # 未找到匹配记录
+        print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到匹配书籍")
+        return None
+
+    # 上传覆盖书籍
+    def upload_book(self, cp_book_id: str, file_content: str, file_name: str) -> bool:
+        """上传覆盖书籍
+        Args:
+            cp_book_id: 平台书籍ID (oper_book_id)
+            file_content: 书籍内容字符串
+            file_name: 文件名
+        Returns:
+            bool: 是否上传请求成功提交
+        """
+        # 判断数据是否存在
+        if not cp_book_id or not file_content or not file_name:
+            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID、文件内容和文件名不能为空")
+            return False, ""
+
+        # 获取书籍信息以获取内部book_id
+        book_info = self.get_book_info(cp_book_id)
+        if not book_info:
+            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未找到书籍信息")
+            return False, ""
+
+        book_id = book_info.get("book_id")
+        # 验证book_id是否为有效数字类型
+        if not book_id or not isinstance(book_id, (int, float)):
+            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 获取到的book_id不是有效数字 (值: {book_id})")
+            return False, ""
+
+        try:
+            response = http_file_post(
+                url=self.api_book_overwrite,
+                file_content=file_content,
+                filename=file_name,
+                form_data={
+                    "book_id": book_id,
+                    "account_id": str(self.account_id)
+                },
+                headers=self.headers
+            )
+
+            # 检查响应是否有效
+            if not response:
+                print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未收到有效响应")
+                return False, ""
+
+            # 检查响应状态码（使用统一的check_response方法）
+            if self.check_response(response):
+                # 解析异步任务信息
+                task_info = response.get("body", {})
+                task_id = task_info.get("celery_task_id", "")
+                db_task_id = task_info.get("db_task_id", "")
+                task_status = task_info.get("celery_task_status", "")
+                print(f"【上传书籍】请求提交成功 | 平台书籍ID: {cp_book_id} | 任务ID: {task_id} | 状态: {task_status}")
+                return True, db_task_id
+            else:
+                error_msg = response.get("message", "未知错误")
+                print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: {error_msg} | 响应码: {response.get('code')}")
+                return False, ""
+
+        except Exception as e:
+            print(f"【上传书籍】异常 | 平台书籍ID: {cp_book_id} | 错误: {str(e)}")
+            return False, ""
+
+    # 查下覆盖任务状态api_book_overwrite_task
+    def get_book_overwrite_task(self, task_id):
+        """查询覆盖任务状态
+        Args:
+            task_id: 任务ID（db_task_id）
+        Returns:
+            任务状态字典，如果查询失败则返回None
+        """
+        # 参数校验
+        if not task_id:
+            print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 任务ID不能为空")
+            return None
+
+        try:
+            # 发送请求（表单数据包含task_id和account_id）
+            response = http_form_post(
+                self.api_book_overwrite_task,
+                form_data={
+                    "task_id": str(task_id),
+                    "account_id": self.account_id
+                },
+                headers=self.headers
+            )
+
+            # 检查响应是否有效
+            if not self.check_response(response):
+                error_msg = response.get("message", "未知错误") if response else "未收到响应"
+                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: {error_msg}")
+                return None
+
+            # 解析响应数据
+            body = response.get("body", {})
+            task_data_list = body.get("data", [])
+
+            # 验证data字段格式
+            if not isinstance(task_data_list, list):
+                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: data字段格式不是列表")
+                return None
+
+            # 提取任务信息（取第一个匹配任务）
+            if task_data_list:
+                task_info = task_data_list[0]
+                print(
+                    f"【查询任务状态】成功 | 任务ID: {task_id} | 状态: {task_info.get('task_status')} | 进度: {task_info.get('task_cur_progress')}/{task_info.get('task_total_progress')}")
+                return task_info
+            else:
+                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 未找到任务数据")
+                return None
+
+        except Exception as e:
+            print(f"【查询任务状态】异常 | 任务ID: {task_id} | 错误: {str(e)}")
+            return None

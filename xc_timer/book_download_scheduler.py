@@ -33,6 +33,7 @@ class BookDownloadTask(QRunnable):
         title = self.book_record.get("title", "未知")
 
         try:
+            # 下载书籍
             success = self.book_service.download_book(id)
             if success:
                 self.scheduler.on_task_completed(self.book_record)
