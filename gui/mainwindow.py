@@ -1244,8 +1244,10 @@ class MainWindow(qt.QMainWindow):
                 "tango_icons/document-open.png",  # 复用现有有效图标
                 upload_file,  # 绑定占位函数
             )
+
             # 添加到编辑菜单
             edit_menu.addAction(upload_action) #加上传文件菜单项
+
             def copy():
                 try:
                     self.get_tab_by_focus().copy()
@@ -2320,12 +2322,40 @@ class MainWindow(qt.QMainWindow):
                 "tango_icons/gnome-web-browser.png",
                 open_in_browser,
             )
+
             # Adding the edit menu and constructing all of the options
             # edit_menu.addAction(find_action)
+            # 【新增】上传覆盖书籍菜单项（移至此位置）
+            def upload_file():
+                """调用外部上传逻辑处理文件上传"""
+                try:
+                    # todo 保持文件
+
+                    focused_tab = self.get_used_tab() or self.get_tab_by_focus()
+                    if not focused_tab:
+                        self.display.repl_display_error("没有找到当前活动的标签页")
+                        return
+                    if not focused_tab.save_path:
+                        self.display.repl_display_error("当前文件未保存，无法上传")
+                        return
+                    from xc_gui.book_overwrite import handle_book_upload
+                    handle_book_upload(self, focused_tab.save_path)
+                except Exception as e:
+                    self.display.repl_display_error(f"上传处理失败: {str(e)}")
+
+            upload_temp_string = "上传文件到服务器"
+            upload_action = create_action(
+                "上传覆盖书籍",
+                None,  # 无快捷键
+                upload_temp_string,
+                "tango_icons/document-open.png",  # 复用图标
+                upload_file,
+            )
             edit_menu.addAction(dialog_find_action)
             edit_menu.addSeparator()
             edit_menu.addAction(open_special_replace_action)
             edit_menu.addAction(import_book_library_action)
+            edit_menu.addAction(upload_action)  # 添加到"编辑"菜单，位于"下载书库书籍"之后
 
             # edit_menu.addAction(regex_find_action)
             # edit_menu.addAction(find_and_replace_action)
