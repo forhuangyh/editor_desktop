@@ -130,13 +130,16 @@ class BookLibraryHistoryDialog(QDialog):
                 # 处理成功逻辑
                 flag = sqlite_service.add_book(book_data=book_info)
                 if not flag:
+                    self.info_mask.close()
                     CustomMessageBox.warning(self, text="书籍下载记录保存失败")
                 else:
                     self.load_downs_book_to_table()
             else:
+                self.info_mask.close()
                 CustomMessageBox.warning(self, "获取失败", f"无法获取书籍ID为 '{cp_book_id}' 的信息")
 
         except Exception as e:
+            self.info_mask.close()
             # 处理异常
             CustomMessageBox.warning(self, "错误", f"获取书籍信息时发生错误：{str(e)}")
 
