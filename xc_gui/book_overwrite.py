@@ -35,6 +35,8 @@ def handle_book_upload(main_window, file_path):
             book_info = book_service.get_book_info(initial_cp_book_id)
 
             if not book_info:
+                info_dialog.close()  # 新增：关闭查询遮罩
+
                 CustomMessageBox.warning(
                     main_window, "书籍信息不存在",
                     f"未找到平台书籍ID为「{initial_cp_book_id}」的书籍信息", 450, 150
@@ -43,11 +45,15 @@ def handle_book_upload(main_window, file_path):
 
             actual_cp_book_id = book_info.get("oper_book_id")
             if not actual_cp_book_id:
+                info_dialog.close()  # 新增：关闭查询遮罩
+
                 CustomMessageBox.warning(
                     main_window, "数据异常", "获取的书籍信息中缺少平台书籍ID", 400, 120
                 )
                 return
         except Exception as e:
+            info_dialog.close()  # 新增：关闭查询遮罩
+
             CustomMessageBox.warning(
                 main_window, "数据异常", "请求书籍信息失败", 400, 120
             )
@@ -56,7 +62,7 @@ def handle_book_upload(main_window, file_path):
             info_dialog.close()
 
         # 显示上传确认窗
-        message = f"确定要上传并覆盖编辑系统上的书籍（ID: {actual_cp_book_id}）:\n\n「{file_name}」吗？"
+        message = f'<html>确定要上传并覆盖编辑系统上的书籍（<b><font color="red">ID: {actual_cp_book_id}</font></b>）:<br><br>「<b><font color="red">{file_name}</font></b>」吗？</html>'
         reply = CustomMessageBox.question(main_window, "确认上传覆盖", message, 480, 200)
 
         if reply != QDialog.DialogCode.Accepted:
