@@ -86,7 +86,7 @@ from xc_gui.special_replace import SpecialReplace
 from xc_gui.fixed_widget import FixedWidget
 from xc_gui.question_list import QuestionList
 from xc_common.file_utils import copy_file_and_save_utf
-
+from xc_timer.book_download_scheduler import book_download_scheduler
 
 if data.platform == "Windows":
     import win32gui
@@ -284,6 +284,8 @@ class MainWindow(qt.QMainWindow):
             self.display.repl_display_message(
                 "Nim lexers imported.", message_type=constants.MessageType.SUCCESS
             )
+        # 启动书籍下载调度器（添加在__init__方法末尾）
+        book_download_scheduler.start()
 
     def __restore_last_session(self) -> None:
         last_layout_filepath = functions.unixify_join(
@@ -676,6 +678,12 @@ class MainWindow(qt.QMainWindow):
         if settings.get("restore_last_session"):
             layout = self.view.layout_generate()
             settings.save_last_layout(layout)
+
+        # 关闭窗口时的处理（添加在closeEvent方法末尾）
+        # 1. 暂停所有下载中的书籍（将状态1改为4）
+        book_download_scheduler.pause_all_downloads()
+        # 2. 停止下载调度器
+        book_download_scheduler.stop()
 
     def resizeEvent(self, event):
         """
@@ -1192,6 +1200,43 @@ class MainWindow(qt.QMainWindow):
             # self.menubar.addMenu(edit_menu)
             edit_menu.installEventFilter(click_filter)
 
+            # 上传文件菜单项（仅显示，无功能实现）
+            def upload_file():
+                """调用外部上传逻辑处理文件上传"""
+                try:
+                    # todo 保持选中文件
+
+                    # 获取当前活动标签页
+                    focused_tab = self.get_used_tab() or self.get_tab_by_focus()
+                    if not focused_tab:
+                        self.display.repl_display_error("没有找到当前活动的标签页")
+                        return
+
+                    # 获取当前文件路径
+                    if not focused_tab.save_path:
+                        self.display.repl_display_error("当前文件未保存，无法上传")
+                        return
+
+                    # 调用外部上传逻辑
+                    from xc_gui.book_overwrite import handle_book_upload
+                    handle_book_upload(self, focused_tab.save_path)
+
+                except Exception as e:
+                    self.display.repl_display_error(f"上传处理失败: {str(e)}")
+
+            upload_temp_string = "上传文件到服务器"
+            # 使用已知存在的图标确保菜单项显示（避免因图标不存在导致隐藏）
+            upload_action = create_action(
+                "上传覆盖书籍",
+                None,  # 无快捷键
+                upload_temp_string,
+                "tango_icons/document-open.png",  # 复用现有有效图标
+                upload_file,  # 绑定占位函数
+            )
+
+            # 添加到编辑菜单
+            edit_menu.addAction(upload_action)  # 加上传文件菜单项
+
             def copy():
                 try:
                     self.get_tab_by_focus().copy()
@@ -1663,6 +1708,35 @@ class MainWindow(qt.QMainWindow):
                 "Find text in the currently selected document",
                 "tango_icons/edit-find.png",
                 special_find,
+            )
+            from xc_gui.import_book_library import show_book_library_history
+
+            # 添加导入书库书籍菜单项
+            # 修改现有的import_book_library函数
+            def import_book_library():
+                try:
+                    # 调用我们实现的函数显示历史列表对话框
+                    show_book_library_history()
+                except Exception as e:
+                    # 使用更健壮的错误处理方式，避免依赖可能不存在的组件
+                    try:
+                        # 首先尝试使用QMessageBox显示错误
+                        from PyQt6.QtWidgets import QMessageBox
+                        QMessageBox.warning(
+                            self,
+                            "错误",
+                            f"无法打开书库历史列表: {str(e)}"
+                        )
+                        # 如果QMessageBox也失败，记录到控制台
+                    except:
+                        print(f"无法打开书库历史列表: {str(e)}")
+
+            import_book_library_action = create_action(
+                "下载书库书籍",
+                None,  # 暂时不设置快捷键
+                "下载书库中的书籍并显示历史列表",
+                "tango_icons/document-open.png",  # 复用文档打开图标
+                import_book_library,
             )
 
             def special_dialog_find():
@@ -2261,13 +2335,44 @@ class MainWindow(qt.QMainWindow):
 
             # Adding the edit menu and constructing all of the options
             # edit_menu.addAction(find_action)
+            # 【新增】上传覆盖书籍菜单项（移至此位置）
+
+            def upload_file():
+                """调用外部上传逻辑处理文件上传"""
+                try:
+                    # todo 保持文件
+
+                    focused_tab = self.get_used_tab() or self.get_tab_by_focus()
+                    if not focused_tab:
+                        self.display.repl_display_error("没有找到当前活动的标签页")
+                        return
+                    if not focused_tab.save_path:
+                        self.display.repl_display_error("当前文件未保存，无法上传")
+                        return
+                    from xc_gui.book_overwrite import handle_book_upload
+                    handle_book_upload(self, focused_tab.save_path)
+                except Exception as e:
+                    self.display.repl_display_error(f"上传处理失败: {str(e)}")
+
+            upload_temp_string = "上传文件到服务器"
+            upload_action = create_action(
+                "上传覆盖书籍",
+                None,  # 无快捷键
+                upload_temp_string,
+                "tango_icons/document-open.png",  # 复用图标
+                upload_file,
+            )
             edit_menu.addAction(dialog_find_action)
             edit_menu.addSeparator()
             edit_menu.addAction(open_special_replace_action)
+
             edit_menu.addSeparator()
             edit_menu.addAction(open_chapter_list_action)
             edit_menu.addSeparator()
             edit_menu.addAction(open_question_list_action)
+
+            edit_menu.addAction(import_book_library_action)
+            edit_menu.addAction(upload_action)  # 添加到"编辑"菜单，位于"下载书库书籍"之后
 
             # edit_menu.addAction(regex_find_action)
             # edit_menu.addAction(find_and_replace_action)

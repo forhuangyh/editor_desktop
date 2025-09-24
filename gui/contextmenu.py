@@ -52,6 +52,7 @@ class ContextMenu(gui.menu.Menu):
         action_names = (
             "copy",
             "cut",
+            "upload_file",
             "paste",
             "line_copy",
             "undo",
@@ -74,6 +75,7 @@ class ContextMenu(gui.menu.Menu):
 
     def create_special_actions(self):
         action_names = (
+            "upload_file",
             "copy",
             "cut",
             "paste",
@@ -98,6 +100,7 @@ class ContextMenu(gui.menu.Menu):
 
     def create_multiline_repl_actions(self):
         action_names = (
+            "upload_file",
             "copy",
             "cut",
             "paste",

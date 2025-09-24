@@ -68,7 +68,7 @@ def http_post(url, data=None, json_data=None, headers=None, timeout=60):
 
 
 # 添加专门的表单请求函数
-def http_form_post(url, form_data, headers=None, timeout=60):
+def http_form_post(url, form_data, headers=None, timeout=120):
     """
     专门用于发送表单请求的函数
 
@@ -148,4 +148,84 @@ def http_form_post(url, form_data, headers=None, timeout=60):
 
     except Exception as e:
         print(f"HTTP 表单请求发生未知错误: {url}, 错误: {str(e)}")
+        return {'success': False, 'error': f'未知错误: {str(e)}'}
+
+
+# 文件上传专用函数
+def http_file_post(url, file_content, filename, form_data=None, headers=None, timeout=120):
+    """
+    发送文件上传请求（multipart/form-data格式）
+    修正：分离普通表单数据（data）和文件数据（files）
+    """
+    try:
+        import requests
+        from io import BytesIO
+
+        # 参数校验
+        if not url or not file_content or not filename:
+            print("HTTP 文件上传失败: URL、文件内容和文件名不能为空")
+            return None
+
+        # 创建请求头副本
+        request_headers = headers.copy() if headers else {}
+        # 移除Content-Type，让requests自动处理multipart/form-data边界
+        request_headers.pop('Content-Type', None)
+
+        # 准备文件对象
+        file_obj = BytesIO(file_content.encode('utf-8'))
+        # 文件数据单独放在files参数中
+        files = {'chapter_file': (filename, file_obj, 'text/plain')}
+
+        # 普通表单数据（如book_id、account_id）放在data参数中
+        data = form_data.copy() if (form_data and isinstance(form_data, dict)) else {}
+
+        # 发送请求：分离data（普通表单）和files（文件）
+        response = requests.post(
+            url,
+            data=data,          # 普通表单数据（book_id等在这里）
+            files=files,        # 文件数据单独传递
+            headers=request_headers,
+            timeout=timeout
+        )
+
+        # 检查响应状态码
+        response.raise_for_status()
+
+        # 尝试解析JSON响应
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            print(f"HTTP 文件上传成功，但响应不是有效的JSON: {url}")
+            return {
+                'success': True,
+                'message': '文件上传成功',
+                'status_code': response.status_code,
+                'raw_text': response.text
+            }
+
+    except requests.exceptions.Timeout:
+        print(f"HTTP 文件上传超时: {url}, 超时时间: {timeout}秒")
+        return {'success': False, 'error': '请求超时'}
+
+    except requests.exceptions.ConnectionError:
+        print(f"HTTP 文件上传连接错误: {url}")
+        return {'success': False, 'error': '网络连接错误'}
+
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP 文件上传错误: {url}, 状态码: {e.response.status_code}"
+        print(error_msg)
+        try:
+            error_data = e.response.json()
+            error_data['success'] = False
+            error_data['status_code'] = e.response.status_code
+            return error_data
+        except (ValueError, AttributeError):
+            return {
+                'success': False,
+                'error': error_msg,
+                'status_code': e.response.status_code if hasattr(e, 'response') else None
+            }
+
+    except Exception as e:
+        print(f"HTTP 文件上传发生未知错误: {url}, 错误: {str(e)}")
         return {'success': False, 'error': f'未知错误: {str(e)}'}
