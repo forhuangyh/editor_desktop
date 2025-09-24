@@ -19,6 +19,7 @@ class FixedWidget(qt.QObject):
     chapter_list = None
     search_dialog = None
     special_replace = None
+    question_list = None
     editor = None
     editor_changed = qt.pyqtSignal(qt.QObject)
 
@@ -64,11 +65,13 @@ class FixedWidget(qt.QObject):
 
     def open_chapter_list(self, tab_widget, document_name=""):
         """open_chapter_list"""
+
+        focused_editor = self.editor
         if self.chapter_list:
-            self.special_replace.update_editor_reference(tab_widget)
+            self.chapter_list.update_editor_reference(focused_editor)
             return self.chapter_list
 
-        new_chapter_list = ChapterList(tab_widget, self.main_form)
+        new_chapter_list = ChapterList(self, tab_widget, self.main_form)
         new_chapter_list_tab_index = tab_widget.addTab(new_chapter_list, document_name)
         # 禁止关闭
         tab_widget.tabBar().setTabButton(new_chapter_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
@@ -97,3 +100,20 @@ class FixedWidget(qt.QObject):
         self.special_replace = tab_widget.widget(new_tab_index)
 
         return self.special_replace
+
+    def open_question_list(self, tab_widget, document_name=""):
+        """question_list"""
+
+        focused_editor = self.editor
+        if self.question_list:
+            self.question_list.update_editor_reference(focused_editor)
+            return self.question_list
+
+        new_question_list = ChapterList(self, tab_widget, self.main_form)
+        new_question_list_tab_index = tab_widget.addTab(new_question_list, document_name)
+        # 禁止关闭
+        # tab_widget.tabBar().setTabButton(new_question_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
+        # Make new tab visible
+        tab_widget.setCurrentIndex(new_question_list_tab_index)
+        self.question_list = tab_widget.widget(new_question_list_tab_index)
+        return self.question_list

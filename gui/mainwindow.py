@@ -84,6 +84,7 @@ from components.pathwatcher import FileEvent, PathWatcher
 from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
 from xc_gui.fixed_widget import FixedWidget
+from xc_gui.question_list import QuestionList
 from xc_common.file_utils import copy_file_and_save_utf
 
 
@@ -271,9 +272,9 @@ class MainWindow(qt.QMainWindow):
                     qt.QTimer.singleShot(0, self.__restore_last_session)
         # Show the PyQt / QScintilla version in statusbar
         self.statusbar_label_left.setText(data.LIBRARY_VERSIONS)
-        self.display.repl_display_message(
-            "Using:\n    Python {}\n    {}".format(sys.version, data.LIBRARY_VERSIONS),
-        )
+        # self.display.repl_display_message(
+        #     "Using:\n    Python {}\n    {}".format(sys.version, data.LIBRARY_VERSIONS),
+        # )
         # Show library data
         if lexers.cython_lexers_found:
             self.display.repl_display_message(
@@ -1162,17 +1163,6 @@ class MainWindow(qt.QMainWindow):
                 self.view.clear_recent_file_list,
             )
 
-            def special_open_chapter_list():
-                self.open_chapter_list()
-
-            open_chapter_list_action = create_action(
-                "打开章节列表",
-                settings.get("keyboard-shortcuts")["general"]["open_chapter_list"],
-                "打开章节列表",
-                "tango_icons/document-open.png",
-                special_open_chapter_list,
-            )
-
             # Add the actions to the File menu
             file_menu.addAction(new_file_action)
             file_menu.addAction(open_file_action)
@@ -1190,8 +1180,7 @@ class MainWindow(qt.QMainWindow):
             file_menu.addMenu(recent_file_list_menu)
             file_menu.addAction(clear_recent_file_list_action)
             file_menu.addSeparator()
-            # file_menu.addAction(open_chapter_list_action)
-            # file_menu.addSeparator()
+
             # file_menu.addSeparator()
             file_menu.addAction(exit_action)
 
@@ -2247,11 +2236,38 @@ class MainWindow(qt.QMainWindow):
                 "tango_icons/gnome-web-browser.png",
                 open_in_browser,
             )
+
+            def special_open_chapter_list():
+                self.open_chapter_list()
+
+            open_chapter_list_action = create_action(
+                "打开章节列表",
+                settings.get("keyboard-shortcuts")["general"]["open_chapter_list"],
+                "打开章节列表",
+                "tango_icons/document-open.png",
+                special_open_chapter_list,
+            )
+
+            def special_open_question_list():
+                self.open_question_list()
+
+            open_question_list_action = create_action(
+                "问题列表",
+                settings.get("keyboard-shortcuts")["general"]["open_question_list"],
+                "问题列表",
+                "tango_icons/document-open.png",
+                special_open_question_list,
+            )
+
             # Adding the edit menu and constructing all of the options
             # edit_menu.addAction(find_action)
             edit_menu.addAction(dialog_find_action)
             edit_menu.addSeparator()
             edit_menu.addAction(open_special_replace_action)
+            edit_menu.addSeparator()
+            edit_menu.addAction(open_chapter_list_action)
+            edit_menu.addSeparator()
+            edit_menu.addAction(open_question_list_action)
 
             # edit_menu.addAction(regex_find_action)
             # edit_menu.addAction(find_and_replace_action)
@@ -2280,6 +2296,7 @@ class MainWindow(qt.QMainWindow):
             # edit_menu.addAction(replace_all_in_documents_action)
 
         # System menu
+
         def construct_system_menu():
             system_menu = Menu("S&ystem", self.menubar)
             # self.menubar.addMenu(system_menu)
@@ -3645,6 +3662,19 @@ class MainWindow(qt.QMainWindow):
         # Return the widget reference
         return return_widget
 
+    def open_question_list(self):
+        """问题段落"""
+        # 创建新的树形tab
+        # Create the new scintilla document in the selected basic widget
+        return_widget = self.get_largest_window().question_list_add(
+            "问题段落"
+        )
+        # Set focus to the new widget
+        return_widget.setFocus()
+        return_widget.find_input.setFocus()
+        # Return the widget reference
+        return return_widget
+
     def open_file_hex(self, file_path, tab_widget=None, save_layout=False):
         # Check if file exists
         if os.path.isfile(file_path) == False:
@@ -4838,6 +4868,7 @@ QSplitter::handle {{
                 "Terminal": Terminal,
                 "ChapterList": ChapterList,
                 "SpecialReplace": SpecialReplace,
+                "QuestionList": QuestionList,
             }
             inverted_classes = {v: k for k, v in classes.items()}
             return classes, inverted_classes
@@ -5056,10 +5087,10 @@ QSplitter::handle {{
                                         new_terminal.set_cwd(working_path)
                                 elif cls == "ChapterList":
                                     new_tabs.chapter_list_add("章节列表")
-
                                 elif cls == "SpecialReplace":
                                     new_tabs.special_replace_add("特殊替换")
-
+                                elif cls == "QuestionList":
+                                    new_tabs.question_list_add("问题列表")
                                 elif cls == constants.SpecialTabNames.Messages.value:
                                     self._parent.repl_messages_tab = (
                                         new_tabs.plain_add_document(

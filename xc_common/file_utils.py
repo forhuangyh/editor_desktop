@@ -6,6 +6,7 @@ import chardet
 from datetime import datetime
 # from charset_normalizer import from_bytes
 # from charset_normalizer import detect
+# fasttext 检查语种
 
 
 def copy_file(platform, src_file_path, dst_dir_path):

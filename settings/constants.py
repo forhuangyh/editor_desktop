@@ -146,6 +146,7 @@ keyboard_shortcuts = {
             "open_chapter_list": "Ctrl+Shift+P",
             "find_dialog": "Ctrl+Shift+S",
             "open_special_replace": "Ctrl+Shift+S",
+            "open_question_list": "Ctrl+Shift+D",
         },
         "editor": {
             "cancel": "Escape",

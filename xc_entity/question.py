@@ -1,43 +1,35 @@
 """
-图书类: 属性，方法
+问题类: 属性，方法
 """
 import re
-from qt import QMessageBox
 from xc_common.word_count import word_count_func
 
 
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 
-class Book(QObject):
-    """书籍类，包含书籍基本信息和章节管理功能"""
+class Question(QObject):
+    """问题列表管理功能"""
 
-    chapter_list_updated = pyqtSignal(list)
+    question_list_updated = pyqtSignal(list)
 
     def __init__(self, cp_book_id, parent=None):
-        """
-        初始化书籍实例
-        :param name: 书籍名称
-        :param cp_book_id: 书籍唯一ID
+        """初始化书籍实例
         """
         super().__init__(parent)
         self.cp_book_id = cp_book_id
-        # self.book_name = book_name
-        self.chapter_list = []
-        self.chapter_pattern = b""
-        self.language = ""
+        self.question_list = []
 
-    def refresh_chapter_list(self, text):
+    def refresh_question_list(self, text):
         if not text:
             return
         if not self.chapter_pattern:
             return
-        self.split_chapter_list(text)
+        self.split_question_list(text)
 
-    def split_chapter_list(self, text, chapter_pattern=None):
-        """获取章节列表
+    def split_question_list(self, text, chapter_pattern=None):
+        """获取问题列表
         编辑器是用byte定位，这里转化成byte处理
-
         """
         if not text:
             return []
@@ -87,12 +79,12 @@ class Book(QObject):
                 merged_chapters.append(current_chapter)
 
         except Exception as ex:
-            raise Exception(f"split_chapter_list error:cp_book_id={self.cp_book_id}, msg={str(ex)}")
+            raise Exception(f"split_question_list error:cp_book_id={self.cp_book_id}, msg={str(ex)}")
 
-        self.chapter_list = merged_chapters
-        self.chapter_list_updated.emit(self.chapter_list)
+        self.question_list = merged_chapters
+        self.question_list_updated.emit(self.question_list)
 
-        return self.chapter_list
+        return self.question_list
 
     def count_words(self, text):
         """
@@ -102,20 +94,20 @@ class Book(QObject):
 
         return word_count_func(text)
 
-    def get_chapter_list(self):
-        """获取章节列表
+    def get_question_list(self):
+        """获取问题列表
         编辑器是用byte定位，这里转化成byte处理
 
         """
-        return self.chapter_list
+        return self.question_list
 
     def __repr__(self) -> str:
         """对象表示方法，便于打印调试"""
-        return f"<Book (ID:{self.cp_book_id}) 包含{len(self.chapter_list)}章>"
+        return f"<Question (ID:{self.cp_book_id}) 包含{len(self.question_list)}章>"
 
 
-class BookManager(object):
-    """书籍类，包含书籍基本信息和章节管理功能"""
+class QuestionManager(object):
+    """书籍类，包含书籍基本信息和问题管理功能"""
 
     def __init__(self):
         """
@@ -142,4 +134,4 @@ class BookManager(object):
         self.book_map.pop(editor, None)
 
 
-book_manager = BookManager()
+question_manager = QuestionManager()

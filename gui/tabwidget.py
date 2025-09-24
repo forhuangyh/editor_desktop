@@ -516,38 +516,38 @@ QTabBar::tab:selected {{
 
         if source == self.tabBar():
             # tab 可移动
-            pass
-            # if (
-            #     event.type() == qt.QEvent.Type.MouseButtonPress
-            #     and event.buttons() == qt.Qt.MouseButton.LeftButton
-            # ):
-            #     qt.QTimer.singleShot(0, self._setmove_range)
-            # elif event.type() == qt.QEvent.Type.MouseButtonRelease:
-            #     self.move_range = None
-            # elif (
-            #     event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
-            # ):
-            #     pos = event.pos()
-            #     if self.tabBar().rect().contains(pos):
-            #         self.drag_lock = False
-            #     else:
-            #         buttons = data.application.mouseButtons()
-            #         if buttons == qt.Qt.MouseButton.LeftButton:
-            #             if self.drag_lock == False:
-            #                 if hasattr(self.main_form.display, "docking_overlay_show"):
-            #                     self.drag_lock = True
-            #                     self.main_form.display.docking_overlay_show()
-            #                     self.__init_drag_data(event)
-            #                     self.__start_tab_drag()
-            #         else:
-            #             self.drag_lock = False
+            # pass
+            if (
+                event.type() == qt.QEvent.Type.MouseButtonPress
+                and event.buttons() == qt.Qt.MouseButton.LeftButton
+            ):
+                qt.QTimer.singleShot(0, self._setmove_range)
+            elif event.type() == qt.QEvent.Type.MouseButtonRelease:
+                self.move_range = None
+            elif (
+                event.type() == qt.QEvent.Type.MouseMove and self.move_range is not None
+            ):
+                pos = event.pos()
+                if self.tabBar().rect().contains(pos):
+                    self.drag_lock = False
+                else:
+                    buttons = data.application.mouseButtons()
+                    if buttons == qt.Qt.MouseButton.LeftButton:
+                        if self.drag_lock == False:
+                            if hasattr(self.main_form.display, "docking_overlay_show"):
+                                self.drag_lock = True
+                                self.main_form.display.docking_overlay_show()
+                                self.__init_drag_data(event)
+                                self.__start_tab_drag()
+                    else:
+                        self.drag_lock = False
 
-            #     if (self.move_range is not None) and (pos.x() < self.move_range[0]):
-            #         return True
-            #     elif (self.move_range is not None) and (
-            #         pos.x() > self.tabBar().width() - self.move_range[1]
-            #     ):
-            #         return True
+                if (self.move_range is not None) and (pos.x() < self.move_range[0]):
+                    return True
+                elif (self.move_range is not None) and (
+                    pos.x() > self.tabBar().width() - self.move_range[1]
+                ):
+                    return True
         return qt.QTabWidget.eventFilter(self, source, event)
 
     def dragEnterEvent(self, event):
@@ -999,6 +999,10 @@ QTabBar::tab:selected {{
     def special_replace_add(self, document_name=""):
         """special_replace_add"""
         return self.main_form.fixed_widget.open_special_replace(self, document_name)
+
+    def question_list_add(self, document_name=""):
+        """question_list_add"""
+        return self.main_form.fixed_widget.open_question_list(self, document_name)
 
     def hexview_add(self, file_path):
         # Initialize the hex-view

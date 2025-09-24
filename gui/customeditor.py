@@ -27,6 +27,8 @@ from gui.baseeditor import BaseEditor
 from gui.dialogs import YesNoDialog, OkDialog
 from xc_common.file_utils import copy_file
 
+from xc_entity.book import book_manager, Book
+
 
 class CustomEditor(BaseEditor):
     """
@@ -117,6 +119,7 @@ class CustomEditor(BaseEditor):
             # Disengage self from the parent and clean up self
             self.setParent(None)
             self.deleteLater()
+            book_manager.remove_book(self)
         except:
             pass
 
@@ -239,6 +242,8 @@ class CustomEditor(BaseEditor):
 
         # Signal file initialization
         data.signal_dispatcher.editor_initialized.emit(self.save_path)
+        book_manager.add_book(self, Book(self.name))
+        self.name = os.path.basename(file_with_path)
 
     def __setattr__(self, name, value):
         """
@@ -570,7 +575,9 @@ class CustomEditor(BaseEditor):
     def text_changed(self):
         """Event that fires when the scintilla document text changes"""
         # Update the line list
-        self.line_list.update_text_to_list(self.text())
+        text = self.text()
+        self.line_list.update_text_to_list(text)
+        book_manager.get_book(self).refresh_chapter_list(self.text())
         # Update the line count list with a list comprehention
         self.line_count = [line for line in range(1, self.lines() + 1)]
         # Execute the parent basic widget signal

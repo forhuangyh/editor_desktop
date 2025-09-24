@@ -25,7 +25,7 @@ from gui import (
     terminal,
     treedisplays,
 )
-from xc_gui import chapter_list, special_replace
+from xc_gui import chapter_list, special_replace, question_list
 
 
 class TheBox(qt.QSplitter):
@@ -221,6 +221,16 @@ class TheBox(qt.QSplitter):
                         )
                     elif isinstance(w, special_replace.SpecialReplace):
                         # SpecialReplace
+                        terminal_name = "{}-{}".format(name, j)
+                        tabs[terminal_name] = (
+                            inverted_classes[w.__class__],
+                            j,
+                            (
+                                w.internals.get_id(),
+                            ),
+                        )
+                    elif isinstance(w, question_list.QuestionList):
+                        # QuestionList
                         terminal_name = "{}-{}".format(name, j)
                         tabs[terminal_name] = (
                             inverted_classes[w.__class__],

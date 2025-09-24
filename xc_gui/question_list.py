@@ -24,9 +24,9 @@ from xc_entity.book import book_manager
 from gui.customeditor import CustomEditor
 
 
-class ChapterList(QWidget):
+class QuestionList(QWidget):
     # Class variables
-    name = "章节列表"
+    name = "问题列表"
     _parent = None
     main_form = None
     current_icon = None
@@ -46,6 +46,8 @@ class ChapterList(QWidget):
         if self._current_book:
             try:
                 self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+                self._current_book = None
+                self.chapter_list = None
             except (TypeError, RuntimeError):
                 pass  # 忽略已断开的连接错误
 
@@ -63,17 +65,16 @@ class ChapterList(QWidget):
         self.settings_control_font = settings.get("settings_control_font")
         self.reg_list = [
             r'^###(\w{1,25})###(.*?)\r?\n?$',
-            r'^(Chapter.*?)\r?\n?$',
+            r'^(Question.*?)\r?\n?$',
             r'^(.*?\d+.*?)\r?\n?$',
         ]
-        self.last_index = 0
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
 
         self.set_theme(settings.get_theme())
 
     def update_editor_reference(self, new_editor):
-        """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
+        """当fixed_widget的编辑器引用发生更新，联动更新"""
         if self._editor == new_editor:
             return
         if not isinstance(new_editor, CustomEditor):
@@ -96,7 +97,6 @@ class ChapterList(QWidget):
             self._current_book = new_book
             # 连接新书的 chapterListUpdated 信号到槽函数
             self._current_book.chapter_list_updated.connect(self.handle_chapter_list_update)
-            self.last_index = 0
             self.fill_match_list(new_book.chapter_list)
         else:
             self._current_book = None
@@ -104,7 +104,7 @@ class ChapterList(QWidget):
 
     @pyqtSlot(list)
     def handle_chapter_list_update(self, chapter_list):
-        """当书籍的章节列表更新时，此槽函数会被调用"""
+        """当书籍的章节列表更新时，联动更新"""
         self.chapter_list = chapter_list
         self.fill_match_list(chapter_list)
 
@@ -260,15 +260,7 @@ class ChapterList(QWidget):
         if match_list:
             self.model.setMatches(match_list)
             self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
-            match_len = len(match_list)
-            self.info_label.setText(f"章节总数：{match_len}")
-            # 内容修改，定位回原来章节位置
-            if self.last_index >= 0:
-                if self.last_index >= match_len:
-                    self.last_index = match_len - 1
-                new_index = self.model.index(self.last_index, 0)
-                self.result_view.setCurrentIndex(new_index)
-                self.result_view.scrollTo(new_index)
+            self.info_label.setText(f"章节总数：{len(match_list)}")
         else:
             self.model.setMatches([])
             self.info_label.setText("章节总数：0")
@@ -277,7 +269,6 @@ class ChapterList(QWidget):
         """
         当 QListWidget 中的一个项目被点击时调用的槽函数。
         """
-        self.last_index = index.row()
         line_number = self.model.data(index, Qt.ItemDataRole.UserRole)
         self._editor.goto_line(line_number + 1)
         self._editor.setFocus()
