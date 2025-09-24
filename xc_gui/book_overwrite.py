@@ -69,17 +69,21 @@ def handle_book_upload(main_window, file_path):
             main_window.display.repl_display_message("用户取消上传", message_type=constants.MessageType.WARNING)
             return
 
-        # 读取文件内容
-        with open(file_path, 'r', encoding='utf-8') as f:
-            file_content = f.read()
-
         # 【第二处使用公共组件】上传进度遮罩（轮询期间保持）
         upload_dialog = UploadProgressDialog(main_window, file_name)
-        upload_dialog.update_status("书籍覆盖", "上传覆盖文件正在处理中...")  # 动态更新文本
+        upload_dialog.update_status("书籍覆盖", "上传覆盖文件读取本地文件中...")  # 动态更新文本
         upload_dialog.setModal(True)
         upload_dialog.show()
         # 强制刷新UI，确保遮罩框显示（关键修复）
         QApplication.processEvents()  # 立即处理UI渲染事件
+
+        # 读取文件内容
+        with open(file_path, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+
+        # 【新增】更新状态为"上传文件中"
+        upload_dialog.update_status("书籍覆盖", "读取本地文件完成，上传服务器中...")
+        QApplication.processEvents()  # 刷新UI显示新状态
         # 调用上传服务
         upload_success, db_task_id = book_service.upload_book(actual_cp_book_id, file_content, file_name)
 
@@ -87,6 +91,8 @@ def handle_book_upload(main_window, file_path):
             upload_dialog.close()  # 修正：变量名应为upload_dialog而非progress_dialog
             CustomMessageBox.critical(main_window, "上传失败", "文件上传请求提交失败", 400, 120)
             return
+        upload_dialog.update_status("书籍覆盖", "上传文件完成，获取覆盖任务状态中...")
+        QApplication.processEvents()  # 刷新UI显示新状态
         # 验证db_task_id有效性
         if not db_task_id:
             upload_dialog.close()  # 修正：变量名应为upload_dialog而非progress_dialog

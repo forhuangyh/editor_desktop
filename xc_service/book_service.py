@@ -269,7 +269,7 @@ class BookService:
                         return False
 
                     print(
-                        f"【下载】章节成功 | 章节ID: {chapter_id} | 标题: '{chapter_title}' | 内容长度: {len(content)} bytes")
+                        f"【下载】章节成功 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                     return (index, chapter_title, content)
                 except Exception as e:
                     print(f"【下载】章节异常 | 章节ID: {chapter_id} | 错误: {str(e)}")
@@ -278,7 +278,7 @@ class BookService:
             # 多线程下载与合并
             success = True
             chapters_content = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                 futures = {executor.submit(download_single_chapter, info): info for info in chapters_to_download}
                 for future in concurrent.futures.as_completed(futures):
                     if not success:
@@ -288,6 +288,11 @@ class BookService:
                     if result is False:
                         success = False
                         print(f"【下载】章节批量失败 | 取消剩余下载")
+                        # 【新增】取消所有剩余未完成的任务
+                        for pending_future in futures:
+                            if not pending_future.done():
+                                pending_future.cancel()
+                        break  # 【新增】跳出循环，不再处理后续任务
                     else:
                         chapters_content.append(result)
 

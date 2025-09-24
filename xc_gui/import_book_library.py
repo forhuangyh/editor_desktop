@@ -94,7 +94,10 @@ class BookLibraryHistoryDialog(QDialog):
             if download_state == 2:
                 # 打印整条数据
                 print(f"双击书籍数据：{self.selected_book}")
-                self.accept()
+                # 删除数据库记录，获取文件路径
+                record_id = self.selected_book.get('id')
+                if record_id:
+                    self.accept()
             else:
                 # 可以添加提示信息，但不阻止其他操作
                 pass
@@ -225,27 +228,16 @@ class BookLibraryHistoryDialog(QDialog):
         """加载书籍历史记录（供刷新按钮调用）"""
         self.load_downs_book_to_table()
 
-    def on_item_selected(self):
-        selected_rows = self.book_table.selectionModel().selectedRows()
-        if selected_rows:
-            row = selected_rows[0].row()
-            self.selected_book = self.book_table.rowData(row)
-            # 【新增】检查下载状态，仅"已完成"状态可打开（download_state=2）
-            download_state = self.selected_book.get('download_state', 0)
-            self.confirm_button.setEnabled(download_state == 2)  # 状态为2时启用按钮
-        else:
-            self.selected_book = None
-            self.confirm_button.setEnabled(False)
 
     def get_selected_book(self):
         return self.selected_book
 
     def accept(self):
         if self.selected_book:
-            self.selected_book['updated_at'] = QDateTime.currentDateTime().toString(Qt.DateFormat.ISODate)
-            sqlite_service.add_or_update_book(self.selected_book)
-            # 调用打开sheet的页面
-
+            # 【新增】从选中数据中获取record_id并执行删除
+            record_id = self.selected_book.get('id')
+            if record_id:
+                sqlite_service.delete_book(record_id)  # 在accept()中执行删除
         super().accept()
 
     def reject(self):

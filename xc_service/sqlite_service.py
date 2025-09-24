@@ -204,12 +204,12 @@ class SQLiteService:
             print(f"更新下载状态失败: {str(e)}")
             return False
 
-    def delete_book(self, book_id, file_path):
+    def delete_book(self, id):
         """删除书籍记录"""
         try:
             self.db.execute(
-                "DELETE FROM book_download_records WHERE book_id = ? AND file_path = ?",
-                (book_id, file_path)
+                "DELETE FROM book_download_records WHERE id=?",
+                (id,)  # 【修复】添加逗号，确保参数为元组类型
             )
             return True
         except Exception as e:
