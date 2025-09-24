@@ -61,24 +61,44 @@ class BookLibraryHistoryDialog(QDialog):
         self.book_table.applyBookTableStyle()
         main_layout.addWidget(self.book_table, 1)
 
-        # 按钮区
-        button_layout = QHBoxLayout()
-        refresh_button = QPushButton("刷新列表")
-        refresh_button.clicked.connect(self.load_history)
-        button_layout.addWidget(refresh_button)
+        # # 按钮区
+        # button_layout = QHBoxLayout()
+        # refresh_button = QPushButton("刷新列表")
+        # refresh_button.clicked.connect(self.load_history)
+        # button_layout.addWidget(refresh_button)
+        #
+        # button_layout.addStretch(1)
+        # self.confirm_button = QPushButton("打开编辑")
+        # self.confirm_button.setEnabled(False)
+        # self.confirm_button.clicked.connect(self.accept)
+        #
+        # cancel_button = QPushButton("取消")
+        # cancel_button.clicked.connect(self.reject)
+        # button_layout.addWidget(self.confirm_button)
+        # button_layout.addWidget(cancel_button)
 
-        button_layout.addStretch(1)
-        self.confirm_button = QPushButton("打开编辑")
-        self.confirm_button.setEnabled(False)
-        self.confirm_button.clicked.connect(self.accept)
+        # main_layout.addLayout(button_layout)
+        # self.book_table.itemSelectionChanged.connect(self.on_item_selected)
+        # 【新增】连接表格双击事件到accept函数
+        # 当用户双击表格行时，直接调用accept函数打开编辑
+        self.book_table.cellDoubleClicked.connect(self.on_cell_double_clicked)
 
-        cancel_button = QPushButton("取消")
-        cancel_button.clicked.connect(self.reject)
-        button_layout.addWidget(self.confirm_button)
-        button_layout.addWidget(cancel_button)
+        # 【新增】双击事件处理函数
 
-        main_layout.addLayout(button_layout)
-        self.book_table.itemSelectionChanged.connect(self.on_item_selected)
+    def on_cell_double_clicked(self, row, column):
+        # 获取双击行的数据
+        self.selected_book = self.book_table.rowData(row)
+        if self.selected_book:
+            # 检查下载状态，仅"已完成"状态可打开（download_state=2）
+            download_state = self.selected_book.get('download_state', 0)
+            if download_state == 2:
+                # 打印整条数据
+                print(f"双击书籍数据：{self.selected_book}")
+                self.accept()
+            else:
+                # 可以添加提示信息，但不阻止其他操作
+                pass
+
 
     def on_confirm_id(self):
         cp_book_id = self.book_id_form.get_value()

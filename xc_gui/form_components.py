@@ -52,7 +52,7 @@ class SimpleInputForm(QFrame):
         self.confirm_button = QPushButton(button_text)
         self.confirm_button.setStyleSheet(
             "background-color: #4a90e2; color: white; border-radius: 3px; padding: 2px 15px;")
-        self.confirm_button.setFixedHeight(25)  # 设置固定高度
+        self.confirm_button.setFixedHeight(36)  # 设置固定高度
         self.layout.addWidget(self.confirm_button)
 
         # 添加伸展空间，使组件靠左对齐
