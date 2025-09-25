@@ -11,6 +11,7 @@ import qt
 import data
 import settings
 from xc_service.account_service import AccountService
+from xc_service.sqlite_service import SQLiteService, sqlite_service
 
 
 class LoginWindow(qt.QDialog):
@@ -271,6 +272,9 @@ class LoginWindow(qt.QDialog):
             # 使用AccountService进行登录
             success, message = AccountService().login(username, password)
             if success:
+                # 清除数据库进行中的数据
+                sqlite_service.clear_downloading_books()
+                print("清楚历史进行中数据完毕。。。")
                 # 如果勾选了记住账号密码，则保存；否则清除已保存的凭据
                 if self.remember_checkbox.isChecked():
                     self.save_credentials(username, password)

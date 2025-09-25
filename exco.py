@@ -103,6 +103,60 @@ def main():
     """
     Main function of Ex.Co.
     """
+    # 【新增】跨平台单实例控制：Windows 互斥锁 / macOS 锁文件
+    import sys
+    import os
+    import tempfile
+    import ctypes
+    from ctypes import wintypes
+
+    # 全局唯一标识（避免与其他应用冲突）
+    APP_ID = "ExCo_Editor_Single_Instance"
+    instance_exists = False
+    lock_file = None
+
+    # === Windows 平台：使用命名互斥锁 ===
+    if sys.platform == "win32":
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel32.CreateMutexW.argtypes = [wintypes.LPCVOID, wintypes.BOOL, wintypes.LPCWSTR]
+        kernel32.CreateMutexW.restype = wintypes.HANDLE
+
+        mutex_name = f"Global\\{APP_ID}_Mutex"  # Global 前缀确保系统级唯一性
+        h_mutex = kernel32.CreateMutexW(None, False, mutex_name)
+        last_error = ctypes.get_last_error()
+        if h_mutex == 0 or last_error == 183:  # 183 = ERROR_ALREADY_EXISTS
+            instance_exists = True
+
+    # === macOS 平台：使用临时目录锁文件 ===
+    elif sys.platform == "darwin":
+        lock_dir = tempfile.gettempdir()
+        lock_file_path = os.path.join(lock_dir, f"{APP_ID}.lock")
+        try:
+            import fcntl
+            # 尝试创建独占锁文件（不存在则创建，存在则抛异常）
+            lock_file = open(lock_file_path, 'w')
+            # 获取文件独占锁（防止其他进程删除）
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (FileExistsError, BlockingIOError):
+            instance_exists = True
+        except Exception as e:
+            print(f"macOS 锁文件创建失败: {str(e)}")
+
+    # === 检测到已有实例：发送唤起指令并退出 ===
+    if instance_exists:
+        try:
+            # 发送 "显示窗口" 指令给已有实例
+            _data = {"command": "show", "arguments": None}
+            fc = components.communicator.FileCommunicator("SHOW-OPEN-INSTANCE")
+            fc.send_data(_data)
+            import time
+            time.sleep(0.5)  # 确保指令发送完成
+        except Exception as e:
+            print(f"唤起已有实例失败: {str(e)}")
+        finally:
+            if lock_file:
+                lock_file.close()  # 关闭 macOS 锁文件
+            sys.exit(0)  # 退出当前实例
 
     # Check arguments
     options = parse_arguments()
