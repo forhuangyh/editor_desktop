@@ -3776,7 +3776,7 @@ class MainWindow(qt.QMainWindow):
         )
         # Set focus to the new widget
         return_widget.setFocus()
-        return_widget.find_input.setFocus()
+        # return_widget.find_input.setFocus()
         # Return the widget reference
         return return_widget
 
