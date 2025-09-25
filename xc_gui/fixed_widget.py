@@ -9,6 +9,7 @@ import qt
 from xc_gui.search_replace_dialog import SearchReplaceDialog
 from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
+from xc_gui.question_list import QuestionList
 from gui.customeditor import CustomEditor
 
 
@@ -109,7 +110,7 @@ class FixedWidget(qt.QObject):
             self.question_list.update_editor_reference(focused_editor)
             return self.question_list
 
-        new_question_list = ChapterList(self, tab_widget, self.main_form)
+        new_question_list = QuestionList(self, tab_widget, self.main_form)
         new_question_list_tab_index = tab_widget.addTab(new_question_list, document_name)
         # 禁止关闭
         # tab_widget.tabBar().setTabButton(new_question_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)

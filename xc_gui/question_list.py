@@ -22,6 +22,7 @@ import components.internals
 import settings
 from xc_entity.book import book_manager
 from gui.customeditor import CustomEditor
+from xc_entity.question import Question
 
 
 class QuestionList(QWidget):
@@ -42,12 +43,11 @@ class QuestionList(QWidget):
         self.main_form = None
         self._fixed_widget = None
         self._editor = None
-        self.matches = None
         if self._current_book:
             try:
                 self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
                 self._current_book = None
-                self.chapter_list = None
+                self._chapter_list = None
             except (TypeError, RuntimeError):
                 pass  # 忽略已断开的连接错误
 
@@ -62,15 +62,10 @@ class QuestionList(QWidget):
         self._fixed_widget = fixed_widget
         self._editor = self._fixed_widget.editor
         self._current_book = None
+        self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
-        self.reg_list = [
-            r'^###(\w{1,25})###(.*?)\r?\n?$',
-            r'^(Question.*?)\r?\n?$',
-            r'^(.*?\d+.*?)\r?\n?$',
-        ]
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
-
         self.set_theme(settings.get_theme())
 
     def update_editor_reference(self, new_editor):
@@ -90,23 +85,22 @@ class QuestionList(QWidget):
         if self._current_book:
             self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
 
-        self.find_input.setEditText(new_book.chapter_pattern.decode("utf-8"))
         # 2. 建立新的绑定
         if new_book:
-            self.chapter_list = new_book.chapter_list
+            self._chapter_list = new_book.get_chapter_list()
             self._current_book = new_book
             # 连接新书的 chapterListUpdated 信号到槽函数
             self._current_book.chapter_list_updated.connect(self.handle_chapter_list_update)
-            self.fill_match_list(new_book.chapter_list)
+            self.fill_match_list()
         else:
             self._current_book = None
-            self.fill_match_list(new_book.chapter_list)
+            self.fill_match_list()
 
     @pyqtSlot(list)
     def handle_chapter_list_update(self, chapter_list):
         """当书籍的章节列表更新时，联动更新"""
-        self.chapter_list = chapter_list
-        self.fill_match_list(chapter_list)
+        self._chapter_list = chapter_list
+        self.fill_match_list()
 
     def init_ui(self):
         # 直接设置自身属性
@@ -116,25 +110,6 @@ class QuestionList(QWidget):
         # 主垂直布局
         main_layout = QVBoxLayout()
         main_layout.setSpacing(10)  # 设置布局间距
-
-        # 1. 顶部查找行
-        find_layout = QHBoxLayout()
-        self.find_input = QComboBox()
-        self.find_input.setEditable(True)  # 设置为可编辑
-        # 可选：添加一些历史搜索项
-        self.find_input.addItems(self.reg_list)
-        # self.find_input.setStyleSheet(self.settings_control_font.get("QLineEdit"))
-        self.find_input.setPlaceholderText("请输入")
-        self.find_input.setMinimumHeight(30)
-        self.find_input.setMinimumWidth(100)
-
-        self.search_button = QPushButton("提取")
-        self.search_button.setMinimumHeight(30)
-        self.search_button.setMinimumWidth(40)
-        self.search_button.setMaximumWidth(50)
-
-        find_layout.addWidget(self.find_input)
-        find_layout.addWidget(self.search_button)
 
         # 替换 QListWidget 为 QListView
         self.result_view = QListView()
@@ -177,15 +152,26 @@ class QuestionList(QWidget):
         info_button_layout.addWidget(self.up_button)
         info_button_layout.addWidget(self.down_button)
 
+        self.search_button = QPushButton("检查")
+        self.search_button.setMinimumHeight(30)
+        self.search_button.setMinimumWidth(40)
+        self.search_button.setMaximumWidth(50)
+        info_button_layout.addWidget(self.search_button)
+
+        self.clear_button = QPushButton("清除")
+        self.clear_button.setMinimumHeight(30)
+        self.clear_button.setMinimumWidth(40)
+        self.clear_button.setMaximumWidth(50)
+        info_button_layout.addWidget(self.clear_button)
+
         # 4. 添加组件到主布局
-        main_layout.addLayout(find_layout)
         main_layout.addLayout(info_button_layout)
         main_layout.addWidget(self.result_view)
         self.setLayout(main_layout)
 
         # # 连接信号槽
         self.search_button.clicked.connect(self._find_all)
-        self.find_input.lineEdit().returnPressed.connect(self._find_all)
+        self.clear_button.clicked.connect(self._clear_highlight)
         self.result_view.clicked.connect(self.on_item_clicked)
         self.up_button.clicked.connect(self.on_up_clicked)
         self.down_button.clicked.connect(self.on_down_clicked)
@@ -208,7 +194,6 @@ class QuestionList(QWidget):
 
     def on_down_clicked(self):
         current_index = self.result_view.currentIndex()
-
         if not current_index.isValid():
             new_row = 0
         else:
@@ -226,44 +211,51 @@ class QuestionList(QWidget):
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
-        search_text = self.find_input.currentText()
-        if not search_text:
-            QMessageBox.warning(self, "警告", "请输入章节提取规则！")
-            return
+        self._current_book.question.set_is_work(True)
+        self.fill_match_list()
 
-        book = self._current_book
-        self.chapter_list = book.split_chapter_list(self._editor.text(), search_text)
-        self.fill_match_list(self.chapter_list)
+    def _clear_highlight(self):
+        """清除所有高亮"""
+        self._editor.clear_question_highlights()
+        self._current_book.question.set_is_work(False)
+        self.model.setMatches([])
+        self.info_label.setText("重复总数：0")
 
-    def fill_match_list(self, chapter_list):
+    def fill_match_list(self):
         """填充列表
         """
-        match_list = []
-        max_len_index = 0
+        max_line_text = ""
         line_text_len = 0
-        for index, chapter in enumerate(chapter_list):
-            line_number, _ = self._editor.lineIndexFromPosition(chapter["start"])
-            line_text = chapter["title"]
-            match_list.append(
-                {
-                    'line_number': line_number,
-                    'line_text': f"{index + 1}：{line_text}({chapter['word_count']})",
-                    'match_data': chapter,
-                    "text_count": 0,
-                }
-            )
-            cur_len = len(line_text)
+        match_list, highlight_matches = self._current_book.question.split_question_list(
+            self._editor.line_list, self._chapter_list, self._editor, self._current_book
+        )
+        new_match_list = []
+        for match in match_list:
+            line_text = match["line_text"]
+            index = match["index"]
+            new_line_text = f"{index}：{line_text}"
+            match["line_text"] = new_line_text
+            new_match_list.append(match)
+            cur_len = len(new_line_text)
             if cur_len > line_text_len:
-                max_len_index = index
+                max_line_text = line_text
                 line_text_len = cur_len
 
+            for i, child in enumerate(match["children"]):
+                new_line_text = f'    {child["title"]}' if child["title"] else f"    序号：{i + 1}"
+                child["line_text"] = new_line_text
+                new_match_list.append(child)
+
         if match_list:
-            self.model.setMatches(match_list)
-            self.delegate.setMaxLenText(match_list[max_len_index]["line_text"])
-            self.info_label.setText(f"章节总数：{len(match_list)}")
+            self.model.setMatches(new_match_list)
+            self.delegate.setMaxLenText(max_line_text)
+            self.info_label.setText(f"重复总数：{len(new_match_list)}")
+            self._editor.clear_question_highlights()
+            self._editor.set_indicator("question")
+            self._editor.highlight_raw(highlight_matches)
         else:
             self.model.setMatches([])
-            self.info_label.setText("章节总数：0")
+            self.info_label.setText("重复总数：0")
 
     def on_item_clicked(self, index):
         """
@@ -281,20 +273,6 @@ class QuestionList(QWidget):
         # 设置主窗口背景色
         main_bg = theme['indication']['passivebackground']
         self.setStyleSheet(f"QWidget {{ background-color: {main_bg}; }}")
-
-        # 更新 QLineEdit 的样式
-        line_edit_style = (
-            f"QLineEdit {{ "
-            f"background-color: {main_bg}; "
-            f"color: {theme['fonts']['default']['color']}; "
-            f"border: 1px solid {theme['indication']['passiveborder']}; "
-            f"selection-background-color: {theme['indication']['selection']}; "
-            f"selection-color: {theme['fonts']['default']['color']}; "
-            f"}}"
-        )
-        self.find_input.setStyleSheet(line_edit_style)
-        # 设置固定字体
-        self.find_input.setStyleSheet(self.settings_control_font.get("QLineEdit"))
 
         # 更新 QPushButton 的样式
         button_style = (

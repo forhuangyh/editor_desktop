@@ -47,7 +47,7 @@ editor = {
         "maximum_highlights": 300,
         "overwrite_mode": False,
         "tab_width": 4,
-        "word_wrap": False,
+        "word_wrap": True,
         "zoom_factor": 0,
         "makefile_uses_tabs": True,
         "makefile_whitespace_visible": True,

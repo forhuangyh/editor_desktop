@@ -54,7 +54,6 @@ class SearchReplaceDialog(QDialog):
     def init_ui(self):
         self.setWindowTitle("搜索和替换")
         self.setFixedSize(460, 200)
-
         # 搜索部分
         search_layout = QHBoxLayout()
         search_layout.addWidget(QLabel("搜索:"))
@@ -175,13 +174,13 @@ class SearchReplaceDialog(QDialog):
         if not search_text:
             QMessageBox.warning(self, "警告", "请输入搜索内容！")
             return
-        self._editor.replace_all(
+        matches = self._editor.replace_all(
             search_text, replace_text,
             case_sensitive=self._case_sensitive.isChecked(),
             regular_expression=self._regex.isChecked(),
             whole_words=self._whole_word.isChecked()
         )
-        QMessageBox.information(self, "信息", "替换完成")
+        QMessageBox.information(self, "信息", f"{len(matches)}处替换完成")
 
     def _clear_highlight(self):
         """清除所有高亮"""

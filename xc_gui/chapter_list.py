@@ -42,10 +42,12 @@ class ChapterList(QWidget):
         self.main_form = None
         self._fixed_widget = None
         self._editor = None
-        self.matches = None
+        # self.matches = None
         if self._current_book:
             try:
                 self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+                self._current_book = None
+                self._chapter_list = None
             except (TypeError, RuntimeError):
                 pass  # 忽略已断开的连接错误
 
@@ -60,6 +62,7 @@ class ChapterList(QWidget):
         self._fixed_widget = fixed_widget
         self._editor = self._fixed_widget.editor
         self._current_book = None
+        self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
         self.reg_list = [
             r'^###(\w{1,25})###(.*?)\r?\n?$',
@@ -92,7 +95,7 @@ class ChapterList(QWidget):
         self.find_input.setEditText(new_book.chapter_pattern.decode("utf-8"))
         # 2. 建立新的绑定
         if new_book:
-            self.chapter_list = new_book.chapter_list
+            self.chapter_list = new_book.get_chapter_list()
             self._current_book = new_book
             # 连接新书的 chapterListUpdated 信号到槽函数
             self._current_book.chapter_list_updated.connect(self.handle_chapter_list_update)

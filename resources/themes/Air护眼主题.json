@@ -2070,7 +2070,8 @@
     "passivebackground": "#ffe6f2d3",
     "passiveborder": "#a0a0a0",
     "replace": "#5032b4ff",
-    "selection": "#64c8c8c8"
+    "selection": "#64c8c8c8",
+    "question": "#64FF0000"
   },
   "left-arrow-hover-image": "feather/air-blue/chevron-left.svg",
   "left-arrow-image": "feather/air-grey/chevron-left.svg",

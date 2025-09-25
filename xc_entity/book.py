@@ -7,6 +7,7 @@ from xc_common.word_count import word_count_func
 
 
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from xc_entity.question import Question
 
 
 class Book(QObject):
@@ -14,18 +15,18 @@ class Book(QObject):
 
     chapter_list_updated = pyqtSignal(list)
 
-    def __init__(self, cp_book_id, parent=None):
+    def __init__(self, book_name, parent=None):
         """
         初始化书籍实例
         :param name: 书籍名称
-        :param cp_book_id: 书籍唯一ID
+        :param book_name: 书籍唯一ID
         """
         super().__init__(parent)
-        self.cp_book_id = cp_book_id
-        # self.book_name = book_name
+        self.book_name = book_name
         self.chapter_list = []
         self.chapter_pattern = b""
         self.language = ""
+        self.question = Question(self.book_name)
 
     def refresh_chapter_list(self, text):
         if not text:
@@ -87,12 +88,67 @@ class Book(QObject):
                 merged_chapters.append(current_chapter)
 
         except Exception as ex:
-            raise Exception(f"split_chapter_list error:cp_book_id={self.cp_book_id}, msg={str(ex)}")
+            raise Exception(f"split_chapter_list error:book_name={self.book_name}, msg={str(ex)}")
 
         self.chapter_list = merged_chapters
         self.chapter_list_updated.emit(self.chapter_list)
 
         return self.chapter_list
+
+    # def split_chapter_list_and_line(self, text):
+    #     """获取章节列表, 并将内容拆解成line，用在问题段落中
+    #     编辑器是用byte定位，这里转化成byte处理
+
+    #     """
+    #     if not text:
+    #         return []
+    #     if not self.chapter_pattern:
+    #         return []
+
+    #     text = bytes(text, "utf-8")
+    #     merged_chapters = []
+    #     pre_txt_begin = 0
+    #     current_chapter = {}
+    #     try:
+    #         for match in re.finditer(self.chapter_pattern, text, re.MULTILINE):
+    #             if pre_txt_begin != 0:
+    #                 pre_txt = text[pre_txt_begin:match.start()]
+    #                 current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
+    #                 if current_chapter:
+    #                     merged_chapters.append(current_chapter)
+
+    #             pre_txt_begin = match.end()
+    #             if len(match.groups()) == 1:
+    #                 current_chapter = {
+    #                     "start": match.start(),
+    #                     "end": match.end(),
+    #                     "title": match.group(1).decode("utf-8").strip()
+    #                 }
+    #             elif len(match.groups()) >= 2:
+    #                 current_chapter = {
+    #                     "start": match.start(),
+    #                     "end": match.end(),
+    #                     "cid": match.group(1).decode("utf-8").strip(),
+    #                     "title": match.group(2).decode("utf-8").strip()
+    #                 }
+    #             else:
+    #                 current_chapter = {
+    #                     "start": match.start(),
+    #                     "end": match.end(),
+    #                     "title": match.group().decode("utf-8").strip()
+    #                 }
+    #             last_txt_begin = match.end()
+
+    #         if current_chapter:
+    #             pre_txt = text[last_txt_begin:]
+    #             # current_chapter["txt"] = pre_txt.strip()
+    #             current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
+    #             merged_chapters.append(current_chapter)
+
+    #     except Exception as ex:
+    #         raise Exception(f"split_chapter_list error:book_name={self.book_name}, msg={str(ex)}")
+
+    #     return merged_chapters
 
     def count_words(self, text):
         """
@@ -111,7 +167,7 @@ class Book(QObject):
 
     def __repr__(self) -> str:
         """对象表示方法，便于打印调试"""
-        return f"<Book (ID:{self.cp_book_id}) 包含{len(self.chapter_list)}章>"
+        return f"<Book (ID:{self.book_name}) 包含{len(self.chapter_list)}章>"
 
 
 class BookManager(object):
@@ -121,7 +177,7 @@ class BookManager(object):
         """
         初始化书籍实例
         :param name: 书籍名称
-        :param cp_book_id: 书籍唯一ID
+        :param book_name: 书籍唯一ID
         """
         self.book_map = {}
 

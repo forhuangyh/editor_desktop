@@ -66,6 +66,7 @@ class CustomEditor(BaseEditor):
     FIND_INDICATOR = 2
     REPLACE_INDICATOR = 3
     SELECTION_INDICATOR = 4
+    QUESTION_INDICATOR = 5
     # Line strings in a list, gets updated on every text change,
     # can be used like any other python list(append, extend, reverse, ...)
     line_list = None
@@ -1673,6 +1674,9 @@ class CustomEditor(BaseEditor):
                     # )
                 # Highlight and display the line difference between the old and new texts
                 self.highlight_raw(corrected_matches)
+                # Restore the previous cursor position
+                self.setCursorPosition(current_position[0], current_position[1])
+                return corrected_matches
             else:
                 # Display the replacements in the REPL tab
                 if len(matches) < settings.get("editor")["maximum_highlights"]:
@@ -1699,8 +1703,10 @@ class CustomEditor(BaseEditor):
                     # )
                 # Highlight and display the replaced text
                 self.highlight_raw(matches)
-            # Restore the previous cursor position
-            self.setCursorPosition(current_position[0], current_position[1])
+                # Restore the previous cursor position
+                self.setCursorPosition(current_position[0], current_position[1])
+                return matches
+
         else:
             message = "The search string and replace string are equivalent!\n"
             message += (
@@ -1939,6 +1945,24 @@ class CustomEditor(BaseEditor):
         self.clearIndicatorRange(
             0, 0, self.lines(), self.lineLength(self.lines() - 1), self.FIND_INDICATOR
         )
+        # self.clearIndicatorRange(
+        #     0,
+        #     0,
+        #     self.lines(),
+        #     self.lineLength(self.lines() - 1),
+        #     self.QUESTION_INDICATOR,
+        # )
+
+    def clear_question_highlights(self):
+        """Clear all highlighted text"""
+        # Clear the highlight indicators
+        self.clearIndicatorRange(
+            0,
+            0,
+            self.lines(),
+            self.lineLength(self.lines() - 1),
+            self.QUESTION_INDICATOR,
+        )
 
     def clear_selection_highlights(self):
         # Clear the selection indicators
@@ -1982,6 +2006,10 @@ class CustomEditor(BaseEditor):
         elif indicator == "find":
             self._set_indicator(
                 self.FIND_INDICATOR, settings.get_theme()["indication"]["find"]
+            )
+        elif indicator == "question":
+            self._set_indicator(
+                self.QUESTION_INDICATOR, settings.get_theme()["indication"]["question"]
             )
         else:
             raise Exception("Unknown indicator: {}".format(indicator))

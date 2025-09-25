@@ -2,97 +2,95 @@
 问题类: 属性，方法
 """
 import re
+import bisect
 from xc_common.word_count import word_count_func
 
 
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 
-class Question(QObject):
+class Question(object):
     """问题列表管理功能"""
 
-    question_list_updated = pyqtSignal(list)
+    is_work = False
 
-    def __init__(self, cp_book_id, parent=None):
+    def __init__(self, book_name):
         """初始化书籍实例
         """
-        super().__init__(parent)
-        self.cp_book_id = cp_book_id
+        self.book_name = book_name
         self.question_list = []
 
-    def refresh_question_list(self, text):
-        if not text:
-            return
-        if not self.chapter_pattern:
-            return
-        self.split_question_list(text)
+    def set_is_work(self, is_work):
+        """是否检查问题列表
+        """
+        self.is_work = is_work
 
-    def split_question_list(self, text, chapter_pattern=None):
+    def split_question_list(self, line_list, chapter_list, editor, book):
         """获取问题列表
         编辑器是用byte定位，这里转化成byte处理
         """
-        if not text:
-            return []
-        if chapter_pattern:
-            self.chapter_pattern = bytes(chapter_pattern, "utf-8")
-        if not self.chapter_pattern:
-            return []
+        if not all([line_list, editor, book]):
+            return [], []
+        if not self.is_work:
+            return [], []
 
-        text = bytes(text, "utf-8")
-        merged_chapters = []
-        pre_txt_begin = 0
-        current_chapter = {}
+        line_dict, repeat_dict = {}, {}
+        highlight_matches, match_list = [], []
+        chapter_list = book.get_chapter_list()
+        order_list = [chapter["start"] for chapter in chapter_list] if chapter_list else []
         try:
-            for match in re.finditer(self.chapter_pattern, text, re.MULTILINE):
-                if pre_txt_begin != 0:
-                    pre_txt = text[pre_txt_begin:match.start()]
-                    current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
-                    if current_chapter:
-                        merged_chapters.append(current_chapter)
-
-                pre_txt_begin = match.end()
-                if len(match.groups()) == 1:
-                    current_chapter = {
-                        "start": match.start(),
-                        "end": match.end(),
-                        "title": match.group(1).decode("utf-8").strip()
-                    }
-                elif len(match.groups()) >= 2:
-                    current_chapter = {
-                        "start": match.start(),
-                        "end": match.end(),
-                        "cid": match.group(1).decode("utf-8").strip(),
-                        "title": match.group(2).decode("utf-8").strip()
-                    }
+            for index, line in enumerate(line_list):
+                line = line.strip()
+                if not line:
+                    continue
+                if line in line_dict:
+                    line_dict[line].append({"line_num": index})
                 else:
-                    current_chapter = {
-                        "start": match.start(),
-                        "end": match.end(),
-                        "title": match.group().decode("utf-8").strip()
+                    line_dict[line] = [{"line_num": index}]
+            for line, items in line_dict.items():
+                if len(items) > 1:
+                    repeat_dict[line] = items
+
+            line_index = 0
+            for line_text, repeat_list in repeat_dict.items():
+                line_index += 1
+                for i, item in enumerate(repeat_list):
+                    byte_index = editor.positionFromLineIndex(item["line_num"], 0)
+                    new_match = {
+                        "index": line_index if i == 0 else 0,
+                        'line_number': item["line_num"],
+                        'line_text': line_text,
+                        "byte_index": byte_index,
+                        "title": self.find_title(byte_index, order_list, chapter_list)
                     }
-                last_txt_begin = match.end()
+                    if i == 0:
+                        match_list.append(new_match)
+                        match_list[-1]["children"] = [new_match.copy()]
+                    else:
+                        match_list[-1]["children"].append(new_match)
 
-            if current_chapter:
-                pre_txt = text[last_txt_begin:]
-                # current_chapter["txt"] = pre_txt.strip()
-                current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
-                merged_chapters.append(current_chapter)
-
+                    highlight_matches.append(
+                        (
+                            0,
+                            byte_index,
+                            0,
+                            byte_index + len(line_text.encode("utf-8")),
+                        )
+                    )
         except Exception as ex:
-            raise Exception(f"split_question_list error:cp_book_id={self.cp_book_id}, msg={str(ex)}")
+            raise Exception(f"split_question_list error:book_name={self.book_name}, msg={str(ex)}")
 
-        self.question_list = merged_chapters
-        self.question_list_updated.emit(self.question_list)
+        return match_list, highlight_matches
 
-        return self.question_list
-
-    def count_words(self, text):
+    def find_title(self, byte_index, order_list, chapter_list):
         """
-        计算单词数，可以处理连字符和撇号。
-        todo 根据语种计算词量
+        查找章节标题
         """
-
-        return word_count_func(text)
+        if not order_list:
+            return ""
+        # 使用 bisect_left 查找位置
+        insertion_point = bisect.bisect_left(order_list, byte_index)
+        return chapter_list[insertion_point - 1]["title"]
 
     def get_question_list(self):
         """获取问题列表
@@ -103,35 +101,66 @@ class Question(QObject):
 
     def __repr__(self) -> str:
         """对象表示方法，便于打印调试"""
-        return f"<Question (ID:{self.cp_book_id}) 包含{len(self.question_list)}章>"
+        return f"<Question (ID:{self.book_name}) 包含{len(self.question_list)}章>"
 
+    # def refresh_question_list(self, text):
+    #     if not text:
+    #         return
+    #     if not self.chapter_pattern:
+    #         return
+    #     self.split_question_list(text)
 
-class QuestionManager(object):
-    """书籍类，包含书籍基本信息和问题管理功能"""
+    # def get_line_byte_positions(self, line_list, encoding='utf-8'):
+    #     """
+    #     计算每行在整个字节流中的起始和结束位置。
+    #     Args:
+    #         text (str): 输入的原始文本。
+    #         encoding (str): 文本编码，默认为 'utf-8'。
 
-    def __init__(self):
-        """
-        初始化书籍实例
-        :param name: 书籍名称
-        :param cp_book_id: 书籍唯一ID
-        """
-        self.book_map = {}
+    #     Returns:
+    #         list: 一个列表，每个元素是一个字典，包含 'paragraph' (str), 'start' (int), 'end' (int)。
+    #     """
+    #     if not line_list:
+    #         return []
+    #     results = []
+    #     current_byte_pos = 0
+    #     for paragraph in line_list:
+    #         # 将当前段落（行）编码为字节串
+    #         paragraph_bytes = paragraph.encode(encoding)
+    #         # 计算结束位置
+    #         end_byte_pos = current_byte_pos + len(paragraph_bytes)
+    #         # 存储结果
+    #         results.append({
+    #             'text': paragraph,
+    #             'start': current_byte_pos,
+    #             'end': end_byte_pos
+    #         })
+    #         # 移动到下一段落的起始位置
+    #         # 需要考虑行分隔符 \n 的字节长度，通常是 1
+    #         current_byte_pos = end_byte_pos + 1
+    #     return results
 
-    def get_book(self, editor):
-        """返回当前编辑器对应的书籍"""
-        if editor in self.book_map:
-            return self.book_map[editor]
-        return None
+    # def find_all(self, source_bytes, pattern_bytes):
+    #     """
+    #     在二进制数据中查找一个模式出现的所有位置。
+    #     Args:
+    #         source_bytes: 要搜索的原始 bytes 对象。
+    #         pattern_bytes: 要查找的模式 bytes 对象。
 
-    def add_book(self, editor, book):
-        """添加编辑器-图书关系
-        """
-        self.book_map[editor] = book
+    #     Returns:
+    #         一个包含所有匹配起始位置的列表。
+    #     """
+    #     positions = []
+    #     start_index = 0
+    #     # 只要还能找到模式，就继续循环
+    #     while True:
+    #         # 从上一次找到的位置+1开始查找
+    #         index = source_bytes.find(pattern_bytes, start_index)
+    #         if index == -1:
+    #             # 如果没有找到，就退出循环
+    #             break
+    #         positions.append(index)
+    #         # 将下一次查找的起始位置更新为当前找到位置的下一个字节
+    #         start_index = index + 1
 
-    def remove_book(self, editor):
-        """添加编辑器-图书关系
-        """
-        self.book_map.pop(editor, None)
-
-
-question_manager = QuestionManager()
+    #     return positions

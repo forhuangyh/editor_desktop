@@ -2202,6 +2202,7 @@ def __check(theme_data):
             "passiveborder": __check_color,
             "replace": __check_color,
             "selection": __check_color,
+            "question": __check_color,
         },
         "left-arrow-hover-image": __check_string,
         "left-arrow-image": __check_string,
