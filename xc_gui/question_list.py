@@ -61,7 +61,7 @@ class QuestionList(QWidget):
         self.main_form = main_form
         self._fixed_widget = fixed_widget
         self._editor = self._fixed_widget.editor
-        self._current_book = None
+        self._current_book = book_manager.get_book(self._editor)
         self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
         self.init_ui()
