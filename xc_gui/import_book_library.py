@@ -238,6 +238,14 @@ class BookLibraryHistoryDialog(QDialog):
             record_id = self.selected_book.get('id')
             if record_id:
                 sqlite_service.delete_book(record_id)  # 在accept()中执行删除
+        cp_book_id = self.selected_book.get('cp_book_id')
+        id = self.selected_book.get('id')
+        book_id = self.selected_book.get('book_id')
+        exco_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco')
+        download_dir = os.path.join(exco_dir, 'down_load_books')
+        file_path = download_dir+"/"+f"{cp_book_id}_{id}_{book_id}.txt"
+        # 调用打开
+
         super().accept()
 
     def reject(self):
