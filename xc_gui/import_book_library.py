@@ -231,11 +231,8 @@ class BookLibraryHistoryDialog(QDialog):
         return self.selected_book
 
     def accept(self):
-        if self.selected_book:
-            # 【新增】从选中数据中获取record_id并执行删除
-            record_id = self.selected_book.get('id')
-            if record_id:
-                sqlite_service.delete_book(record_id)  # 在accept()中执行删除
+        if not self.selected_book:
+            return
         cp_book_id = self.selected_book.get('cp_book_id')
         id = self.selected_book.get('id')
         book_id = self.selected_book.get('book_id')
@@ -244,8 +241,14 @@ class BookLibraryHistoryDialog(QDialog):
         download_dir = os.path.join(exco_dir, 'down_load_books')
         file_path = download_dir + "/" + f"{cp_book_id}_{id}_{book_id}.txt"
         # 调用打开
-        self.main_form.open_file_from_online(f"{cp_book_id}.txt", language, file_path)
-        super().accept()
+        is_open = self.main_form.open_file_from_online(f"{cp_book_id}.txt", language, file_path)
+        if is_open:
+            # 【新增】从选中数据中获取record_id并执行删除
+            record_id = self.selected_book.get('id')
+            # if record_id:
+            #     sqlite_service.delete_book(record_id)  # 在accept()中执行删除
+
+            super().accept()
 
     def reject(self):
         super().reject()

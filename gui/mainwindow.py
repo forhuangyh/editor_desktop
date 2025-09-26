@@ -85,6 +85,7 @@ from xc_gui.chapter_list import ChapterList
 from xc_gui.special_replace import SpecialReplace
 from xc_gui.fixed_widget import FixedWidget
 from xc_gui.question_list import QuestionList
+from xc_common import file_utils
 from xc_common.file_utils import copy_file_and_save_utf
 from xc_timer.book_download_scheduler import book_download_scheduler
 from xc_gui.q_message_box import CustomMessageBox
@@ -3637,12 +3638,19 @@ class MainWindow(qt.QMainWindow):
         #  先把文件复制到临时目录中，然后打开
         # Check if the files are valid
         if not all([file_name, file_path, language]):
-            return
+            return False
+        # 禁止同名文件打开
 
+        is_same = file_utils.has_same_file_name(file_name, self.get_all_editors())
+        if is_same:
+            CustomMessageBox.warning(
+                self, "警告", "已有打开的同名文件", 400, 120
+            )
+            return False
         self.open_chapter_list()
-
         new_file_path = copy_file_and_save_utf(data.platform, file_path, data.temp_file_directory, file_name)
         self.open_file(new_file_path, tab_widget, language=language, is_online=True)
+        return True
 
     def open_file(self, file=None, tab_widget=None, save_layout=False, language=None, is_online=False):
         """

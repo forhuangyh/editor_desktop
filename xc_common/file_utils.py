@@ -123,6 +123,17 @@ def save_as_utf(file_with_path, encoding='utf-8'):
         raise Exception(f"无法识别的编码: encoding={encoding}, {str(ex)}")
 
 
+def has_same_file_name(file_name, all_editors):
+    """是否有打开的同名文件
+    """
+
+    for editor in all_editors:
+        if os.path.basename(editor.save_path) == file_name:
+            return True
+
+    return False
+
+
 def get_chapter_title_reg(language):
     """获取章节标题正则
     """
