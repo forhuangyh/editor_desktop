@@ -312,10 +312,10 @@ if __name__ == "__main__":
         # 访问下载版本地址 http://192.168.3.7:8090/downloads/ 下载最新版本
         """
         # 构建开发环境版本
-        python utilities\windows_freeze_exco.py --env dev
+        python windows_freeze_exco.py --env dev
 
         # 构建生产环境版本
-        python utilities\windows_freeze_exco.py --env prod
+        python windows_freeze_exco.py --env prod
 
         """
     finally:
