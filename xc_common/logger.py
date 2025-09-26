@@ -5,6 +5,7 @@ import os
 import logging
 import datetime
 import data
+import sys
 from functions import create_directory
 
 
@@ -39,20 +40,19 @@ class LoggerManager:
         file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
 
-        # 创建控制台处理器
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-
         # 定义日志格式
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
-
         file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
-
-        # 添加处理器到日志记录器
         root_logger.addHandler(file_handler)
-        root_logger.addHandler(console_handler)
+
+        # 只有当sys.stdout存在时才创建控制台处理器
+        if hasattr(sys, 'stdout') and sys.stdout is not None:
+            # 创建控制台处理器
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            console_handler.setFormatter(formatter)
+            root_logger.addHandler(console_handler)
 
     def get_logger(self, name):
         """获取指定名称的logger实例"""

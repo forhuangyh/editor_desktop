@@ -368,4 +368,7 @@ default_settings = {
     "keyboard-shortcuts": keyboard_shortcuts["default"].copy(),
     "editor_api_base_url": editor_api_base_url,
     "settings_control_font": settings_control_font,
+    "remember_credentials": False,
+    "saved_username": "",
+    "saved_password": "",
 }
