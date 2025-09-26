@@ -148,11 +148,13 @@ def main():
             # 发送 "显示窗口" 指令给已有实例
             _data = {"command": "show", "arguments": None}
             fc = components.communicator.FileCommunicator("SHOW-OPEN-INSTANCE")
+            print(f"[单实例控制] 检测到已有实例，尝试发送show命令到: {fc._FileCommunicator__comm_file_path}")
             fc.send_data(_data)
             import time
             time.sleep(0.5)  # 确保指令发送完成
+            print("[单实例控制] 命令发送成功，当前实例退出")
         except Exception as e:
-            print(f"唤起已有实例失败: {str(e)}")
+            print(f"[单实例控制] 唤起已有实例失败: {str(e)}")
         finally:
             if lock_file:
                 lock_file.close()  # 关闭 macOS 锁文件
