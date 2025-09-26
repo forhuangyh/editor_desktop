@@ -224,6 +224,18 @@ class SQLiteService:
         except Exception as e:
             print(f"关闭数据库连接失败: {str(e)}")
 
+    # 清除数据库中进行中的数据
+    def clear_downloading_books(self):
+        """清除数据库中所有下载状态为1（进行中）的书籍记录"""
+        try:
+            self.db.execute(
+                "DELETE FROM book_download_records WHERE download_state = 1"
+            )
+            return True
+        except Exception as e:
+            print(f"清除下载中书籍记录失败: {str(e)}")
+            return False
+
     """--------------------------------下载相关--------------------------------"""
     def get_books_by_download_state(self, states):
         """根据下载状态获取书籍记录
