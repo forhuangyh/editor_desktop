@@ -5,7 +5,9 @@ from xc_common.sqlite_utils import SQLiteUtils
 
 # 数据库文件路径
 db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco', 'editor_desktop.db')
-
+from xc_common.logger import get_logger
+# 获取模块专属logger
+logger = get_logger("sqlite_service")
 
 class SQLiteService:
     """SQLite数据库服务类，提供书籍相关的数据库操作"""
@@ -69,7 +71,7 @@ class SQLiteService:
             self.db.insert('book_download_records', filtered_data)
             return True
         except Exception as e:
-            print(f"添加书籍记录失败: {str(e)}")
+            logger.error(f"添加书籍记录失败: {str(e)}")
             return False
 
     def update_book(self, book_data):
@@ -87,7 +89,7 @@ class SQLiteService:
             file_path = book_data.get('file_path', '')
 
             if not book_id or not file_path:
-                print("更新书籍记录失败: 缺少必要的book_id或file_path字段")
+                logger.error("更新书籍记录失败: 缺少必要的book_id或file_path字段")
                 return False
 
             # 检查记录是否存在
@@ -97,7 +99,7 @@ class SQLiteService:
             )
 
             if not existing_book:
-                print(f"更新书籍记录失败: 未找到书籍ID为'{book_id}'且文件路径为'{file_path}'的记录")
+                logger.error(f"更新书籍记录失败: 未找到书籍ID为'{book_id}'且文件路径为'{file_path}'的记录")
                 return False
 
             # 过滤只保留表结构中定义的字段（排除id）
@@ -120,7 +122,7 @@ class SQLiteService:
             )
             return True
         except Exception as e:
-            print(f"更新书籍记录失败: {str(e)}")
+            logger.error(f"更新书籍记录失败: {str(e)}")
             return False
 
     def add_or_update_book(self, book_data):
@@ -139,7 +141,7 @@ class SQLiteService:
                 # 调用添加方法
                 return self.add_book(book_data)
         except Exception as e:
-            print(f"添加或更新书籍记录失败: {str(e)}")
+            logger.error(f"添加或更新书籍记录失败: {str(e)}")
             return False
 
     def get_all_books(self):
@@ -149,7 +151,7 @@ class SQLiteService:
                 "SELECT * FROM book_download_records ORDER BY created_at DESC"
             )
         except Exception as e:
-            print(f"获取书籍记录失败: {str(e)}")
+            logger.error(f"获取书籍记录失败: {str(e)}")
             return []
 
     def get_recent_books(self, limit=100):
@@ -165,7 +167,7 @@ class SQLiteService:
                 (limit,)
             )
         except Exception as e:
-            print(f"获取最近书籍记录失败: {str(e)}")
+            logger.error(f"获取最近书籍记录失败: {str(e)}")
             return []
 
     def get_book_by_id(self, id):
@@ -182,7 +184,7 @@ class SQLiteService:
                 return result
             return None
         except Exception as e:
-            print(f"获取书籍记录失败: {str(e)}")
+            logger.error(f"获取书籍记录失败: {str(e)}")
             return None
 
     def update_download_state(self, id, state, chapters=None):
@@ -201,7 +203,7 @@ class SQLiteService:
             )
             return True
         except Exception as e:
-            print(f"更新下载状态失败: {str(e)}")
+            logger.error(f"更新下载状态失败: {str(e)}")
             return False
 
     def delete_book(self, id):
@@ -213,7 +215,7 @@ class SQLiteService:
             )
             return True
         except Exception as e:
-            print(f"删除书籍记录失败: {str(e)}")
+            logger.error(f"删除书籍记录失败: {str(e)}")
             return False
 
     def close(self):
@@ -222,7 +224,7 @@ class SQLiteService:
             if hasattr(self.db, 'close'):
                 self.db.close()
         except Exception as e:
-            print(f"关闭数据库连接失败: {str(e)}")
+            logger.error(f"关闭数据库连接失败: {str(e)}")
 
     # 清除数据库中进行中的数据
     def clear_downloading_books(self):
@@ -233,7 +235,7 @@ class SQLiteService:
             )
             return True
         except Exception as e:
-            print(f"清除下载中书籍记录失败: {str(e)}")
+            logger.error(f"清除下载中书籍记录失败: {str(e)}")
             return False
 
     """--------------------------------下载相关--------------------------------"""
@@ -256,7 +258,7 @@ class SQLiteService:
             query = f"SELECT * FROM book_download_records WHERE download_state IN ({placeholders}) ORDER BY {case_when} ASC"
             return self.db.fetch_all(query, states)
         except Exception as e:
-            print(f"获取特定状态的书籍记录失败: {str(e)}")
+            logger.error(f"获取特定状态的书籍记录失败: {str(e)}")
             return []
 
     def get_pending_books(self, limit=10):
@@ -276,7 +278,7 @@ class SQLiteService:
                     """
             return self.db.fetch_all(query, (limit,))
         except Exception as e:
-            print(f"获取待处理书籍记录失败: {str(e)}")
+            logger.error(f"获取待处理书籍记录失败: {str(e)}")
             return []
 
     def pause_all_downloads(self):
@@ -293,7 +295,7 @@ class SQLiteService:
             )
             return True
         except Exception as e:
-            print(f"暂停所有下载失败: {str(e)}")
+            logger.error(f"暂停所有下载失败: {str(e)}")
             return False
 # 创建全局实例供其他模块使用
 sqlite_service = SQLiteService()

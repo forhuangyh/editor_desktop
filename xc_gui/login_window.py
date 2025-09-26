@@ -13,7 +13,9 @@ import settings
 from xc_service.account_service import AccountService
 from xc_service.sqlite_service import SQLiteService, sqlite_service
 from settings.constants import version_type
-
+from xc_common.logger import get_logger
+# 获取模块专属logger
+logger = get_logger("login_window")
 
 class LoginWindow(qt.QDialog):
     """
@@ -278,7 +280,7 @@ class LoginWindow(qt.QDialog):
             if success:
                 # 清除数据库进行中的数据
                 sqlite_service.clear_downloading_books()
-                print("清楚历史进行中数据完毕。。。")
+                logger.info("清楚历史进行中数据完毕。。。")
                 # 如果勾选了记住账号密码，则保存；否则清除已保存的凭据
                 if self.remember_checkbox.isChecked():
                     self.save_credentials(username, password)
@@ -314,7 +316,7 @@ class LoginWindow(qt.QDialog):
             settings.set("saved_username", "")
             settings.set("saved_password", "")
         except Exception as e:
-            print(f"清除账号密码失败: {str(e)}")
+            logger.error(f"清除账号密码失败: {str(e)}")
 
     def save_credentials(self, username, password):
         """
@@ -325,7 +327,7 @@ class LoginWindow(qt.QDialog):
             settings.set("saved_username", username)
             settings.set("saved_password", password)  # 注意：实际应用中应考虑加密存储
         except Exception as e:
-            print(f"保存账号密码失败: {str(e)}")
+            logger.error(f"保存账号密码失败: {str(e)}")
 
     def load_saved_credentials(self):
         """
@@ -342,7 +344,7 @@ class LoginWindow(qt.QDialog):
                         self.password_edit.setText(password)
                     self.remember_checkbox.setChecked(True)
         except Exception as e:
-            print(f"加载账号密码失败: {str(e)}")
+            logger.error(f"加载账号密码失败: {str(e)}")
 
     def show_error(self, message):
         """

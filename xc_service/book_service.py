@@ -3,7 +3,9 @@ import concurrent.futures
 from xc_common.utils import http_form_post, http_file_post
 from xc_entity.account import user_info
 import settings
-
+from xc_common.logger import get_logger
+# 获取模块专属logger
+logger = get_logger("book_service")
 
 class BookService:
     # 加入初始化方法
@@ -112,7 +114,7 @@ class BookService:
         """
         bookinfo = self.get_book_info(cp_book_id=cp_book_id)
         if not bookinfo:
-            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到书籍信息")
+            logger.warning(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到书籍信息")
             return None
         bk_id = bookinfo.get("book_id")
         form_data = {"book_id": bk_id}
@@ -164,15 +166,15 @@ class BookService:
                                 }
                                 chapter_result_list.append(extracted_item)
                         if not chapter_result_list:
-                            print(f"书籍ID:{cp_book_id}未获取到书籍章节基本信息数据")
+                            logger.info(f"书籍ID:{cp_book_id}未获取到书籍章节基本信息数据")
                             return None
                         result["chapter_list"] = chapter_result_list
                         result["total_chapters"] = len(chapter_result_list)
                         return result
                 else:
-                    print(f"书籍ID:{cp_book_id}未获取到书籍基本信息数据")
+                    logger.info(f"书籍ID:{cp_book_id}未获取到书籍基本信息数据")
                     return None
-        print(f"书籍ID:{cp_book_id}未获取到书籍基本信息数据")
+        logger.info(f"书籍ID:{cp_book_id}未获取到书籍基本信息数据")
         return None
 
         # 完善目录检查方法（确保正确创建文件夹）
@@ -183,18 +185,18 @@ class BookService:
         # 仅创建down_load_books根目录，不添加书籍子目录
         download_dir = os.path.join(exco_dir, 'down_load_books')
 
-        print(f"【下载目录】检查 | 目标根目录: '{download_dir}'")
+        logger.info(f"【下载目录】检查 | 目标根目录: '{download_dir}'")
 
         # 确保根目录存在（递归创建所有不存在的父目录）
         os.makedirs(download_dir, exist_ok=True)
-        print(f"【下载目录】根目录准备完成 | 路径: '{download_dir}'")
+        logger.info(f"【下载目录】根目录准备完成 | 路径: '{download_dir}'")
 
         return download_dir
 
     def download_book(self, id):
         import json
         from xc_service.sqlite_service import SQLiteService
-        print(f"\n【下载】开始下载书籍 | 本地记录ID: {id}")
+        logger.info(f"【下载】开始下载书籍 | 本地记录ID: {id}")
 
         try:
             # 获取本地书籍记录
@@ -203,13 +205,13 @@ class BookService:
             db_service.close()
 
             if not record:
-                print(f"【下载】失败 | 本地记录ID: {id} | 记录不存在")
+                logger.warning(f"【下载】失败 | 本地记录ID: {id} | 记录不存在")
                 return False
 
             book_id = record.get("book_id")
             cp_book_id = record.get("cp_book_id")
             title = record.get("title", "未知标题")
-            print(f"【下载】本地记录加载成功 | 本地ID: {id} | 书籍ID: {book_id} | 来源ID: {cp_book_id} | 标题: '{title}'")
+            logger.info(f"【下载】本地记录加载成功 | 本地ID: {id} | 书籍ID: {book_id} | 来源ID: {cp_book_id} | 标题: '{title}'")
 
             # 检查文件是否已存在
             # 新增：调用目录检查方法，确保文件夹存在
@@ -218,18 +220,18 @@ class BookService:
             file_path = os.path.join(download_dir, file_name)  # 使用检查后的目录
 
             if os.path.exists(file_path):
-                print(f"【下载】文件已存在 | 跳过下载 | 路径: '{file_path}'")
+                logger.warning(f"【下载】文件已存在 | 跳过下载 | 路径: '{file_path}'")
                 return True
-            print(
+            logger.info(
                 f"【下载】目标文件路径: '{file_path}' | 文件大小: {os.path.getsize(file_path) if os.path.exists(file_path) else 0} bytes")
 
             # 解析章节列表
             chapter_list_str = record.get('chapter_list', '[]')
             chapter_list = json.loads(chapter_list_str) if chapter_list_str else []
             if not chapter_list:
-                print(f"【下载】章节列表为空 | 本地ID: {id}")
+                logger.error(f"【下载】章节列表为空 | 本地ID: {id}")
                 return False
-            print(
+            logger.info(
                 f"【下载】章节列表解析完成 | 章节总数: {len(chapter_list)} | 最小索引: {min((c.get('index') for c in chapter_list), default=0)} | 最大索引: {max((c.get('index') for c in chapter_list), default=0)}")
 
             # 过滤需要下载的章节
@@ -238,10 +240,10 @@ class BookService:
                 chapter_id = chapter.get("chapter_id")
                 index = chapter.get("index")
                 if not chapter_id or index is None:
-                    print(f"【下载】章节过滤失败 | 本地ID: {id} | 章节索引: {idx} | 缺少chapter_id/index")
+                    logger.error(f"【下载】章节过滤失败 | 本地ID: {id} | 章节索引: {idx} | 缺少chapter_id/index")
                     return False
                 chapters_to_download.append({'chapter': chapter, 'index': index})
-            print(f"【下载】章节过滤完成 | 待下载章节数: {len(chapters_to_download)}")
+            logger.info(f"【下载】章节过滤完成 | 待下载章节数: {len(chapters_to_download)}")
 
             # 章节下载函数
             def download_single_chapter(chapter_info):
@@ -249,7 +251,7 @@ class BookService:
                 chapter_id = chapter.get("chapter_id")
                 index = chapter_info['index']
                 chapter_title = chapter.get("chapter_title", f"第{index}章")
-                print(f"【下载】章节开始 | 章节ID: {chapter_id} | 索引: {index} | 标题: '{chapter_title}'")
+                logger.info(f"【下载】章节开始 | 章节ID: {chapter_id} | 索引: {index} | 标题: '{chapter_title}'")
 
                 try:
                     response = http_form_post(
@@ -259,19 +261,19 @@ class BookService:
                     )
 
                     if not self.check_response(response) or "body" not in response:
-                        print(f"【下载】章节失败 | 章节ID: {chapter_id} | 响应无效: {response}")
+                        logger.error(f"【下载】章节失败 | 章节ID: {chapter_id} | 响应无效: {response}")
                         return False
 
                     content = response["body"].get("content", "").strip()
                     if not content:
-                        print(f"【下载】章节内容为空 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
+                        logger.error(f"【下载】章节内容为空 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                         return False
 
-                    print(
+                    logger.info(
                         f"【下载】章节成功 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                     return (index, chapter_title, content)
                 except Exception as e:
-                    print(f"【下载】章节异常 | 章节ID: {chapter_id} | 错误: {str(e)}")
+                    logger.error(f"【下载】章节异常 | 章节ID: {chapter_id} | 错误: {str(e)}")
                     return False
 
             # 多线程下载与合并
@@ -286,7 +288,7 @@ class BookService:
                     result = future.result()
                     if result is False:
                         success = False
-                        print(f"【下载】章节批量失败 | 取消剩余下载")
+                        logger.error(f"【下载】章节批量失败 | 取消剩余下载")
                         # 【新增】取消所有剩余未完成的任务
                         for pending_future in futures:
                             if not pending_future.done():
@@ -296,32 +298,32 @@ class BookService:
                         chapters_content.append(result)
 
             if not success or len(chapters_content) != len(chapters_to_download):
-                print(f"【下载】合并失败 | 成功下载: {len(chapters_content)}/{len(chapters_to_download)}章节")
+                logger.error(f"【下载】合并失败 | 成功下载: {len(chapters_content)}/{len(chapters_to_download)}章节")
                 return False
 
             # 排序并合并内容
             chapters_content.sort(key=lambda x: x[0])
             full_content = "\n\n".join([f"{title}\n{content}" for idx, title, content in chapters_content])
-            print(f"【下载】内容合并完成 | 总章节: {len(chapters_content)} | 合并后大小: {len(full_content)} bytes")
+            logger.info(f"【下载】内容合并完成 | 总章节: {len(chapters_content)} | 合并后大小: {len(full_content)} bytes")
 
             # 写入文件
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(full_content)
-            print(
+            logger.info(
                 f"【下载】成功完成 | 本地ID: {id} | 文件路径: '{file_path}' | 文件大小: {os.path.getsize(file_path)} bytes")
             return True
 
         except json.JSONDecodeError as e:
-            print(f"【下载】JSON解析失败 | 本地ID: {id} | 错误: {str(e)} | 章节列表: {record.get('chapter_list', '')}")
+            logger.error(f"【下载】JSON解析失败 | 本地ID: {id} | 错误: {str(e)} | 章节列表: {record.get('chapter_list', '')}")
         except Exception as e:
-            print(f"【下载】总异常 | 本地ID: {id} | 错误类型: {type(e).__name__} | 详情: {str(e)}")
+            logger.error(f"【下载】总异常 | 本地ID: {id} | 错误类型: {type(e).__name__} | 详情: {str(e)}")
         return False
 
     # 获取书籍基本信息
     def get_book_info(self, cp_book_id):
         """获取书籍基本信息"""
         if not cp_book_id:
-            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID不能为空")
+            logger.warning(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID不能为空")
             return None
 
         response = http_form_post(
@@ -331,7 +333,7 @@ class BookService:
         )
 
         if not self.check_response(response) or "body" not in response:
-            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应无效: {response}")
+            logger.warning(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应无效: {response}")
             return None
 
         # 新增：从body中提取items数组并查找匹配记录
@@ -340,17 +342,17 @@ class BookService:
 
         # 验证items是否为列表
         if not isinstance(items, list):
-            print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应items格式错误")
+            logger.error(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 响应items格式错误")
             return None
 
         # 遍历items查找oper_book_id完全匹配的记录
         for item in items:
             if item.get("oper_book_id") == cp_book_id:
-                print(f"【获取书籍基本信息】成功 | 平台书籍ID: {cp_book_id} | 找到匹配记录")
+                logger.warning(f"【获取书籍基本信息】成功 | 平台书籍ID: {cp_book_id} | 找到匹配记录")
                 return item
 
         # 未找到匹配记录
-        print(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到匹配书籍")
+        logger.info(f"【获取书籍基本信息】失败 | 平台书籍ID: {cp_book_id} | 未找到匹配书籍")
         return None
 
     # 上传覆盖书籍
@@ -365,19 +367,19 @@ class BookService:
         """
         # 判断数据是否存在
         if not cp_book_id or not file_content or not file_name:
-            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID、文件内容和文件名不能为空")
+            logger.info(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 书籍ID、文件内容和文件名不能为空")
             return False, ""
 
         # 获取书籍信息以获取内部book_id
         book_info = self.get_book_info(cp_book_id)
         if not book_info:
-            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未找到书籍信息")
+            logger.warning(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未找到书籍信息")
             return False, ""
 
         book_id = book_info.get("book_id")
         # 验证book_id是否为有效数字类型
         if not book_id or not isinstance(book_id, (int, float)):
-            print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 获取到的book_id不是有效数字 (值: {book_id})")
+            logger.info(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 获取到的book_id不是有效数字 (值: {book_id})")
             return False, ""
 
         try:
@@ -394,7 +396,7 @@ class BookService:
 
             # 检查响应是否有效
             if not response:
-                print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未收到有效响应")
+                logger.error(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: 未收到有效响应")
                 return False, ""
 
             # 检查响应状态码（使用统一的check_response方法）
@@ -404,15 +406,15 @@ class BookService:
                 task_id = task_info.get("celery_task_id", "")
                 db_task_id = task_info.get("db_task_id", "")
                 task_status = task_info.get("celery_task_status", "")
-                print(f"【上传书籍】请求提交成功 | 平台书籍ID: {cp_book_id} | 任务ID: {task_id} | 状态: {task_status}")
+                logger.info(f"【上传书籍】请求提交成功 | 平台书籍ID: {cp_book_id} | 任务ID: {task_id} | 状态: {task_status}")
                 return True, db_task_id
             else:
                 error_msg = response.get("message", "未知错误")
-                print(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: {error_msg} | 响应码: {response.get('code')}")
+                logger.error(f"【上传书籍】失败 | 平台书籍ID: {cp_book_id} | 错误: {error_msg} | 响应码: {response.get('code')}")
                 return False, ""
 
         except Exception as e:
-            print(f"【上传书籍】异常 | 平台书籍ID: {cp_book_id} | 错误: {str(e)}")
+            logger.error(f"【上传书籍】异常 | 平台书籍ID: {cp_book_id} | 错误: {str(e)}")
             return False, ""
 
     # 查下覆盖任务状态api_book_overwrite_task
@@ -425,7 +427,7 @@ class BookService:
         """
         # 参数校验
         if not task_id:
-            print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 任务ID不能为空")
+            logger.error(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 任务ID不能为空")
             return None
 
         try:
@@ -442,7 +444,7 @@ class BookService:
             # 检查响应是否有效
             if not self.check_response(response):
                 error_msg = response.get("message", "未知错误") if response else "未收到响应"
-                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: {error_msg}")
+                logger.error(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: {error_msg}")
                 return None
 
             # 解析响应数据
@@ -451,19 +453,19 @@ class BookService:
 
             # 验证data字段格式
             if not isinstance(task_data_list, list):
-                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: data字段格式不是列表")
+                logger.error(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: data字段格式不是列表")
                 return None
 
             # 提取任务信息（取第一个匹配任务）
             if task_data_list:
                 task_info = task_data_list[0]
-                print(
+                logger.info(
                     f"【查询任务状态】成功 | 任务ID: {task_id} | 状态: {task_info.get('task_status')} | 进度: {task_info.get('task_cur_progress')}/{task_info.get('task_total_progress')}")
                 return task_info
             else:
-                print(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 未找到任务数据")
+                logger.warning(f"【查询任务状态】失败 | 任务ID: {task_id} | 错误: 未找到任务数据")
                 return None
 
         except Exception as e:
-            print(f"【查询任务状态】异常 | 任务ID: {task_id} | 错误: {str(e)}")
+            logger.error(f"【查询任务状态】异常 | 任务ID: {task_id} | 错误: {str(e)}")
             return None
