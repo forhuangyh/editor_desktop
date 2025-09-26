@@ -51,7 +51,7 @@ class BookLibraryHistoryDialog(QDialog):
         self.book_id_form = SimpleInputForm(
             label_text="书籍ID：",
             placeholder_text="请输入书籍ID",
-            button_text="确认",
+            button_text="确认下载",
             on_confirm_callback=self.on_confirm_id
         )
         main_layout.addWidget(self.book_id_form)

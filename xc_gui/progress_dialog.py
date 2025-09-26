@@ -7,14 +7,14 @@ class UploadProgressDialog(QDialog):
     def __init__(self, parent, file_name):
         super().__init__(parent)
         self.setWindowTitle("处理中")
-        self.setFixedSize(300, 120)
+        self.setFixedSize(400, 160)
         self.setWindowFlags(
             Qt.WindowType.Window |
             Qt.WindowType.WindowTitleHint |
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint
         )
-        self.setStyleSheet("background-color: rgba(255, 255, 255, 240); border-radius: 5px;")
+        self.setStyleSheet("QDialog {background-color: rgba(255, 255, 255, 240); border: 1px solid black;}")
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
