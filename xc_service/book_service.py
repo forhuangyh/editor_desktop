@@ -3,7 +3,6 @@ import concurrent.futures
 from xc_common.utils import http_form_post, http_file_post
 from xc_entity.account import user_info
 import settings
-from xc_service.sqlite_service import sqlite_service
 
 
 class BookService:

@@ -17,10 +17,43 @@ import black
 import cx_Freeze
 import zipfile
 import paramiko
+import argparse
 from cx_Freeze import Executable
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data import application_version
 
+
+# 添加环境参数解析 - 只包含dev和prod选项
+parser = argparse.ArgumentParser(description="构建编辑桌面应用开始")
+parser.add_argument('--env', choices=['dev', 'prod'], default='dev', help='Target environment for build')
+args = parser.parse_args()
+target_env = args.env
+print(f"构建 {target_env} 环境的桌面应用")
+
+# 获取项目根目录
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+settings_dir = os.path.join(project_root, 'settings')
+
+# 保存原始的constants.py文件，用于后续还原
+original_constants = os.path.join(settings_dir, 'constants.py')
+backup_constants = os.path.join(settings_dir, 'constants.py.bak')
+
+# 环境特定配置文件路径
+env_constants = os.path.join(settings_dir, f'constants_{target_env}.py')
+
+# 检查环境配置文件是否存在
+if not os.path.exists(env_constants):
+    print(f"错误：环境配置文件 {env_constants} 不存在")
+    sys.exit(1)
+
+# 备份原始配置文件（如果存在）
+if os.path.exists(original_constants):
+    shutil.copy2(original_constants, backup_constants)
+    print(f"已备份原始配置文件到 {backup_constants}")
+
+# 复制环境特定配置文件覆盖默认配置文件
+shutil.copy2(env_constants, original_constants)
+print(f"已使用 {target_env} 环境配置文件覆盖默认配置文件")
 
 def compress_directory(directory_path):
     """将指定目录压缩成zip文件"""
@@ -245,4 +278,21 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+        # 访问下载版本地址 http://192.168.3.7:8090/downloads/ 下载最新版本
+        """
+        # 构建开发环境版本
+        python darwin_freeze_exco.py --env dev
+
+        # 构建生产环境版本
+        python darwin_freeze_exco.py --env prod
+
+        """
+    finally:
+        # 还原原始配置文件
+        if os.path.exists(backup_constants):
+            print(f"还原原始配置文件")
+            shutil.copy2(backup_constants, original_constants)
+            os.remove(backup_constants)
+        pass

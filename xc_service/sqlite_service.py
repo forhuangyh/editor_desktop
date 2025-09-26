@@ -270,17 +270,10 @@ class SQLiteService:
             # 查询状态为4、3、0的记录，并按照这个顺序排序
             # 使用book_id和file_path组合确保不返回重复项
             query = """
-                   SELECT  * 
-                   FROM book_download_records 
-                   WHERE download_state IN (4, 3, 0) 
-                   ORDER BY book_id, file_path, 
-                       CASE download_state 
-                           WHEN 4 THEN 0 
-                           WHEN 3 THEN 1 
-                           WHEN 0 THEN 2 
-                       END ASC
-                   LIMIT ?
-               """
+                    SELECT *
+                    FROM book_download_records
+                    WHERE download_state = 0 LIMIT ? \
+                    """
             return self.db.fetch_all(query, (limit,))
         except Exception as e:
             print(f"获取待处理书籍记录失败: {str(e)}")
