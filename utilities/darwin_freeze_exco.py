@@ -272,7 +272,12 @@ def main():
     ssh_username = 'root'
     ssh_password = '123,abc'  # 或者使用密钥文件
     # ssh_key_file = '/path/to/your/private_key'
-    remote_directory = '/home/www/editor_desktop_downloads/downloads/mac'
+
+    # 如果是target_env dev 则全部放入dev目录
+    if target_env == 'dev':
+        remote_directory = '/home/www/editor_desktop_downloads/downloads/dev'
+    else:
+        remote_directory = '/home/www/editor_desktop_downloads/downloads/mac'
 
     upload_to_remote_server(zip_file, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory)
 
