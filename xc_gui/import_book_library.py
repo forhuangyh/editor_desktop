@@ -140,7 +140,7 @@ class BookLibraryHistoryDialog(QDialog):
                     self.load_downs_book_to_table()
             else:
                 self.info_mask.close()
-                CustomMessageBox.warning(self, "获取失败", f"无法获取书籍ID为 '{cp_book_id}' 的信息")
+                CustomMessageBox.warning(self, "获取失败", f"无法查到此书，书籍ID为 '{cp_book_id}'")
 
         except Exception as e:
             self.info_mask.close()
