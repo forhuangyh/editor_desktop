@@ -16,6 +16,20 @@ from settings.settings import SettingsManipulator
 __settings_manipulator: SettingsManipulator = SettingsManipulator()
 __theme_cache: Dict[str, Dict[str, Any]] = {}
 
+# 在文件顶部添加以下导入语句
+def load_constants():
+    import importlib
+    constants_module = importlib.import_module('settings.constants')
+    # 动态导入所有常量到当前模块
+    for attr in dir(constants_module):
+        if not attr.startswith('__'):
+            globals()[attr] = getattr(constants_module, attr)
+
+# 加载常量
+try:
+    load_constants()
+except Exception as e:
+    print(f"Failed to load constants: {e}")
 
 def get(name: str) -> Any:
     return __settings_manipulator.get(name)

@@ -12,7 +12,8 @@ import functions
 """
 自定义属性行
 """
-# editor_api_base_url = "https://editor.inovelclub.com/"
+setting_env = "dev"
+version_type = "dev"
 editor_api_base_url = "http://101.47.131.70:8087"
 
 """

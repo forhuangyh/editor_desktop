@@ -12,6 +12,7 @@ import data
 import settings
 from xc_service.account_service import AccountService
 from xc_service.sqlite_service import SQLiteService, sqlite_service
+from settings.constants import version_type
 
 
 class LoginWindow(qt.QDialog):
@@ -73,7 +74,10 @@ class LoginWindow(qt.QDialog):
         logo_font.setBold(True)
         logo_label.setFont(logo_font)
         logo_label.setAlignment(qt.Qt.AlignmentFlag.AlignCenter)
-        title_label = qt.QLabel("version {:s}".format(data.application_version))
+        if version_type == "dev":
+            title_label = qt.QLabel("开发版 - 版本 {:s}".format(data.application_version))
+        else:
+            title_label = qt.QLabel("发布版 - 版本 {:s}".format(data.application_version))
 
         title_font = qt.QFont(title_label.font())
         title_font.setPointSize(18)  # 增大版本号字体
