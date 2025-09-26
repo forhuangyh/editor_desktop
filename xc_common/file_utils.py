@@ -126,7 +126,8 @@ def save_as_utf(file_with_path, encoding='utf-8'):
 def has_same_file_name(file_name, all_editors):
     """是否有打开的同名文件
     """
-
+    # file_name,这里的file_name 有时候是个path，
+    file_name = os.path.basename(file_name)
     for editor in all_editors:
         if os.path.basename(editor.save_path) == file_name:
             return True

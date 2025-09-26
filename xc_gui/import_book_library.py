@@ -245,9 +245,8 @@ class BookLibraryHistoryDialog(QDialog):
         if is_open:
             # 【新增】从选中数据中获取record_id并执行删除
             record_id = self.selected_book.get('id')
-            # if record_id:
-            #     sqlite_service.delete_book(record_id)  # 在accept()中执行删除
-
+            if record_id:
+                sqlite_service.delete_book(record_id)  # 在accept()中执行删除
             super().accept()
 
     def reject(self):
