@@ -19,7 +19,9 @@ from .extended_table_widget import ExtendedTableWidget
 from .form_components import SimpleInputForm
 from xc_service.sqlite_service import sqlite_service
 from xc_gui.progress_dialog import UploadProgressDialog  # 导入公共遮罩组件
-
+from xc_common.logger import get_logger
+# 获取模块专属logger
+logger = get_logger("import_book_library")
 
 # ================= 历史对话框 =================
 class BookLibraryHistoryDialog(QDialog):
@@ -93,7 +95,7 @@ class BookLibraryHistoryDialog(QDialog):
             download_state = self.selected_book.get('download_state', 0)
             if download_state == 2:
                 # 打印整条数据
-                print(f"双击书籍数据：{self.selected_book}")
+                logger.info(f"双击书籍数据：{self.selected_book}")
                 # 删除数据库记录，获取文件路径
                 record_id = self.selected_book.get('id')
                 if record_id:
@@ -164,10 +166,10 @@ class BookLibraryHistoryDialog(QDialog):
             # 遍历数据并添加到表格
             for book_info in self.book_history:
                 # 打印每一条记录信息，打印id 和 时间
-                print(f"书籍ID: {book_info.get('cp_book_id', '未知')}, 提交时间: {book_info.get('created_at', '未知时间')},记录id: {book_info.get('id', '未知')}，更新时间:{book_info.get('updated_at', '未知时间')}")
+                logger.info(f"书籍ID: {book_info.get('cp_book_id', '未知')}, 提交时间: {book_info.get('created_at', '未知时间')},记录id: {book_info.get('id', '未知')}，更新时间:{book_info.get('updated_at', '未知时间')}")
                 self.add_book_to_table(book_info)
         except Exception as e:
-            print(f"加载下载记录失败: {str(e)}")
+            logger.error(f"加载下载记录失败: {str(e)}")
             CustomMessageBox.warning(self, "加载失败", f"无法加载书籍下载记录：{str(e)}")
 
     def add_book_to_table(self, book_info):
@@ -257,7 +259,7 @@ class BookLibraryHistoryDialog(QDialog):
             self.scheduler.task_completed.disconnect(self.load_downs_book_to_table)
             self.scheduler.task_failed.disconnect(self.load_downs_book_to_table)
         except Exception as e:
-            print(f"断开信号连接失败: {str(e)}")
+            logger.info(f"断开信号连接失败: {str(e)}")
         event.accept()
 
 
@@ -287,7 +289,7 @@ class BookLibraryManager:
             }
             sqlite_service.add_or_update_book(book_info)
         except Exception as e:
-            print(f"无法添加书籍到历史记录：{str(e)}")
+            logger.error(f"无法添加书籍到历史记录：{str(e)}")
 
 
 # ================= 便捷函数 =================
