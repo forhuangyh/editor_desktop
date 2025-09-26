@@ -276,9 +276,10 @@ def main():
     # 如果是target_env dev 则全部放入dev目录
     if target_env == 'dev':
         remote_directory = '/home/www/editor_desktop_downloads/downloads/dev'
+        print(f"上传到开发环境目录: {remote_directory}")
     else:
         remote_directory = '/home/www/editor_desktop_downloads/downloads/mac'
-
+        print(f"上传到生产环境目录: {remote_directory}")
     upload_to_remote_server(zip_file, ssh_host, ssh_port, ssh_username, ssh_password, remote_directory)
 
 
