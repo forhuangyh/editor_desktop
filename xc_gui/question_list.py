@@ -27,7 +27,7 @@ from xc_entity.question import Question
 
 class QuestionList(QWidget):
     # Class variables
-    name = "问题列表"
+    name = "查重列表"
     _parent = None
     main_form = None
     current_icon = None
@@ -181,7 +181,7 @@ class QuestionList(QWidget):
         info_button_layout.addWidget(self.up_button)
         info_button_layout.addWidget(self.down_button)
 
-        self.search_button = QPushButton("检查")
+        self.search_button = QPushButton("查重")
         self.search_button.setMinimumHeight(30)
         self.search_button.setMinimumWidth(40)
         self.search_button.setMaximumWidth(50)

@@ -67,7 +67,7 @@ class ChapterList(QWidget):
         self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
         self.reg_list = [
-            r'^###(\w{1,25})###(.*?)\r?\n?$',
+            # r'^###(\w{1,25})###(.*?)\r?\n?$',
             r'^(Chapter.*?)\r?\n?$',
             r'^(.*?\d+.*?)\r?\n?$',
         ]

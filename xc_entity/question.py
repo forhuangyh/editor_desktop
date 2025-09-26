@@ -6,7 +6,7 @@ import bisect
 
 
 class Question(object):
-    """问题列表管理功能"""
+    """查重列表管理功能"""
 
     is_work = False
 
@@ -17,7 +17,7 @@ class Question(object):
         self.question_list = []
 
     def set_is_work(self, is_work):
-        """是否检查问题列表
+        """是否查重
         """
         self.is_work = is_work
 

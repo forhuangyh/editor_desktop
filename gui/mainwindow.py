@@ -2329,9 +2329,9 @@ class MainWindow(qt.QMainWindow):
                 self.open_question_list()
 
             open_question_list_action = create_action(
-                "问题列表",
+                "查重列表",
                 settings.get("keyboard-shortcuts")["general"]["open_question_list"],
-                "问题列表",
+                "查重列表",
                 "tango_icons/document-open.png",
                 special_open_question_list,
             )
@@ -2385,6 +2385,7 @@ class MainWindow(qt.QMainWindow):
             edit_menu.addAction(open_chapter_list_action)
             edit_menu.addSeparator()
             edit_menu.addAction(open_question_list_action)
+            edit_menu.addSeparator()
 
             edit_menu.addAction(import_book_library_action)
             edit_menu.addAction(upload_action)  # 添加到"编辑"菜单，位于"下载书库书籍"之后
@@ -3806,11 +3807,11 @@ class MainWindow(qt.QMainWindow):
         return return_widget
 
     def open_question_list(self):
-        """问题段落"""
+        """重复段落"""
         # 创建新的树形tab
         # Create the new scintilla document in the selected basic widget
         return_widget = self.get_largest_window().question_list_add(
-            "问题段落"
+            "重复段落"
         )
         # Set focus to the new widget
         return_widget.setFocus()
@@ -5234,7 +5235,7 @@ QSplitter::handle {{
                                 elif cls == "SpecialReplace":
                                     new_tabs.special_replace_add("特殊替换")
                                 elif cls == "QuestionList":
-                                    new_tabs.question_list_add("问题列表")
+                                    new_tabs.question_list_add("查重列表")
                                 elif cls == constants.SpecialTabNames.Messages.value:
                                     self._parent.repl_messages_tab = (
                                         new_tabs.plain_add_document(

@@ -114,7 +114,7 @@ class FixedWidget(qt.QObject):
         new_question_list = QuestionList(self, tab_widget, self.main_form)
         new_question_list_tab_index = tab_widget.addTab(new_question_list, document_name)
         # 禁止关闭
-        # tab_widget.tabBar().setTabButton(new_question_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
+        tab_widget.tabBar().setTabButton(new_question_list_tab_index, qt.QTabBar.ButtonPosition.RightSide, None)
         # Make new tab visible
         tab_widget.setCurrentIndex(new_question_list_tab_index)
         self.question_list = tab_widget.widget(new_question_list_tab_index)
