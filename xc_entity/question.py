@@ -1,12 +1,8 @@
 """
 问题类: 属性，方法
 """
-import re
+
 import bisect
-from xc_common.word_count import word_count_func
-
-
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 
 class Question(object):
@@ -86,7 +82,7 @@ class Question(object):
         """
         查找章节标题
         """
-        if not order_list:
+        if not order_list or not chapter_list:
             return ""
         # 使用 bisect_left 查找位置
         insertion_point = bisect.bisect_left(order_list, byte_index)
@@ -102,65 +98,3 @@ class Question(object):
     def __repr__(self) -> str:
         """对象表示方法，便于打印调试"""
         return f"<Question (ID:{self.book_name}) 包含{len(self.question_list)}章>"
-
-    # def refresh_question_list(self, text):
-    #     if not text:
-    #         return
-    #     if not self.chapter_pattern:
-    #         return
-    #     self.split_question_list(text)
-
-    # def get_line_byte_positions(self, line_list, encoding='utf-8'):
-    #     """
-    #     计算每行在整个字节流中的起始和结束位置。
-    #     Args:
-    #         text (str): 输入的原始文本。
-    #         encoding (str): 文本编码，默认为 'utf-8'。
-
-    #     Returns:
-    #         list: 一个列表，每个元素是一个字典，包含 'paragraph' (str), 'start' (int), 'end' (int)。
-    #     """
-    #     if not line_list:
-    #         return []
-    #     results = []
-    #     current_byte_pos = 0
-    #     for paragraph in line_list:
-    #         # 将当前段落（行）编码为字节串
-    #         paragraph_bytes = paragraph.encode(encoding)
-    #         # 计算结束位置
-    #         end_byte_pos = current_byte_pos + len(paragraph_bytes)
-    #         # 存储结果
-    #         results.append({
-    #             'text': paragraph,
-    #             'start': current_byte_pos,
-    #             'end': end_byte_pos
-    #         })
-    #         # 移动到下一段落的起始位置
-    #         # 需要考虑行分隔符 \n 的字节长度，通常是 1
-    #         current_byte_pos = end_byte_pos + 1
-    #     return results
-
-    # def find_all(self, source_bytes, pattern_bytes):
-    #     """
-    #     在二进制数据中查找一个模式出现的所有位置。
-    #     Args:
-    #         source_bytes: 要搜索的原始 bytes 对象。
-    #         pattern_bytes: 要查找的模式 bytes 对象。
-
-    #     Returns:
-    #         一个包含所有匹配起始位置的列表。
-    #     """
-    #     positions = []
-    #     start_index = 0
-    #     # 只要还能找到模式，就继续循环
-    #     while True:
-    #         # 从上一次找到的位置+1开始查找
-    #         index = source_bytes.find(pattern_bytes, start_index)
-    #         if index == -1:
-    #             # 如果没有找到，就退出循环
-    #             break
-    #         positions.append(index)
-    #         # 将下一次查找的起始位置更新为当前找到位置的下一个字节
-    #         start_index = index + 1
-
-    #     return positions

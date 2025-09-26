@@ -939,15 +939,15 @@ QTabBar::tab:selected {{
         # Return the reference to the new added scintilla tab widget
         return self.widget(new_editor_tab_index)
 
-    def editor_create_document(self, file_with_path=None):
+    def editor_create_document(self, file_with_path=None, language=None, is_online=False):
         """Create and initialize a custom scintilla document"""
         # Initialize the custom editor
-        new_scintilla_tab = CustomEditor(self, self.main_form, file_with_path)
+        new_scintilla_tab = CustomEditor(self, self.main_form, file_with_path, language, is_online=is_online)
         # Connect the signals
         new_scintilla_tab.textChanged.connect(new_scintilla_tab.text_changed)
         return new_scintilla_tab
 
-    def editor_add_document(self, document_name, type=None, bypass_check=False):
+    def editor_add_document(self, document_name, type=None, bypass_check=False, language=None, is_online=False):
         """Check tab type and add a document to self(QTabWidget)"""
         if type == "file":
             # New tab is a file on disk
@@ -964,7 +964,7 @@ QTabBar::tab:selected {{
                     # File cannot be read
                     return None
                 # Create new scintilla document
-                new_editor_tab = self.editor_create_document(document_name)
+                new_editor_tab = self.editor_create_document(document_name, language, is_online=is_online)
                 # Set the lexer that colour codes the document
                 new_editor_tab.choose_lexer(file_type)
                 # Add the scintilla document to the tab widget
@@ -984,7 +984,7 @@ QTabBar::tab:selected {{
         else:
             # New tab is an empty tab
             # Create new scintilla object
-            new_editor_tab = self.editor_create_document(document_name)
+            new_editor_tab = self.editor_create_document(document_name, language)
             # Add the scintilla document to the tab widget
             new_editor_tab_index = self.addTab(new_editor_tab, document_name)
             # Make new tab visible

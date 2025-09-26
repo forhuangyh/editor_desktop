@@ -46,6 +46,8 @@ class QuestionList(QWidget):
         if self._current_book:
             try:
                 self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+                self._fixed_widget.editor_changed.disconnect(self.update_editor_reference)
+                self._fixed_widget.editor_closed.disconnect(self.close_editor_reference)
                 self._current_book = None
                 self._chapter_list = None
             except (TypeError, RuntimeError):
@@ -66,6 +68,7 @@ class QuestionList(QWidget):
         self.settings_control_font = settings.get("settings_control_font")
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
+        self._fixed_widget.editor_closed.connect(self.close_editor_reference)
         self.set_theme(settings.get_theme())
 
     def update_editor_reference(self, new_editor):
@@ -95,6 +98,32 @@ class QuestionList(QWidget):
         else:
             self._current_book = None
             self.fill_match_list()
+
+    def close_editor_reference(self, new_editor):
+        """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
+        if self._editor != new_editor:
+            return
+        if not isinstance(new_editor, CustomEditor):
+            return
+
+        new_book = book_manager.get_book(new_editor)
+        if not new_book:
+            return
+        if self._current_book != new_book:
+            return
+
+        # 1. 如果存在旧的书籍对象，先断开它与槽函数的连接
+        if self._current_book:
+            try:
+                self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+            except TypeError:
+                pass
+
+        self._editor.clear_question_highlights()
+        self.model.setMatches([])
+        self.info_label.setText("重复总数：0")
+        self._current_book = None
+        self._editor = None
 
     @pyqtSlot(list)
     def handle_chapter_list_update(self, chapter_list):

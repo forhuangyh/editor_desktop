@@ -80,6 +80,8 @@ class CustomEditor(BaseEditor):
     hotspots = None
     bookmarks = None
     keyboard = None
+    language = None
+    is_online = False
 
     """
     Built-in and private functions
@@ -91,6 +93,7 @@ class CustomEditor(BaseEditor):
             self.line_list.parent = None
             self.line_list._clear()
             self._parent = None
+            book_manager.remove_book(self)
             self.main_form = None
             # Disconnect signals
             try:
@@ -120,7 +123,7 @@ class CustomEditor(BaseEditor):
             # Disengage self from the parent and clean up self
             self.setParent(None)
             self.deleteLater()
-            book_manager.remove_book(self)
+
         except:
             pass
 
@@ -128,7 +131,7 @@ class CustomEditor(BaseEditor):
         if not qt.sip.isdeleted(data.signal_dispatcher):
             data.signal_dispatcher.editor_deleted.emit(self.save_path)
 
-    def __init__(self, parent, main_form, file_with_path=None):
+    def __init__(self, parent, main_form, file_with_path=None, language=None, is_online=False):
         """
         Initialize the scintilla widget
         """
@@ -243,8 +246,10 @@ class CustomEditor(BaseEditor):
 
         # Signal file initialization
         data.signal_dispatcher.editor_initialized.emit(self.save_path)
-        book_manager.add_book(self, Book(self.name))
+        book_manager.add_book(self, Book(self.name, language, is_online))
         self.name = os.path.basename(file_with_path)
+        self.language = language
+        self.is_online = is_online
 
     def __setattr__(self, name, value):
         """
@@ -2145,56 +2150,6 @@ class CustomEditor(BaseEditor):
                 copy_file(data.platform, self.save_path, temp_save_path)
             else:
                 raise Exception("保存失败")
-
-    # def save_to_temp_directory(self, encoding="utf-8", line_ending=None):
-    #     """
-    #     新打开文件，主动存到临时文件夹
-    #     """
-    #     temp_file_dir =
-    #     temp_save_path = os.path.join(temp_file_dir, self.name)
-    #     # Replace back-slashes to forward-slashes on Windows
-    #     if data.platform == "Windows":
-    #         temp_save_path = functions.unixify_path(temp_save_path)
-    #     # Save the chosen file name to the document "save_path" attribute
-    #     self.save_path = temp_save_path
-    #     # Set the tab name by filtering it out from the QFileDialog result
-    #     self.name = os.path.basename(self.save_path)
-    #     # Change the displayed name of the tab in the basic widget
-    #     self._parent.set_tab_name(self, self.name)
-    #     # Check if a line ending was specified
-    #     if line_ending == None:
-    #         # Write contents of the tab into the specified file
-    #         save_result = functions.write_to_file(self.text(), self.save_path, encoding)
-    #     else:
-    #         # The line ending has to be a string
-    #         if isinstance(line_ending, str) == False:
-    #             self.main_form.display.repl_display_message(
-    #                 "Line ending has to be a string!",
-    #                 message_type=constants.MessageType.ERROR,
-    #             )
-    #             return False
-    #         else:
-    #             # Convert the text into a list and join it together with the specified line ending
-    #             text_list = self.line_list
-    #             converted_text = line_ending.join(text_list)
-    #             save_result = functions.write_to_file(
-    #                 converted_text, self.save_path, encoding
-    #             )
-    #     # Store the modification time
-    #     self.modification_time = os.path.getmtime(self.save_path)
-    #     # Check save result
-    #     if save_result == True:
-    #         # Saving has succeded
-    #         self.reset_text_changed()
-    #         # Update the lexer for the document only if the lexer is not set
-    #         if isinstance(self.lexer(), lexers.Text):
-    #             file_type = functions.get_file_type(self.save_path)
-    #             self.choose_lexer(file_type)
-    #         # Update the settings manipulator with the new file
-    #         self.main_form.settings.update_recent_list(self.save_path)
-    #         return True
-    #     else:
-    #         return False
 
     def refresh_lexer(self):
         """

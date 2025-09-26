@@ -30,10 +30,10 @@ def copy_file(platform, src_file_path, dst_dir_path):
     return dst_dir_path
 
 
-def copy_file_and_save_utf(platform, src_file_path, dst_dir):
+def copy_file_and_save_utf(platform, src_file_path, dst_dir, new_file_name=None):
     """复制需要打开的文件，并按utf-8编码统一保存"""
 
-    file_name = os.path.basename(src_file_path)
+    file_name = new_file_name if new_file_name else os.path.basename(src_file_path)
     dst_dir_path = os.path.join(dst_dir, file_name)
 
     # Replace back-slashes to forward-slashes on Windows
@@ -121,3 +121,43 @@ def save_as_utf(file_with_path, encoding='utf-8'):
     except Exception as ex:
         # Catch any other potential errors and print a message
         raise Exception(f"无法识别的编码: encoding={encoding}, {str(ex)}")
+
+
+def get_chapter_title_reg(language):
+    """获取章节标题正则
+    """
+    if language.lower() == 'en':  # 英语
+        collect_patt = r"^Book\s*#\d+\s*:\s*Chapter\s*\d+"
+        patt = r"^Chapter\s*\d+"
+    elif language.lower() == 'fr':  # 法语
+        collect_patt = r"^Livre\s*#\d+\s*:\s*Chapitre\s*\d+"
+        patt = r"^Chapitre\s*\d+"
+    elif language.lower() == 'pt':  # 葡萄牙语
+        collect_patt = r"^Livro\s*#\d+\s*:\s*Capítulo\s*\d+"
+        patt = r"^Capítulo\s*\d+"
+    elif language.lower() == 'es':  # 西班牙语
+        collect_patt = r"^Libro\s*#\d+\s*:\s*Capítulo\s*\d+"
+        patt = r"^Capítulo\s*\d+"
+    elif language.lower() == 'de':  # 德语
+        collect_patt = r"^Buch\s*#\d+\s*:\s*Kapitel\s*\d+"
+        patt = r"^Kapitel\s*\d+"
+    elif language.lower() == 'ru':  # 俄语
+        collect_patt = r"^Книга\s*#\d+\s*:\s*Глава\s*\d+"
+        patt = r"^Глава\s*\d+"
+    elif language.lower() == 'ko':  # 韩语
+        collect_patt = r"^책\s*#\d+\s*:\s*장\s*\d+"
+        patt = r"^장\s*\d+"
+    elif language.lower() == 'ar':  # 阿拉伯语
+        collect_patt = r"^كتاب\s*#\d+\s*:\s*فصل\s*\d+"
+        patt = r"^فصل\s*\d+"
+    elif language.lower() == 'id':  # 印尼语
+        collect_patt = r"^Buku\s*#\d+\s*:\s*Bab\s*\d+"
+        patt = r"^Bab\s*\d+"
+    elif language.lower() == 'th':  # 泰语
+        collect_patt = r"^หนังสือ\s*#\d+\s*:\s*บท\s*\d+"
+        patt = r"^บท\s*\d+"
+    else:
+        collect_patt = r"^Book\s*#\d+\s*:\s*Chapter\s*\d+"
+        patt = r"^Chapter\s*\d+"
+
+    return collect_patt, patt

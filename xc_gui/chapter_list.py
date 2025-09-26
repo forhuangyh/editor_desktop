@@ -46,6 +46,8 @@ class ChapterList(QWidget):
         if self._current_book:
             try:
                 self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+                self._fixed_widget.editor_changed.disconnect(self.update_editor_reference)
+                self._fixed_widget.editor_closed.disconnect(self.close_editor_reference)
                 self._current_book = None
                 self._chapter_list = None
             except (TypeError, RuntimeError):
@@ -72,7 +74,7 @@ class ChapterList(QWidget):
         self.last_index = 0
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
-
+        self._fixed_widget.editor_closed.connect(self.close_editor_reference)
         self.set_theme(settings.get_theme())
 
     def update_editor_reference(self, new_editor):
@@ -90,7 +92,10 @@ class ChapterList(QWidget):
 
         # 1. 如果存在旧的书籍对象，先断开它与槽函数的连接
         if self._current_book:
-            self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+            try:
+                self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+            except TypeError:
+                pass
 
         self.find_input.setEditText(new_book.chapter_pattern.decode("utf-8"))
         # 2. 建立新的绑定
@@ -105,10 +110,38 @@ class ChapterList(QWidget):
             self._current_book = None
             self.fill_match_list(new_book.chapter_list)
 
+    def close_editor_reference(self, new_editor):
+        """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
+        if self._editor != new_editor:
+            return
+        if not isinstance(new_editor, CustomEditor):
+            return
+
+        new_book = book_manager.get_book(new_editor)
+        if not new_book:
+            return
+        if self._current_book != new_book:
+            return
+
+        self._editor = None
+
+        # 1. 如果存在旧的书籍对象，先断开它与槽函数的连接
+        if self._current_book:
+            try:
+                self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+            except TypeError:
+                pass
+
+        self.find_input.setEditText("")
+        self._current_book = None
+        self.model.setMatches([])
+        self.info_label.setText("章节总数：0")
+
     @pyqtSlot(list)
     def handle_chapter_list_update(self, chapter_list):
         """当书籍的章节列表更新时，此槽函数会被调用"""
         self.chapter_list = chapter_list
+        self.find_input.setEditText(self._current_book.chapter_pattern.decode("utf-8"))
         self.fill_match_list(chapter_list)
 
     def init_ui(self):

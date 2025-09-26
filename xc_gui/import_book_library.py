@@ -23,13 +23,14 @@ from xc_gui.progress_dialog import UploadProgressDialog  # 导入公共遮罩组
 
 # ================= 历史对话框 =================
 class BookLibraryHistoryDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, main_form, parent=None):
         super().__init__(parent)
         self.setWindowTitle("下载书库书籍")
         self.setMinimumSize(1200, 800)
         self.book_history = []
         self.selected_book = None
         self.book_service = BookService()
+        self.main_form = main_form
         self.init_ui()
         # 初始化时调用 load_history 方法加载历史记录
         self.load_history()
@@ -41,7 +42,6 @@ class BookLibraryHistoryDialog(QDialog):
         self.scheduler.task_started.connect(self.load_downs_book_to_table)
         self.scheduler.task_completed.connect(self.load_downs_book_to_table)
         self.scheduler.task_failed.connect(self.load_downs_book_to_table)
-
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -57,7 +57,7 @@ class BookLibraryHistoryDialog(QDialog):
         main_layout.addWidget(self.book_id_form)
 
         # 表格
-        self.book_table = ExtendedTableWidget(0, 6, ["书籍ID", "书名", "语言", "章节数", "下载时间","下载状态"])
+        self.book_table = ExtendedTableWidget(0, 6, ["书籍ID", "书名", "语言", "章节数", "下载时间", "下载状态"])
         self.book_table.applyBookTableStyle()
         main_layout.addWidget(self.book_table, 1)
 
@@ -101,7 +101,6 @@ class BookLibraryHistoryDialog(QDialog):
             else:
                 # 可以添加提示信息，但不阻止其他操作
                 pass
-
 
     def on_confirm_id(self):
         cp_book_id = self.book_id_form.get_value()
@@ -228,7 +227,6 @@ class BookLibraryHistoryDialog(QDialog):
         """加载书籍历史记录（供刷新按钮调用）"""
         self.load_downs_book_to_table()
 
-
     def get_selected_book(self):
         return self.selected_book
 
@@ -241,11 +239,12 @@ class BookLibraryHistoryDialog(QDialog):
         cp_book_id = self.selected_book.get('cp_book_id')
         id = self.selected_book.get('id')
         book_id = self.selected_book.get('book_id')
+        language = self.selected_book.get('language')
         exco_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco')
         download_dir = os.path.join(exco_dir, 'down_load_books')
-        file_path = download_dir+"/"+f"{cp_book_id}_{id}_{book_id}.txt"
+        file_path = download_dir + "/" + f"{cp_book_id}_{id}_{book_id}.txt"
         # 调用打开
-
+        self.main_form.open_file_from_online(f"{cp_book_id}.txt", language, file_path)
         super().accept()
 
     def reject(self):
@@ -265,8 +264,8 @@ class BookLibraryHistoryDialog(QDialog):
 # ================= 管理器 =================
 class BookLibraryManager:
     @staticmethod
-    def import_book_from_library(parent=None):
-        dialog = BookLibraryHistoryDialog(parent)
+    def import_book_from_library(main_form, parent=None):
+        dialog = BookLibraryHistoryDialog(main_form, parent)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected_book = dialog.get_selected_book()
             if selected_book:
@@ -292,8 +291,8 @@ class BookLibraryManager:
 
 
 # ================= 便捷函数 =================
-def show_book_library_history(parent=None):
-    return BookLibraryManager.import_book_from_library(parent)
+def show_book_library_history(main_form, parent=None):
+    return BookLibraryManager.import_book_from_library(main_form, parent)
 
 
 def add_book_to_library_history(book_name, author, file_path):

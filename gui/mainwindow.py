@@ -87,6 +87,8 @@ from xc_gui.fixed_widget import FixedWidget
 from xc_gui.question_list import QuestionList
 from xc_common.file_utils import copy_file_and_save_utf
 from xc_timer.book_download_scheduler import book_download_scheduler
+from xc_gui.q_message_box import CustomMessageBox
+
 
 if data.platform == "Windows":
     import win32gui
@@ -1204,7 +1206,7 @@ class MainWindow(qt.QMainWindow):
             def upload_file():
                 """调用外部上传逻辑处理文件上传"""
                 try:
-                    # todo 保持选中文件
+                    # 保存选中文件，并在handle_book_upload校验标题
 
                     # 获取当前活动标签页
                     focused_tab = self.get_used_tab() or self.get_tab_by_focus()
@@ -1716,7 +1718,7 @@ class MainWindow(qt.QMainWindow):
             def import_book_library():
                 try:
                     # 调用我们实现的函数显示历史列表对话框
-                    show_book_library_history()
+                    show_book_library_history(self)
                 except Exception as e:
                     # 使用更健壮的错误处理方式，避免依赖可能不存在的组件
                     try:
@@ -2341,14 +2343,26 @@ class MainWindow(qt.QMainWindow):
                 """调用外部上传逻辑处理文件上传"""
                 try:
                     # todo 保持文件
-
                     focused_tab = self.get_used_tab() or self.get_tab_by_focus()
                     if not focused_tab:
-                        self.display.repl_display_error("没有找到当前活动的标签页")
+                        CustomMessageBox.warning(
+                            self, "警告", "没有找到当前活动的标签页", 400, 120
+                        )
                         return
-                    if not focused_tab.save_path:
-                        self.display.repl_display_error("当前文件未保存，无法上传")
+                    if not isinstance(focused_tab, CustomEditor):
+                        CustomMessageBox.warning(
+                            self, "警告", "非文本编辑器，无法上传", 400, 120
+                        )
                         return
+
+                    from xc_entity.book import book_manager
+                    is_ok, msg = book_manager.get_book(focused_tab).upload_check(focused_tab)
+                    if not is_ok:
+                        CustomMessageBox.warning(
+                            self, "警告", msg, 400, 120
+                        )
+                        return
+
                     from xc_gui.book_overwrite import handle_book_upload
                     handle_book_upload(self, focused_tab.save_path)
                 except Exception as e:
@@ -3617,7 +3631,20 @@ class MainWindow(qt.QMainWindow):
                 new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
                 self.open_file(new_file_path, tab_widget)
 
-    def open_file(self, file=None, tab_widget=None, save_layout=False):
+    def open_file_from_online(self, file_name, language, file_path, tab_widget=None):
+        """从web侧打开一个文件"""
+
+        #  先把文件复制到临时目录中，然后打开
+        # Check if the files are valid
+        if not all([file_name, file_path, language]):
+            return
+
+        self.open_chapter_list()
+
+        new_file_path = copy_file_and_save_utf(data.platform, file_path, data.temp_file_directory, file_name)
+        self.open_file(new_file_path, tab_widget, language=language, is_online=True)
+
+    def open_file(self, file=None, tab_widget=None, save_layout=False, language=None, is_online=False):
         """
         Read file contents into a TabWidget
         """
@@ -3654,7 +3681,7 @@ class MainWindow(qt.QMainWindow):
 
             # Add new scintilla document tab to the basic widget
             new_tab = tab_widget.editor_add_document(
-                in_file, "file", bypass_check=False
+                in_file, "file", bypass_check=False, language=language, is_online=is_online
             )
             # Set the icon if it was set by the lexer
             new_tab.internals.update_icon(new_tab)

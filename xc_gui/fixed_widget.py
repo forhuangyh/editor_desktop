@@ -23,6 +23,7 @@ class FixedWidget(qt.QObject):
     question_list = None
     editor = None
     editor_changed = qt.pyqtSignal(qt.QObject)
+    editor_closed = qt.pyqtSignal(qt.QObject)
 
     def __init__(self, main_form):
         """init
@@ -44,8 +45,8 @@ class FixedWidget(qt.QObject):
         if isinstance(widget, CustomEditor):
             if self.editor != widget:
                 return
+            self.editor_closed.emit(self.editor)  # 当编辑器关闭时发出信号
             self.editor = None
-            self.editor_changed.emit(self.editor)  # 当编辑器变化时发出信号
 
     def open_find_replace_dialog(self):
         """open_find_replace_dialog

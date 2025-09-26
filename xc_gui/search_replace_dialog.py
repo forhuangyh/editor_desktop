@@ -152,6 +152,8 @@ class SearchReplaceDialog(QDialog):
         )
         if not result:
             QMessageBox.warning(self, "警告", "查询不到匹配项")
+        else:
+            QMessageBox.information(self, "信息", f"共查询到{len(result)}个匹配项")
 
     def _replace(self):
         """替换当前匹配项"""
