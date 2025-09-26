@@ -105,7 +105,7 @@ class BookLibraryHistoryDialog(QDialog):
                 pass
 
     def on_confirm_id(self):
-        cp_book_id = self.book_id_form.get_value()
+        cp_book_id = self.book_id_form.get_value().strip()
         if not cp_book_id:
             CustomMessageBox.warning(self, "输入错误", "请输入书籍ID")
             return

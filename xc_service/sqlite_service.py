@@ -231,7 +231,7 @@ class SQLiteService:
         """清除数据库中所有下载状态为1（进行中）的书籍记录"""
         try:
             self.db.execute(
-                "DELETE FROM book_download_records WHERE download_state = 1 or download_state = 0"
+                "DELETE FROM book_download_records WHERE download_state != 2"
             )
             return True
         except Exception as e:
