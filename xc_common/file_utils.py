@@ -30,7 +30,7 @@ def copy_file(platform, src_file_path, dst_dir_path):
     return dst_dir_path
 
 
-def copy_file_and_save_utf(platform, src_file_path, dst_dir, new_file_name=None):
+def copy_file_and_save_utf(platform, src_file_path, dst_dir, new_file_name=None, is_online=None):
     """复制需要打开的文件，并按utf-8编码统一保存"""
 
     file_name = new_file_name if new_file_name else os.path.basename(src_file_path)
@@ -61,31 +61,31 @@ def copy_file_and_save_utf(platform, src_file_path, dst_dir, new_file_name=None)
 
     shutil.copy2(src_file_path, dst_dir_path)
 
-    save_as_utf(dst_dir_path)
+    save_as_utf(dst_dir_path, "utf-8" if is_online else None)
 
     return dst_dir_path
 
 
-def save_as_utf(file_with_path, encoding='utf-8'):
+def save_as_utf(file_with_path, encoding=None):
     """
     Read contents of a text file to a single string,
     detecting the encoding automatically.
     """
     try:
-        encoding = None
+
         read_len = 8192
         # Use binary mode to read the file's content
         with open(file_with_path, 'rb') as f:
             raw_data = f.read(read_len)
-
-        # Detect the encoding
-        result = chardet.detect(raw_data)
-        if result["confidence"] < 0.9:  # 如果置信度低，尝试读取更多数据
-            with open(file_with_path, 'rb') as f:
-                raw_data = f.read(read_len * 2)
+        if not encoding:
+            # Detect the encoding
             result = chardet.detect(raw_data)
+            if result["confidence"] < 0.9:  # 如果置信度低，尝试读取更多数据
+                with open(file_with_path, 'rb') as f:
+                    raw_data = f.read(read_len * 2)
+                result = chardet.detect(raw_data)
 
-        encoding = result["encoding"]
+            encoding = result["encoding"]
 
         if encoding == "utf-8":
             text = raw_data.decode(encoding, errors='replace')

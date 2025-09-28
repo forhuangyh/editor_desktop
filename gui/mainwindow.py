@@ -3625,14 +3625,10 @@ class MainWindow(qt.QMainWindow):
             return
         if isinstance(files, str):
             # Single file
-            # new_file_path = copy_file_and_save_utf(data.platform, files, data.temp_file_directory)
-            # self.open_file(new_file_path, tab_widget)
             self.open_file(files, tab_widget)
         else:
             # List of files
             for file in files:
-                # new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
-                # self.open_file(new_file_path, tab_widget)
                 self.open_file(file, tab_widget)
 
     def open_file_from_online(self, file_name, language, file_path, tab_widget=None):
@@ -3644,7 +3640,12 @@ class MainWindow(qt.QMainWindow):
             return False
 
         self.open_chapter_list()
-        self.open_file(file_path, tab_widget, language=language, is_online=True, new_file_name=file_name)
+        return_flag = self.open_file(file_path, tab_widget, language=language, is_online=True, new_file_name=file_name)
+        if return_flag is None:
+            CustomMessageBox.warning(
+                self, "警告", "打开文件失败，请联系管理员", 400, 120
+            )
+            return False
         return True
 
     def open_file(self, file=None, tab_widget=None, save_layout=False, language=None, is_online=False, new_file_name=None):
@@ -3652,14 +3653,15 @@ class MainWindow(qt.QMainWindow):
         Read file contents into a TabWidget
         """
         # 禁止同名文件打开
-        is_same = file_utils.has_same_file_name(file, self.get_all_editors())
+
+        is_same = file_utils.has_same_file_name(new_file_name or file, self.get_all_editors())
         if is_same:
             CustomMessageBox.warning(
                 self, "警告", "已有打开的同名文件", 400, 120
             )
             return False
 
-        file = copy_file_and_save_utf(data.platform, file, data.temp_file_directory, new_file_name)
+        file = copy_file_and_save_utf(data.platform, file, data.temp_file_directory, new_file_name, is_online)
 
         def open_file_function(in_file, tab_widget):
             # Check if file exists
@@ -4159,9 +4161,7 @@ class MainWindow(qt.QMainWindow):
             # Nested function for opening the recent file
             def new_file_function(file):
                 try:
-                    # new_file_path = copy_file_and_save_utf(data.platform, file, data.temp_file_directory)
-                    # self._parent.open_file(file=new_file_path, tab_widget=None)
-                    self._parent.open_file(file=new_file, tab_widget=None)
+                    self._parent.open_file(file=file, tab_widget=None)
                     self._parent.get_largest_window().currentWidget().setFocus()
                 except:
                     pass
