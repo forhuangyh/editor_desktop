@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import chardet
 from datetime import datetime
+import itertools
 # from charset_normalizer import from_bytes
 # from charset_normalizer import detect
 # fasttext 检查语种
@@ -72,20 +73,18 @@ def save_as_utf(file_with_path, encoding=None):
     detecting the encoding automatically.
     """
     try:
-
         read_len = 8192
         # Use binary mode to read the file's content
         with open(file_with_path, 'rb') as f:
             raw_data = f.read(read_len)
         if not encoding:
-            # Detect the encoding
             result = chardet.detect(raw_data)
-            if result["confidence"] < 0.9:  # 如果置信度低，尝试读取更多数据
-                with open(file_with_path, 'rb') as f:
-                    raw_data = f.read(read_len * 2)
-                result = chardet.detect(raw_data)
-
             encoding = result["encoding"]
+            if result["confidence"] < 0.9:  # 如果置信度低，尝试读取更多数据
+                encoding = test_text_file(file_with_path)
+
+        if not encoding:
+            raise Exception("无法识别的编码，请联系管理员")
 
         if encoding == "utf-8":
             text = raw_data.decode(encoding, errors='replace')
@@ -93,7 +92,8 @@ def save_as_utf(file_with_path, encoding=None):
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
                 with open(file_with_path, 'rb') as f:
                     raw_data = f.read()
-                text = raw_data.decode(encoding, errors='replace')
+                # text = raw_data.decode(encoding, errors='replace')
+                text = raw_data.decode(encoding, errors='surrogateescape')
                 # 包含\r, 通常是windows下的文件, 转换为unix格式
                 text = text.replace("\r", "")
                 # Write the decoded text back to the file, using UTF-8 encoding
@@ -106,9 +106,9 @@ def save_as_utf(file_with_path, encoding=None):
             with open(file_with_path, 'rb') as f:
                 raw_data = f.read()
             # Decode the raw data using the detected encoding, with error handling
-            text = raw_data.decode(encoding, errors='replace')
+            text = raw_data.decode(encoding, errors='surrogateescape')
             if text.find("\r") > -1:
-                # 包含\r, 通常是windows下的文件, 转换为unix格式
+                #     # 包含\r, 通常是windows下的文件, 转换为unix格式
                 text = text.replace("\r", "")
             # Write the decoded text back to the file, using UTF-8 encoding
             with open(file_with_path, 'w', encoding='utf-8') as f:
@@ -173,3 +173,37 @@ def get_chapter_title_reg(language):
         patt = r"^Chapter\s*\d+"
 
     return collect_patt, patt
+
+
+def test_text_file(file_with_path):
+    """检查文件编码"""
+    test_encodings = [
+        "utf-8",
+        "windows-936",      # Windows中文ANSI编码 (GBK超集)
+        "gbk",
+        "gb2312",
+        "windows-1250",     # 中欧和东欧语言
+        "windows-1252",     # Windows西欧
+        "ascii",
+        "utf-16",
+        "utf-32",
+        "iso-8859-1",
+        "latin-1",
+    ]
+    for current_encoding in test_encodings:
+        try:
+            file = open(
+                file_with_path, "r", encoding=current_encoding, errors="strict"
+            )
+            # Read only a couple of lines in the file
+            for line in itertools.islice(file, 30):
+                line = line
+            # Close the file handle
+            file.close()
+            # Return the succeded encoding
+            return current_encoding
+        except:
+            # Error occured while reading the file, skip to next iteration
+            continue
+    # Error, no encoding was correct
+    return None

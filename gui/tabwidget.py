@@ -956,13 +956,14 @@ QTabBar::tab:selected {{
                 file_type = functions.get_file_type(document_name)
             if file_type != "unknown" or bypass_check == True:
                 # Test if file can be read
-                if functions.test_text_file(document_name) == None:
-                    self.main_form.display.repl_display_message(
-                        "Testing for TEXT file failed!",
-                        message_type=constants.MessageType.ERROR,
-                    )
-                    # File cannot be read
-                    return None
+                # 文件导入的时候已经校验，这里屏蔽
+                # if functions.test_text_file(document_name) == None:
+                #     self.main_form.display.repl_display_message(
+                #         "Testing for TEXT file failed!",
+                #         message_type=constants.MessageType.ERROR,
+                #     )
+                #     # File cannot be read
+                #     return None
                 # Create new scintilla document
                 new_editor_tab = self.editor_create_document(document_name, language, is_online=is_online)
                 # Set the lexer that colour codes the document
