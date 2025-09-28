@@ -123,7 +123,7 @@ def handle_book_upload(main_window, file_path):
                 CustomMessageBox.information(  # 恢复被省略的成功逻辑代码
                     main_window, "上传成功", f"文件 '{file_name}' 已成功上传", 400, 120
                 )
-                main_window.display.repl_display_success(f"文件 '{file_name}' 上传成功")
+                # main_window.display.repl_display_success(f"文件 '{file_name}' 上传成功")
             elif task_status == 3:  # 失败
                 timer.stop()
                 upload_dialog.close()
@@ -131,10 +131,13 @@ def handle_book_upload(main_window, file_path):
                 CustomMessageBox.critical(
                     main_window, "上传失败", f"文件上传失败: {fail_reason}", 450, 150
                 )
-                main_window.display.repl_display_error(f"文件 '{file_name}' 上传失败: {fail_reason}")
+                # main_window.display.repl_display_error(f"文件 '{file_name}' 上传失败: {fail_reason}")
         # 设置定时器每秒查询一次
         timer.timeout.connect(check_task_status)
         timer.start(2000)  # 1000ms = 1秒
         check_task_status()  # 立即执行一次
     except Exception as e:
-        main_window.display.repl_display_error(f"上传处理异常: {str(e)}")
+        CustomMessageBox.critical(
+            main_window, "上传失败", f"文件上传失败", 450, 150
+        )
+        # main_window.display.repl_display_error(f"上传处理异常: {str(e)}")
