@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QMessageBox, QDialog, QProgressDialog, QLabel, QVBox
 from PyQt6.QtCore import QTimer, Qt
 import os
 import constants
-from xc_service.book_service import BookService
+from xc_service.book_service import book_service
 from xc_gui.q_message_box import CustomMessageBox
 from xc_gui.progress_dialog import UploadProgressDialog
 
@@ -31,7 +31,6 @@ def handle_book_upload(main_window, file_path):
         QApplication.processEvents()  # 立即处理UI渲染事件
         try:
             # 验证书籍信息
-            book_service = BookService()
             book_info = book_service.get_book_info(initial_cp_book_id)
 
             if not book_info:

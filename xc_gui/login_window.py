@@ -286,6 +286,45 @@ class LoginWindow(qt.QDialog):
                     self.save_credentials(username, password)
                 else:
                     self.clear_saved_credentials()
+
+                # 获取当前环境 是dev 还是prod
+                from xc_service.book_service import book_service
+                from utilities.aws_s3 import aws_oss_singleton
+                # 调用get_aws_configs方法获取AWS配置
+                aws_configs = book_service.get_aws_configs()
+                if aws_configs:
+                    # 根据version_type选择对应的配置
+                    target_config = None
+                    for config in aws_configs:
+                        # 检查配置的environment字段是否匹配当前version_type
+                        if config.get("environment") == version_type:
+                            target_config = config
+                            break
+
+                    # 如果没有找到匹配的配置，使用第一个配置
+                    if not target_config and aws_configs:
+                        target_config = aws_configs[0]
+                        logger.warning(f"未找到匹配{version_type}环境的AWS配置，使用第一个配置")
+
+                    # 更新aws_oss_singleton实例的配置
+                    if target_config:
+                        # 使用update_config方法更新配置
+                        aws_oss_singleton.update_config(
+                            aws_id=target_config.get("aws_access_key_id"),
+                            aws_key=target_config.get("aws_secret_key"),
+                            aws_region_name=target_config.get("aws_region"),
+                            aws_endpoint=target_config.get("aws_endpoint"),
+                            aws_bucket=target_config.get("aws_s3_bucket_name"),
+                            is_fast=target_config.get("is_active", False),
+                            fast_url=target_config.get("aws_fast_url", "")
+                        )
+                        logger.info(f"成功更新AWS配置，当前环境: {version_type} ，bucket_name: {target_config.get('aws_s3_bucket_name')}")
+                    else:
+                        logger.error("获取AWS配置失败，无法初始化S3客户端")
+                else:
+                    logger.error("调用get_aws_configs方法返回空配置")
+
+
                 # 登录成功，发射信号并接受对话框
                 self.login_successful.emit()
                 self.accept()

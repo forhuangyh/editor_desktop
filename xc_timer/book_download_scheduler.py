@@ -4,7 +4,7 @@ from PyQt6.QtCore import QObject, QTimer, QThreadPool, QRunnable, pyqtSignal
 
 # 确保可以导入项目模块
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from xc_service.book_service import BookService
+from xc_service.book_service import book_service
 from xc_common.logger import get_logger
 # 获取模块专属logger
 logger = get_logger("book_download_scheduler")
@@ -26,7 +26,7 @@ class BookDownloadTask(QRunnable):
         super().__init__()
         self.book_record = book_record
         self.scheduler = scheduler
-        self.book_service = BookService()
+        self.book_service = book_service
 
     def run(self):
         """执行下载任务"""

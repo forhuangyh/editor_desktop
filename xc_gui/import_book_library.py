@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, QDateTime, QThread, pyqtSignal  # 新增：QThread,
 # 导入样式表类
 # 添加路径以便导入book_service
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from xc_service.book_service import BookService
+from xc_service.book_service import book_service
 
 # 数据库文件路径
 DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.exco', 'editor_desktop.db')
@@ -31,7 +31,7 @@ class BookLibraryHistoryDialog(QDialog):
         self.setMinimumSize(1200, 800)
         self.book_history = []
         self.selected_book = None
-        self.book_service = BookService()
+        self.book_service = book_service
         self.main_form = main_form
         self.init_ui()
         # 初始化时调用 load_history 方法加载历史记录
