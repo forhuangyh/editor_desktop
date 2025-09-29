@@ -4,12 +4,17 @@ from xc_common.utils import http_form_post, http_file_post
 from xc_entity.account import user_info
 import settings
 from xc_common.logger import get_logger
+from urllib.parse import urlparse
+from utilities.aws_s3 import aws_oss_singleton  # 导入全局单例实例
 # 获取模块专属logger
 logger = get_logger("book_service")
 
 class BookService:
     # 加入初始化方法
     def __init__(self):
+
+        # 设置prefix变量，用于S3路径构建
+        self.prefix ='chapter_txt'
         # 初始化连接
         self.base_url = settings.get("editor_api_base_url")
         self.account_id = user_info.user_id
@@ -33,6 +38,49 @@ class BookService:
         self.api_book_overwrite = f"{self.base_url}/api/editor_v1/book/overwrite_book"
         # 查下任务状态
         self.api_book_overwrite_task = f"{self.base_url}/api/editor_v1/task_list_scope"
+        # 获取AWS配置
+        self.aws_config = f"{self.base_url}/api/editor_v1/editor_desktop/env_configs"
+
+    def get_aws_configs(self):
+        """
+        获取AWS配置
+        """
+        form_data = {"account_id": self.account_id}
+        # 发送请求
+        response = http_form_post(self.aws_config, form_data=form_data, headers=self.headers)
+        # 检查响应
+        if self.check_response(response):
+            # 解析数据
+            result_list = []
+            # 检查是否有body字段且是列表
+            if "body" in response and isinstance(response["body"], list):
+                # 遍历body中的每个元素
+                for item in response["body"]:
+                    # 提取所需字段，创建新的字典对象
+                    extracted_item = {
+                        "id": item.get("id"),
+                        "environment": item.get("environment"),
+                        "version_old": item.get("version_old"),
+                        "version_new": item.get("version_new"),
+                        "aws_region": item.get("aws_region"),
+                        "aws_access_key_id": item.get("aws_access_key_id"),
+                        "aws_secret_key": item.get("aws_secret_key"),
+                        "aws_fast_url": item.get("aws_fast_url"),
+                        "aws_s3_bucket_name": item.get("aws_s3_bucket_name"),
+                        "aws_endpoint": item.get("aws_endpoint"),
+                        "is_active": item.get("is_active")
+                    }
+                    result_list.append(extracted_item)
+                return result_list
+        return None
+
+    # 从s3桶里获取章节文本内容
+    def getTxtStrFromS3(self, book_id, chapter_cid):
+        path = f"{self.prefix}/{book_id}/{chapter_cid}.txt"
+        # 直接使用全局单例实例
+        content = aws_oss_singleton.get_s3_content(path)
+        return content
+
 
     # 统一校验结果
     def check_response(self, response):
@@ -158,6 +206,7 @@ class BookService:
                                 # 提取所需字段，创建新的字典对象
                                 extracted_item = {
                                     "chapter_id": item.get("chapter_id"),
+                                    "chapter_cid": item.get("chapter_cid"),
                                     "book_id": item.get("book_id"),
                                     "chapter_title": item.get("chapter_title"),
                                     "cp_book_id": item.get("oper_book_id"),
@@ -248,32 +297,43 @@ class BookService:
             # 章节下载函数
             def download_single_chapter(chapter_info):
                 chapter = chapter_info['chapter']
-                chapter_id = chapter.get("chapter_id")
-                index = chapter_info['index']
+                index = chapter['index']
+                chapter_cid = chapter['chapter_cid']
                 chapter_title = chapter.get("chapter_title", f"第{index}章")
+
+                chapter_id = chapter.get("chapter_id")
                 logger.info(f"【下载】章节开始 | 章节ID: {chapter_id} | 索引: {index} | 标题: '{chapter_title}'")
 
+                oss_url = chapter.get("oss_url")  # "oss_url": "https://xcyh-author-staging-txt.s3.amazonaws.com/chapter_txt/3109/wpjMZjB7q8wO2kYL.txt",
+                # oss_url 去掉 域名 保留域名后面的
+                oss_path = urlparse(oss_url).path if oss_url else ""  # 【新增】解析URL获取域名后的路径（如：/chapter_txt/3109/wpjMZjB7q8wO2kYL.txt）
+                if not oss_path:
+                    logger.error(f"【下载】解析章节桶路径错误 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
+                    return False
+
                 try:
-                    response = http_form_post(
-                        self.api_chapter_content,
-                        form_data={"book_id": book_id, "chapter_id": chapter_id, "account_id": self.account_id},
-                        headers=self.headers
-                    )
+                    # response = http_form_post(
+                    #     self.api_chapter_content,
+                    #     form_data={"book_id": book_id, "chapter_id": chapter_id, "account_id": self.account_id},
+                    #     headers=self.headers
+                    # )
+                    #
+                    # if not self.check_response(response) or "body" not in response:
+                    #     logger.error(f"【下载】章节失败 | 章节ID: {chapter_id} | 响应无效: {response}")
+                    #     return False
 
-                    if not self.check_response(response) or "body" not in response:
-                        logger.error(f"【下载】章节失败 | 章节ID: {chapter_id} | 响应无效: {response}")
-                        return False
+                    # 调用 AwsOSS get 获取章节内容
 
-                    content = response["body"].get("content", "").strip()
+                    content = self.getTxtStrFromS3(book_id,chapter_cid)
                     if not content:
                         logger.error(f"【下载】章节内容为空 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                         return False
 
                     logger.info(
-                        f"【下载】章节成功 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
+                        f"【下载】章节成功 success | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                     return (index, chapter_title, content)
                 except Exception as e:
-                    logger.error(f"【下载】章节异常 | 章节ID: {chapter_id} | 错误: {str(e)}")
+                    logger.error(f"【下载】章节异常 fail | 章节ID: {chapter_id} | 错误: {str(e)}")
                     return False
 
             # 多线程下载与合并
@@ -469,3 +529,5 @@ class BookService:
         except Exception as e:
             logger.error(f"【查询任务状态】异常 | 任务ID: {task_id} | 错误: {str(e)}")
             return None
+# 创建全局BookService实例
+book_service = BookService()
