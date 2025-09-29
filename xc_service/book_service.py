@@ -330,10 +330,10 @@ class BookService:
                         return False
 
                     logger.info(
-                        f"【下载】章节成功 | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
+                        f"【下载】章节成功 success | 章节ID: {chapter_id} | 标题: '{chapter_title}'")
                     return (index, chapter_title, content)
                 except Exception as e:
-                    logger.error(f"【下载】章节异常 | 章节ID: {chapter_id} | 错误: {str(e)}")
+                    logger.error(f"【下载】章节异常 fail | 章节ID: {chapter_id} | 错误: {str(e)}")
                     return False
 
             # 多线程下载与合并
