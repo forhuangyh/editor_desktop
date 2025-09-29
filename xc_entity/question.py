@@ -3,33 +3,38 @@
 """
 
 import bisect
+from PyQt6.QtCore import QObject, pyqtSignal
+from xc_common.trace import timer_trace
 
 
-class Question(object):
+class Question(QObject):
     """查重列表管理功能"""
 
     is_work = False
+    question_list_updated = pyqtSignal(list, list)
 
-    def __init__(self, book_name):
+    def __init__(self, book_name, parent=None):
         """初始化书籍实例
         """
+        super().__init__(parent)
         self.book_name = book_name
-        self.question_list = []
+        self.match_list = []
+        self.highlight_matches = []
 
     def set_is_work(self, is_work):
         """是否查重
         """
         self.is_work = is_work
 
+    @timer_trace
     def split_question_list(self, line_list, chapter_list, editor, book):
         """获取问题列表
         编辑器是用byte定位，这里转化成byte处理
         """
-        if not all([line_list, editor, book]):
+        if not all([line_list, editor, book, self.is_work]):
+            self.question_list_updated.emit([], [])
             return [], []
-        if not self.is_work:
-            return [], []
-
+        print("split_question_list")
         line_dict, repeat_dict = {}, {}
         highlight_matches, match_list = [], []
         chapter_list = book.get_chapter_list()
@@ -76,6 +81,9 @@ class Question(object):
         except Exception as ex:
             raise Exception(f"split_question_list error:book_name={self.book_name}, msg={str(ex)}")
 
+        self.match_list = match_list
+        self.highlight_matches = highlight_matches
+        self.question_list_updated.emit(match_list, highlight_matches)
         return match_list, highlight_matches
 
     def find_title(self, byte_index, order_list, chapter_list):
@@ -90,10 +98,8 @@ class Question(object):
 
     def get_question_list(self):
         """获取问题列表
-        编辑器是用byte定位，这里转化成byte处理
-
         """
-        return self.question_list
+        return self.match_list, self.highlight_matches
 
     def __repr__(self) -> str:
         """对象表示方法，便于打印调试"""

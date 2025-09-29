@@ -2,13 +2,13 @@
 图书类: 属性，方法
 """
 import re
-from qt import QMessageBox
 from xc_common.word_count import word_count_func
 
 
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, pyqtSignal
 from xc_entity.question import Question
 from xc_common.file_utils import get_chapter_title_reg
+from xc_common.trace import timer_trace
 
 
 class Book(QObject):
@@ -28,17 +28,12 @@ class Book(QObject):
         self.chapter_pattern = b""
         self.language = language
         self.is_online = is_online
-        self.question = Question(self.book_name)
+        self.word_count_dict = {}
+        self.question = Question(self.book_name, parent)
 
     def refresh_chapter_list(self, text):
-        if not text:
-            return
-
         self.confirm_chapter_title_reg(text)
-
-        if not self.chapter_pattern:
-            return
-        self.split_chapter_list(text)
+        self.split_chapter_list(text, None)
 
     def confirm_chapter_title_reg(self, text):
         if not text:
@@ -59,24 +54,28 @@ class Book(QObject):
             self.chapter_pattern = bytes(patt, "utf-8")
             return
 
+    @timer_trace
     def split_chapter_list(self, text, chapter_pattern=None):
         """获取章节列表
         编辑器是用byte定位，这里转化成byte处理
-
         """
-        if not text:
-            return []
+        print("split_chapter_list")
         if chapter_pattern:
             self.chapter_pattern = bytes(chapter_pattern, "utf-8")
-        if not self.chapter_pattern:
-            return []
+        if not all([self.chapter_pattern, text]):
+            self.chapter_list = []
+            self.chapter_list_updated.emit(self.chapter_list)
+            return self.chapter_list
 
         text = bytes(text, "utf-8")
         merged_chapters = []
         pre_txt_begin = 0
         current_chapter = {}
+
         try:
-            for match in re.finditer(self.chapter_pattern, text, re.MULTILINE):
+            self.compiled_chapter_pattern = re.compile(self.chapter_pattern, re.MULTILINE)
+            index = 0
+            for match in re.finditer(self.compiled_chapter_pattern, text):
                 if pre_txt_begin != 0:
                     pre_txt = text[pre_txt_begin:match.start()]
                     current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
@@ -104,6 +103,7 @@ class Book(QObject):
                         "title": match.group().decode("utf-8").strip()
                     }
                 last_txt_begin = match.end()
+                index = index + 1
 
             if current_chapter:
                 pre_txt = text[last_txt_begin:]
@@ -144,7 +144,12 @@ class Book(QObject):
     def count_words(self, text):
         """计算字数
         """
-        return word_count_func(text)
+        word_count = self.word_count_dict.get(text, 0)
+        if not word_count:
+            word_count = word_count_func(text)
+            self.word_count_dict[text] = word_count
+
+        return word_count
 
     def get_chapter_list(self):
         """获取章节列表

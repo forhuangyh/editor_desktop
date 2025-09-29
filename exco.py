@@ -240,11 +240,34 @@ def main():
         file_arguments=file_arguments,
         user_info=account.user_info,  # 传递用户信息
     )
+
+    # import cProfile
+    # import pstats
+    # import io
+    # pr = cProfile.Profile()
+    # pr.enable()  # 启动分析
+
     components.thesquid.TheSquid.init_objects(main_window)
     main_window.import_user_functions()
     main_window.show()
     result = app.exec()
     functions.output_backup()
+
+    # pr.disable()  # 停止分析
+    # s = io.StringIO()
+    # sortby = 'cumulative'  # 按累计耗时排序
+    # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    # # 关键修改：使用 print_stats() 的参数来过滤结果
+    # # 第一个参数是“限制”值，可以是整数（行数）或浮点数（时间百分比）
+    # # 如果你想要按时间过滤，需要先调用 strip_dirs()
+    # ps.strip_dirs().print_stats(1.0, '.*')  # 打印耗时超过 1 秒的条目
+    # # 或者，如果你想打印调用次数超过 100 次的条目
+    # # ps.print_stats(100)
+    # print("\n" + "=" * 50)
+    # print("Performance Profile Report:")
+    # print(s.getvalue())
+    # print("=" * 50)
+
     sys.exit(result)
 
 

@@ -6,14 +6,13 @@ from qt import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QLineEdit,
     QPushButton,
     QMessageBox,
     QSize, Qt,
     QStyledItemDelegate,
-    QStyleOptionButton, QApplication,
-    QListView, QEvent, QStyle, QColor, QFontMetrics,
-    QAbstractListModel, QModelIndex, QVariant, QRect, Qt,
+    QApplication,
+    QListView, QStyle, QColor, QFontMetrics,
+    QAbstractListModel, QModelIndex, QVariant, Qt,
     QLabel, QComboBox, pyqtSlot, QToolButton
 )
 

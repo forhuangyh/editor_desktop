@@ -2735,7 +2735,9 @@ def output_backup() -> None:
     output_file: str = output_get_file()
     # Create backup with timestamp
     output_file_with_date: str = output_get_file_with_timestamp()
-    shutil.copy(output_file, output_file_with_date)
+    import os
+    if os.path.exists(output_file):
+        shutil.copy(output_file, output_file_with_date)
 
 
 def reorganize_imports(import_code: str) -> str:

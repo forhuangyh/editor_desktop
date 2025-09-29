@@ -3,18 +3,12 @@ Copyright (c) 2015
 """
 
 from qt import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLineEdit,
-    QPushButton,
-    QMessageBox,
-    QSize, Qt,
-    QStyledItemDelegate,
-    QStyleOptionButton, QApplication,
-    QListView, QEvent, QStyle, QColor, QFontMetrics,
-    QAbstractListModel, QModelIndex, QVariant, QRect, Qt,
-    QLabel, QComboBox, pyqtSlot, QToolButton
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QPushButton, QSize, Qt,
+    QStyledItemDelegate, QApplication,
+    QListView, QStyle, QColor, QFontMetrics,
+    QAbstractListModel, QModelIndex, QVariant, Qt,
+    QLabel, pyqtSlot, QToolButton
 )
 
 import constants
@@ -22,7 +16,8 @@ import components.internals
 import settings
 from xc_entity.book import book_manager
 from gui.customeditor import CustomEditor
-from xc_entity.question import Question
+from xc_entity.work import TaskWorker
+from qt import QThread
 
 
 class QuestionList(QWidget):
@@ -50,8 +45,15 @@ class QuestionList(QWidget):
                 self._fixed_widget.editor_closed.disconnect(self.close_editor_reference)
                 self._current_book = None
                 self._chapter_list = None
-            except (TypeError, RuntimeError):
-                pass  # 忽略已断开的连接错误
+            except:
+                pass
+        try:
+            if hasattr(self, 'worker'):
+                self.worker.stop()
+                self.worker_thread.quit()
+                self.worker_thread.wait()
+        except:
+            pass
 
     def __init__(self, fixed_widget, parent, main_form):
         # Initialize the superclass
@@ -66,6 +68,16 @@ class QuestionList(QWidget):
         self._current_book = book_manager.get_book(self._editor)
         self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
+        # text_change的耗时操作线程，比如split_chapter_list
+        # 初始化工作线程和 Worker 对象
+        self.worker_thread = QThread()
+        self.worker = TaskWorker()
+        # 将 Worker 对象移动到工作线程中，确保了耗时任务在后台运行，而不会冻结主线程的 UI
+        self.worker.moveToThread(self.worker_thread)
+        # 连接信号：当线程启动时，开始工作
+        self.worker_thread.started.connect(self.worker.run)
+        # 启动工作线程
+        self.worker_thread.start()
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
         self._fixed_widget.editor_closed.connect(self.close_editor_reference)
@@ -87,6 +99,7 @@ class QuestionList(QWidget):
         # 1. 如果存在旧的书籍对象，先断开它与槽函数的连接
         if self._current_book:
             self._current_book.chapter_list_updated.disconnect(self.handle_chapter_list_update)
+            self._current_book.question.question_list_updated.disconnect(self.handle_question_list_update)
 
         # 2. 建立新的绑定
         if new_book:
@@ -94,10 +107,14 @@ class QuestionList(QWidget):
             self._current_book = new_book
             # 连接新书的 chapterListUpdated 信号到槽函数
             self._current_book.chapter_list_updated.connect(self.handle_chapter_list_update)
-            self.fill_match_list()
+            self._current_book.question.question_list_updated.connect(self.handle_question_list_update)
+            match_list, highlight_matches = self._current_book.question.get_question_list(
+                # self._editor.line_list, self._chapter_list, self._editor, self._current_book
+            )
+            self.fill_match_list(match_list, highlight_matches)
         else:
             self._current_book = None
-            self.fill_match_list()
+            self.fill_match_list([], [])
 
     def close_editor_reference(self, new_editor):
         """当fixed_widget的编辑器变化时，更新我们的_editor引用"""
@@ -129,7 +146,19 @@ class QuestionList(QWidget):
     def handle_chapter_list_update(self, chapter_list):
         """当书籍的章节列表更新时，联动更新"""
         self._chapter_list = chapter_list
-        self.fill_match_list()
+        question = self._current_book.question
+        task = {
+            'name': 'refresh_question_list',
+            'function': question.split_question_list,
+            'args': (self._editor.line_list, self._chapter_list, self._editor, self._current_book)
+        }
+        # 将任务提交给 Worker 对象，由 Worker 自己处理
+        self.worker.add_task(task)
+
+    @pyqtSlot(list, list)
+    def handle_question_list_update(self, match_list, highlight_matches):
+        """当书籍的章节列表更新时，联动更新"""
+        self.fill_match_list(match_list, highlight_matches)
 
     def init_ui(self):
         # 直接设置自身属性
@@ -241,7 +270,10 @@ class QuestionList(QWidget):
     def _find_all(self):
         """查找下一个匹配项并高亮"""
         self._current_book.question.set_is_work(True)
-        self.fill_match_list()
+        match_list, highlight_matches = self._current_book.question.split_question_list(
+            self._editor.line_list, self._chapter_list, self._editor, self._current_book
+        )
+        self.fill_match_list(match_list, highlight_matches)
 
     def _clear_highlight(self):
         """清除所有高亮"""
@@ -250,14 +282,11 @@ class QuestionList(QWidget):
         self.model.setMatches([])
         self.info_label.setText("重复总数：0")
 
-    def fill_match_list(self):
+    def fill_match_list(self, match_list, highlight_matches):
         """填充列表
         """
         max_line_text = ""
         line_text_len = 0
-        match_list, highlight_matches = self._current_book.question.split_question_list(
-            self._editor.line_list, self._chapter_list, self._editor, self._current_book
-        )
         new_match_list = []
         for match in match_list:
             line_text = match["line_text"]
@@ -284,6 +313,7 @@ class QuestionList(QWidget):
             self._editor.highlight_raw(highlight_matches)
         else:
             self.model.setMatches([])
+            self._editor.clear_question_highlights()
             self.info_label.setText("重复总数：0")
 
     def on_item_clicked(self, index):

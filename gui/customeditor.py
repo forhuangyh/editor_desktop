@@ -25,9 +25,10 @@ import gui.contextmenu
 
 from gui.baseeditor import BaseEditor
 from gui.dialogs import YesNoDialog, OkDialog
+from qt import QThread
 from xc_common.file_utils import copy_file
-
 from xc_entity.book import book_manager, Book
+from xc_entity.work import TaskWorker
 
 
 class CustomEditor(BaseEditor):
@@ -123,7 +124,13 @@ class CustomEditor(BaseEditor):
             # Disengage self from the parent and clean up self
             self.setParent(None)
             self.deleteLater()
-
+            if hasattr(self, 'text_changed_timer'):
+                self.text_changed_timer.stop()
+                self.text_changed_timer = None
+            if hasattr(self, 'worker'):
+                self.worker.stop()
+                self.worker_thread.quit()
+                self.worker_thread.wait()
         except:
             pass
 
@@ -250,6 +257,21 @@ class CustomEditor(BaseEditor):
         self.name = os.path.basename(file_with_path)
         self.language = language
         self.is_online = is_online
+        # text_change 防抖，延迟1000ms
+        self.text_changed_timer = qt.QTimer(self)
+        self.text_changed_timer.setSingleShot(True)
+        self.text_changed_timer.timeout.connect(self._delayed_text_changed)
+
+        # text_change的耗时操作线程，比如split_chapter_list
+        # 初始化工作线程和 Worker 对象
+        self.worker_thread = QThread()
+        self.worker = TaskWorker()
+        # 将 Worker 对象移动到工作线程中，确保了耗时任务在后台运行，而不会冻结主线程的 UI
+        self.worker.moveToThread(self.worker_thread)
+        # 连接信号：当线程启动时，开始工作
+        self.worker_thread.started.connect(self.worker.run)
+        # 启动工作线程
+        self.worker_thread.start()
 
     def __setattr__(self, name, value):
         """
@@ -578,12 +600,36 @@ class CustomEditor(BaseEditor):
             # Ignore the event, it will be propageted up to the parent objects
             event.ignore()
 
+    # _text_changed_count = 0
     def text_changed(self):
+        """Event that fires when the scintilla document text changes - with debouncing"""
+        # 停止之前的定时器
+        # import traceback
+        # self._text_changed_count += 1
+        # print(f"=== text_changed call #{self._text_changed_count} ===")
+        # # 打印调用栈的最后几帧（最相关的部分）
+        # stack = traceback.extract_stack()
+        # for frame in stack[-5:]:  # 只显示最后5帧
+        #     print(f"  {frame.filename}:{frame.lineno} in {frame.name}")
+        #     print(f"    {frame.line}")
+        self.text_changed_timer.stop()
+        # 启动新的定时器（例如2000ms延迟）
+        self.text_changed_timer.start(1000)
+
+    def _delayed_text_changed(self):
         """Event that fires when the scintilla document text changes"""
         # Update the line list
         text = self.text()
+        print("text_changed")
         self.line_list.update_text_to_list(text)
-        book_manager.get_book(self).refresh_chapter_list(self.text())
+        cur_book = book_manager.get_book(self)
+        task = {
+            'name': 'refresh_chapter_list',
+            'function': cur_book.refresh_chapter_list,
+            'args': (self.text(),)
+        }
+        # work队列排队执行任务
+        self.worker.add_task(task)
         # Update the line count list with a list comprehention
         self.line_count = [line for line in range(1, self.lines() + 1)]
         # Execute the parent basic widget signal
