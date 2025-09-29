@@ -232,40 +232,40 @@ def main():
 
 
 
-    # 非模态显示登录窗口，不阻塞程序执行
-    login_window.show()
-
-    # 检查版本更新
-    update_service = UpdateSoftwareService()
-    download_url = update_service.check_update()
-    if download_url:
-        logger.info(f"发现新版本，下载地址: {download_url}")
-        # 进行 发现新版本，下载地址: http://192.168.3.7:8090/downloads/windows/editor_desktop_v1.0_windows_64bit.zip 安装把下载和覆盖
-        # 提示用户是否安装新版本
-        reply = qt.QMessageBox.question(
-            login_window,
-            "发现新版本",
-            f"发现新版本，下载地址: {download_url}\n是否安装新版本？",
-            qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
-            qt.QMessageBox.StandardButton.No,
-        )
-        if reply == qt.QMessageBox.StandardButton.Yes:
-            # 调用安装函数
-            update_service.install_update(download_url)
-            # 安装完成后，提示用户重启应用程序
-            reply = qt.QMessageBox.question(
-                login_window,
-                "安装完成",
-                "安装完成，是否现在重启应用程序？",
-                qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
-                qt.QMessageBox.StandardButton.Yes,
-            )
-            if reply == qt.QMessageBox.StandardButton.Yes:
-                # 重启应用程序
-                sys.exit(0)
-    else:
-        logger.info("当前版本是最新的")
-
+    # # 非模态显示登录窗口，不阻塞程序执行
+    # login_window.show()
+    #
+    # # 检查版本更新
+    # update_service = UpdateSoftwareService()
+    # download_url = update_service.check_update()
+    # if download_url:
+    #     logger.info(f"发现新版本，下载地址: {download_url}")
+    #     # 进行 发现新版本，下载地址: http://192.168.3.7:8090/downloads/windows/editor_desktop_v1.0_windows_64bit.zip 安装把下载和覆盖
+    #     # 提示用户是否安装新版本
+    #     reply = qt.QMessageBox.question(
+    #         login_window,
+    #         "发现新版本",
+    #         f"发现新版本，下载地址: {download_url}\n是否安装新版本？",
+    #         qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
+    #         qt.QMessageBox.StandardButton.No,
+    #     )
+    #     if reply == qt.QMessageBox.StandardButton.Yes:
+    #         # 调用安装函数
+    #         update_service.install_update(download_url)
+    #         # 安装完成后，提示用户重启应用程序
+    #         reply = qt.QMessageBox.question(
+    #             login_window,
+    #             "安装完成",
+    #             "安装完成，是否现在重启应用程序？",
+    #             qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
+    #             qt.QMessageBox.StandardButton.Yes,
+    #         )
+    #         if reply == qt.QMessageBox.StandardButton.Yes:
+    #             # 重启应用程序
+    #             sys.exit(0)
+    # else:
+    #     logger.info("当前版本是最新的")
+    #
 
 
     if login_window.exec() != qt.QDialog.DialogCode.Accepted:

@@ -1,4 +1,5 @@
 import data
+import platform
 import settings
 from hy.models import Object
 from xc_common.utils import http_form_post, http_file_post
@@ -30,6 +31,16 @@ class UpdateSoftwareService(Object):
 
     def install_update(self,download_url):
         print(f"install_update: {download_url}")
+
+    def _get_os_type(self):
+        """检测当前操作系统类型"""
+        system = platform.system().lower()
+        if "windows" in system:
+            return "windows"
+        elif "darwin" in system:  # macOS的内核名称是Darwin
+            return "macos"
+        else:
+            return "other"
 
     def check_update(self):
         """
