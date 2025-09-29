@@ -26,6 +26,11 @@ import gui.mainwindow
 import xc_gui.login_window
 from xc_entity import account
 
+from xc_common.logger import get_logger
+from xc_service.update_software_service import UpdateSoftwareService
+
+# 获取模块专属logger
+logger = get_logger("exco")
 
 def parse_arguments():
     """
@@ -140,7 +145,7 @@ def main():
         except (FileExistsError, BlockingIOError):
             instance_exists = True
         except Exception as e:
-            print(f"macOS 锁文件创建失败: {str(e)}")
+            logger.info(f"macOS 锁文件创建失败: {str(e)}")
 
     # === 检测到已有实例：发送唤起指令并退出 ===
     if instance_exists:
@@ -148,13 +153,13 @@ def main():
             # 发送 "显示窗口" 指令给已有实例
             _data = {"command": "show", "arguments": None}
             fc = components.communicator.FileCommunicator("SHOW-OPEN-INSTANCE")
-            print(f"[单实例控制] 检测到已有实例，尝试发送show命令到: {fc._FileCommunicator__comm_file_path}")
+            logger.info(f"[单实例控制] 检测到已有实例，尝试发送show命令到: {fc._FileCommunicator__comm_file_path}")
             fc.send_data(_data)
             import time
             time.sleep(0.5)  # 确保指令发送完成
-            print("[单实例控制] 命令发送成功，当前实例退出")
+            logger.info("[单实例控制] 命令发送成功，当前实例退出")
         except Exception as e:
-            print(f"[单实例控制] 唤起已有实例失败: {str(e)}")
+            logger.info(f"[单实例控制] 唤起已有实例失败: {str(e)}")
         finally:
             if lock_file:
                 lock_file.close()  # 关闭 macOS 锁文件
@@ -224,13 +229,52 @@ def main():
 
     # 在创建MainWindow之前显示登录窗口
     login_window = xc_gui.login_window.LoginWindow()
+
+
+
+    # 非模态显示登录窗口，不阻塞程序执行
+    login_window.show()
+
+    # 检查版本更新
+    update_service = UpdateSoftwareService()
+    download_url = update_service.check_update()
+    if download_url:
+        logger.info(f"发现新版本，下载地址: {download_url}")
+        # 进行 发现新版本，下载地址: http://192.168.3.7:8090/downloads/windows/editor_desktop_v1.0_windows_64bit.zip 安装把下载和覆盖
+        # 提示用户是否安装新版本
+        reply = qt.QMessageBox.question(
+            login_window,
+            "发现新版本",
+            f"发现新版本，下载地址: {download_url}\n是否安装新版本？",
+            qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
+            qt.QMessageBox.StandardButton.No,
+        )
+        if reply == qt.QMessageBox.StandardButton.Yes:
+            # 调用安装函数
+            update_service.install_update(download_url)
+            # 安装完成后，提示用户重启应用程序
+            reply = qt.QMessageBox.question(
+                login_window,
+                "安装完成",
+                "安装完成，是否现在重启应用程序？",
+                qt.QMessageBox.StandardButton.Yes | qt.QMessageBox.StandardButton.No,
+                qt.QMessageBox.StandardButton.Yes,
+            )
+            if reply == qt.QMessageBox.StandardButton.Yes:
+                # 重启应用程序
+                sys.exit(0)
+    else:
+        logger.info("当前版本是最新的")
+
+
+
     if login_window.exec() != qt.QDialog.DialogCode.Accepted:
         # 如果用户取消登录或关闭窗口，直接退出应用程序
         sys.exit(0)
 
     # 登录成功后，确保用户信息已正确加载
     if not account.user_info.token:
-        print("登录验证失败，退出应用程序")
+        logger.info("登录验证失败，退出应用程序")
         sys.exit(0)
 
     # Create the main window, pass the filename that may have been passed as an argument
