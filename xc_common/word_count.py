@@ -18,15 +18,12 @@ def word_count_func(txt):
     if not isinstance(txt, six.text_type):
         raise TypeError('Word count requires a str string')
 
-    cn = 0  # 汉字数
-    en = 0  # 非中文单词
-    nm = 0  # 数字
     cnChars = 0  # 全角字符
     enChars = 0  # 英文字母
     ruChars = 0  # 俄语
     nmChars = 0  # 数字字符
-    spChars = 0  # 空格
-    otChars = 0  # 其它字符
+    # spChars = 0  # 空格
+    # otChars = 0  # 其它字符
 
     thai_chars_pattern = re.compile("[\u0E00-\u0E7F]")
     # 泰语
@@ -34,25 +31,70 @@ def word_count_func(txt):
         return word_count_func_for_thai(txt)
 
     string_val_pattern = re.compile(r"[^A-Za-z0-9\u4E00-\u9FA5\u0400-\u04FF\u00C0-\u00FF\']")
-    en_chars_pattern = re.compile(".*?([a-zA-Z]+).*?")
-    nmChars_pattern = re.compile(".*?([1-9]+).*?")
-    ruChars_pattern = re.compile('[\u0400-\u04FF]')
-    cnChars_pattern = re.compile(".*?([\u4E00-\u9FA5]+).*?")
+    # en_chars_pattern = re.compile(".*?([a-zA-Z]+).*?")
+    # nmChars_pattern = re.compile(".*?([1-9]+).*?")
+    # ruChars_pattern = re.compile('[\u0400-\u04FF]')
+    # cnChars_pattern = re.compile(".*?([\u4E00-\u9FA5]+).*?")
 
-    string_val = string_val_pattern.sub(' ', txt)
+    # en_chars_pattern = re.compile("([a-zA-Z]+)")
+    # nmChars_pattern = re.compile("([1-9]+)")
+    # ruChars_pattern = re.compile('[\u0400-\u04FF]')
+    # cnChars_pattern = re.compile("([\u4E00-\u9FA5]+)")
+
+    string_val = string_val_pattern.sub(' ', txt).strip()
+    # for ch in string_val.split():
+    #     if en_chars_pattern.findall(ch) or ch in en_punc:
+    #         enChars += 1
+    #     elif nmChars_pattern.findall(ch):
+    #         nmChars += 1
+    #     elif ruChars_pattern.findall(ch):
+    #         ruChars += 1
+    #     elif ch.isspace():
+    #         spChars += 1
+    #     elif cnChars_pattern.findall(ch):
+    #         cnChars += 1
+    #     else:
+    #         otChars += 1
+
+    WORD_PATTERN = re.compile(
+        r'([\u4E00-\u9FA5]+)|'       # Group 1: Chinese characters
+        r'([\u0400-\u04FF]+)|'       # Group 2: Russian characters
+        r'([a-zA-Z]+)|'             # Group 3: English words
+        r'([1-9]+)',                # Group 4: Numbers
+        # r'([{}])'.format(re.escape(en_punc))
+    )
     for ch in string_val.split():
-        if en_chars_pattern.findall(ch) or ch in en_punc:
+        if ch in en_punc:
             enChars += 1
-        elif nmChars_pattern.findall(ch):
-            nmChars += 1
-        elif ruChars_pattern.findall(ch):
-            ruChars += 1
-        elif ch.isspace():
-            spChars += 1
-        elif cnChars_pattern.findall(ch):
-            cnChars += 1
-        else:
-            otChars += 1
+            continue
+        if ch.isspace():
+            continue
+        for match in WORD_PATTERN.finditer(ch):
+            if match.group(1):  # Matched Chinese characters
+                cnChars += 1
+                break
+            elif match.group(2):  # Matched Russian characters
+                ruChars += 1
+                break
+            elif match.group(3):  # Matched English words
+                enChars += 1
+                break
+            elif match.group(4):  # Matched numbers
+                nmChars += 1
+                break
+    # for match in WORD_PATTERN.finditer(string_val):
+    #     if match.group(1):  # Matched Chinese characters
+    #         cnChars += 1
+    #         continue
+    #     elif match.group(2):  # Matched Russian characters
+    #         ruChars += 1
+    #         continue
+    #     elif match.group(3):  # Matched English words
+    #         enChars += 1
+    #         continue
+    #     elif match.group(4):  # Matched numbers
+    #         nmChars += 1
+    #         continue
 
     return cnChars + enChars + nmChars + ruChars
 

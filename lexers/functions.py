@@ -137,75 +137,75 @@ def get_comment_style_for_lexer(lexer):
     open_close_comment_style = False
     comment_string = None
     end_comment_string = None
-    if isinstance(lexer, lexers.CustomPython):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.Python):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.Cython):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.AWK):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.CPP):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.CiCode):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.Pascal):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.Oberon):
-        open_close_comment_style = True
-        comment_string = "(*"
-        end_comment_string = "*)"
-    elif isinstance(lexer, lexers.Ada):
-        comment_string = "--"
-    elif isinstance(lexer, lexers.D):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.Nim):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.Makefile):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.XML):
-        comment_string = None
-    elif isinstance(lexer, lexers.Batch):
-        comment_string = "::"
-    elif isinstance(lexer, lexers.Bash):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.Lua):
-        comment_string = "--"
-    elif isinstance(lexer, lexers.Java):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.JavaScript):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.Octave):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.RouterOS):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.SQL):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.Spice):
-        comment_string = "*"
-    elif isinstance(lexer, lexers.SKILL):
-        comment_string = ";"
-    elif isinstance(lexer, lexers.SmallBasic):
-        comment_string = "'"
-    elif isinstance(lexer, lexers.PostScript):
-        comment_string = "%"
-    elif isinstance(lexer, lexers.Fortran):
-        comment_string = "c "
-    elif isinstance(lexer, lexers.Fortran77):
-        comment_string = "c "
-    elif isinstance(lexer, lexers.IDL):
-        comment_string = "//"
-    elif isinstance(lexer, lexers.Ruby):
-        comment_string = "#"
-    elif isinstance(lexer, lexers.HTML):
-        open_close_comment_style = True
-        comment_string = "<!--"
-        end_comment_string = "-->"
-    elif isinstance(lexer, lexers.CSS):
-        open_close_comment_style = True
-        comment_string = "/*"
-        end_comment_string = "*/"
-    elif isinstance(lexer, lexers.Zig):
-        comment_string = "//"
+    # if isinstance(lexer, lexers.CustomPython):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.Python):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.Cython):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.AWK):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.CPP):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.CiCode):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.Pascal):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.Oberon):
+    #     open_close_comment_style = True
+    #     comment_string = "(*"
+    #     end_comment_string = "*)"
+    # elif isinstance(lexer, lexers.Ada):
+    #     comment_string = "--"
+    # elif isinstance(lexer, lexers.D):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.Nim):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.Makefile):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.XML):
+    #     comment_string = None
+    # elif isinstance(lexer, lexers.Batch):
+    #     comment_string = "::"
+    # elif isinstance(lexer, lexers.Bash):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.Lua):
+    #     comment_string = "--"
+    # elif isinstance(lexer, lexers.Java):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.JavaScript):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.Octave):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.RouterOS):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.SQL):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.Spice):
+    #     comment_string = "*"
+    # elif isinstance(lexer, lexers.SKILL):
+    #     comment_string = ";"
+    # elif isinstance(lexer, lexers.SmallBasic):
+    #     comment_string = "'"
+    # elif isinstance(lexer, lexers.PostScript):
+    #     comment_string = "%"
+    # elif isinstance(lexer, lexers.Fortran):
+    #     comment_string = "c "
+    # elif isinstance(lexer, lexers.Fortran77):
+    #     comment_string = "c "
+    # elif isinstance(lexer, lexers.IDL):
+    #     comment_string = "//"
+    # elif isinstance(lexer, lexers.Ruby):
+    #     comment_string = "#"
+    # elif isinstance(lexer, lexers.HTML):
+    #     open_close_comment_style = True
+    #     comment_string = "<!--"
+    #     end_comment_string = "-->"
+    # elif isinstance(lexer, lexers.CSS):
+    #     open_close_comment_style = True
+    #     comment_string = "/*"
+    #     end_comment_string = "*/"
+    # elif isinstance(lexer, lexers.Zig):
+    #     comment_string = "//"
     # Save the comment options to the lexer
     return (open_close_comment_style, comment_string, end_comment_string)

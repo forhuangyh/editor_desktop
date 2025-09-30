@@ -47,11 +47,11 @@ class Book(QObject):
         collect_patt, patt = get_chapter_title_reg(self.language)
         match = re.search(collect_patt, chapter_title)
         if match:
-            self.chapter_pattern = bytes(collect_patt, "utf-8")
+            self.set_chapter_pattern(collect_patt)
             return
         match = re.search(patt, text)
         if match:
-            self.chapter_pattern = bytes(patt, "utf-8")
+            self.set_chapter_pattern(patt)
             return
 
     @timer_trace
@@ -61,7 +61,7 @@ class Book(QObject):
         """
         print("split_chapter_list")
         if chapter_pattern:
-            self.chapter_pattern = bytes(chapter_pattern, "utf-8")
+            self.set_chapter_pattern(chapter_pattern)
         if not all([self.chapter_pattern, text]):
             self.chapter_list = []
             self.chapter_list_updated.emit(self.chapter_list)
@@ -71,9 +71,7 @@ class Book(QObject):
         merged_chapters = []
         pre_txt_begin = 0
         current_chapter = {}
-
         try:
-            self.compiled_chapter_pattern = re.compile(self.chapter_pattern, re.MULTILINE)
             index = 0
             for match in re.finditer(self.compiled_chapter_pattern, text):
                 if pre_txt_begin != 0:
@@ -107,7 +105,6 @@ class Book(QObject):
 
             if current_chapter:
                 pre_txt = text[last_txt_begin:]
-                # current_chapter["txt"] = pre_txt.strip()
                 current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
                 merged_chapters.append(current_chapter)
 
@@ -140,6 +137,12 @@ class Book(QObject):
                 return False, f'标题：\"{chapter["title"]}\"，不符合规范，无法上线'
 
         return True, ""
+
+    def set_chapter_pattern(self, chapter_pattern):
+        """设置拆章正则
+        """
+        self.chapter_pattern = bytes(chapter_pattern, "utf-8")
+        self.compiled_chapter_pattern = re.compile(self.chapter_pattern, re.MULTILINE)
 
     def count_words(self, text):
         """计算字数

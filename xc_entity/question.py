@@ -37,7 +37,6 @@ class Question(QObject):
         print("split_question_list")
         line_dict, repeat_dict = {}, {}
         highlight_matches, match_list = [], []
-        chapter_list = book.get_chapter_list()
         order_list = [chapter["start"] for chapter in chapter_list] if chapter_list else []
         try:
             for index, line in enumerate(line_list):

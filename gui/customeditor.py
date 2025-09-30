@@ -29,6 +29,7 @@ from qt import QThread
 from xc_common.file_utils import copy_file
 from xc_entity.book import book_manager, Book
 from xc_entity.work import TaskWorker
+from xc_common.trace import timer_trace
 
 
 class CustomEditor(BaseEditor):
@@ -601,6 +602,7 @@ class CustomEditor(BaseEditor):
             event.ignore()
 
     # _text_changed_count = 0
+
     def text_changed(self):
         """Event that fires when the scintilla document text changes - with debouncing"""
         # 停止之前的定时器
@@ -666,27 +668,32 @@ class CustomEditor(BaseEditor):
         # Check if the selected line is within the line boundaries of the current document
         line_number = self.check_line_numbering(line_number)
         # Move the first displayed line to the top of the viewing area minus an offset
-        self.set_first_visible_line(line_number + 8)
+        self.set_first_visible_line(line_number)
         # Disable REPL focus after the REPL evaluation
         # Move the cursor to the start of the selected line
-        self.setCursorPosition(line_number, 0)
+        # self.setCursorPosition(line_number - 10, 0)
         if skip_repl_focus == True:
             self._skip_next_repl_focus()
 
     def goto_index(self, index):
         self.SendScintilla(self.SCI_GOTOPOS, index)
         line, line_index = self.lineIndexFromPosition(index)
-        self.set_first_visible_line(line - 10)
+        self.set_first_visible_line(line)
         self.setFocus()
 
     def set_first_visible_line(self, line_number):
         """Move the top of the viewing area to the selected line"""
         if line_number < 0:
             line_number = 0
-        # self.SendScintilla(qt.QsciScintillaBase.SCI_SETFIRSTVISIBLELINE, line_number)
+        # line_number 为物理行，SCI_GOTOLINE设置光标在line_number行，保证展示出该行，具体位置随机
         self.SendScintilla(qt.QsciScintillaBase.SCI_GOTOLINE, line_number)
-        # for _ in range(3):
-        #     self.SendScintilla(qt.QsciScintillaBase.SCI_LINESCROLLDOWN)
+        # 使用 SendScintilla 获取虚拟行
+        virtual_line = self.SendScintilla(
+            qt.QsciScintillaBase.SCI_VISIBLEFROMDOCLINE,
+            line_number
+        )
+        # 设置虚拟行为第一个可见行，即置顶
+        self.setFirstVisibleLine(virtual_line)
 
     def remove_line(self, line_number):
         """Remove a line from the custom editor"""

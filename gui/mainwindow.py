@@ -89,7 +89,7 @@ from xc_common import file_utils
 from xc_common.file_utils import copy_file_and_save_utf
 from xc_timer.book_download_scheduler import book_download_scheduler
 from xc_gui.q_message_box import CustomMessageBox
-
+from xc_common.trace import timer_trace
 
 if data.platform == "Windows":
     import win32gui
@@ -3648,6 +3648,7 @@ class MainWindow(qt.QMainWindow):
             return False
         return True
 
+    @timer_trace
     def open_file(self, file=None, tab_widget=None, save_layout=False, language=None, is_online=False, new_file_name=None):
         """
         Read file contents into a TabWidget
@@ -3718,7 +3719,13 @@ class MainWindow(qt.QMainWindow):
                             message, message_type=constants.MessageType.WARNING
                         )
                     else:
+                        # new_tab.setVisible(False)
+                        # 加载后显示
+                        # new_tab.clear_lexer()
+                        # new_tab.setUpdatesEnabled(False)
                         new_tab.setText(file_text)
+                        # new_tab.setVisible(True)
+                        # new_tab.setUpdatesEnabled(True)
                     # Save the layout if needed
                     if save_layout == True:
                         self.view.layout_save()
