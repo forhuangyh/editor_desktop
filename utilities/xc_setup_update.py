@@ -30,7 +30,7 @@ def build_with_pyinstaller():
     command = [
         'pyinstaller',
         '--onefile',  # 生成单个可执行文件
-        '--console',  # 使用控制台模式，确保能看到输出
+        '--windowed',  # 使用窗口模式，不显示控制台窗口
         '--icon', os.path.join(resource_dir, 'exco-icon-win.ico'),  # 设置图标
         '--name', 'update_program',  # 设置输出文件名
         '--add-data', f'{resource_dir};resources',  # 添加资源文件
