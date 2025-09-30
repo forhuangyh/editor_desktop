@@ -15,7 +15,8 @@ from qt import (
     QStyleOptionButton, QApplication,
     QListView, QEvent, QStyle, QColor, QFontMetrics,
     QAbstractListModel, QModelIndex, QVariant, QRect, Qt,
-    QLabel
+    QLabel, QToolButton
+
 )
 
 import constants
@@ -118,15 +119,39 @@ class SpecialReplace(QWidget):
         self.delegate = HighlightDelegate(self.result_view)
         self.result_view.setItemDelegate(self.delegate)
 
+        info_button_layout = QHBoxLayout()
         self.info_label = QLabel("匹配项：")
-        self.info_label.setWordWrap(True)  # 允许自动换行
-        self.info_label.setMinimumHeight(10)  # 设置最小高度
-        self.info_label.setStyleSheet("color: gray;")  # 可以设置样式
+        self.info_label.setWordWrap(True)
+        self.info_label.setMinimumHeight(10)
+        self.info_label.setStyleSheet("color: gray;")
+
+        # 增加弹性伸缩空间，将标签推到左侧
+        info_button_layout.addWidget(self.info_label)
+        info_button_layout.addStretch()
+
+        # 创建上箭头按钮
+        self.up_button = QToolButton()
+        self.up_button.setArrowType(Qt.ArrowType.UpArrow)
+        self.up_button.setFixedSize(QSize(20, 20))  # 固定按钮大小
+
+        # 创建下箭头按钮
+        self.down_button = QToolButton()
+        self.down_button.setArrowType(Qt.ArrowType.DownArrow)
+        self.down_button.setFixedSize(QSize(20, 20))  # 固定按钮大小
+
+        # 增加弹性伸缩空间，将标签推到左侧
+        info_button_layout.addWidget(self.up_button)
+        info_button_layout.addWidget(self.down_button)
+
+        # self.info_label = QLabel("匹配项：")
+        # self.info_label.setWordWrap(True)  # 允许自动换行
+        # self.info_label.setMinimumHeight(10)  # 设置最小高度
+        # self.info_label.setStyleSheet("color: gray;")  # 可以设置样式
 
         # 4. 添加组件到主布局
         main_layout.addLayout(find_layout)
         main_layout.addLayout(replace_layout)
-        main_layout.addWidget(self.info_label)
+        main_layout.addLayout(info_button_layout)
         main_layout.addWidget(self.result_view)
         self.setLayout(main_layout)
 
@@ -135,6 +160,9 @@ class SpecialReplace(QWidget):
         self.find_input.returnPressed.connect(self._find_all)
         self.replace_button.clicked.connect(self._replace_all)
         self.result_view.clicked.connect(self.on_item_clicked)
+
+        self.up_button.clicked.connect(self.on_up_clicked)
+        self.down_button.clicked.connect(self.on_down_clicked)
 
     def _find_all(self):
         """查找下一个匹配项并高亮"""
@@ -231,6 +259,40 @@ class SpecialReplace(QWidget):
         line_number = self.model.data(index, Qt.ItemDataRole.UserRole)
         self._editor.goto_line(line_number + 1)
         self._editor.setFocus()
+
+    def on_up_clicked(self):
+        current_index = self.result_view.currentIndex()
+        # 确保有选中的项，并且不是第一项
+        if not current_index.isValid():
+            new_row = 0
+        else:
+            new_row = current_index.row() - 1 if current_index.row() >= 1 else 0
+
+        new_index = self.model.index(new_row, 0)
+        # 将焦点设置到新的项上
+        self.result_view.setCurrentIndex(new_index)
+        # 滚动到新的项，确保可见
+        self.result_view.scrollTo(new_index)
+        # 模拟点击事件，触发 on_item_clicked
+        self.on_item_clicked(new_index)
+
+    def on_down_clicked(self):
+        current_index = self.result_view.currentIndex()
+
+        if not current_index.isValid():
+            new_row = 0
+        else:
+            new_row = current_index.row()
+
+        if new_row < self.model.rowCount() - 1:
+            new_row = current_index.row() + 1
+            new_index = self.model.index(new_row, 0)
+            # 将焦点设置到新的项上
+            self.result_view.setCurrentIndex(new_index)
+            # 滚动到新的项，确保可见
+            self.result_view.scrollTo(new_index)
+            # 模拟点击事件，触发 on_item_clicked
+            self.on_item_clicked(new_index)
 
     def set_theme(self, theme):
         """
