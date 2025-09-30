@@ -11,7 +11,7 @@ import qt
 import data
 import settings
 from xc_service.account_service import AccountService
-from xc_service.sqlite_service import SQLiteService, sqlite_service
+from xc_service.sqlite_service import sqlite_service
 from settings.constants import version_type
 from xc_common.logger import get_logger
 # 获取模块专属logger
@@ -289,7 +289,7 @@ class LoginWindow(qt.QDialog):
 
                 # 获取当前环境 是dev 还是prod
                 from xc_service.book_service import book_service
-                from utilities.aws_s3 import aws_oss_singleton
+                from xc_common.aws_s3 import aws_oss_singleton
                 # 调用get_aws_configs方法获取AWS配置
                 aws_configs = book_service.get_aws_configs()
                 if aws_configs:

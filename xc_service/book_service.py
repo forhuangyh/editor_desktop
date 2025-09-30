@@ -5,7 +5,7 @@ from xc_entity.account import user_info
 import settings
 from xc_common.logger import get_logger
 from urllib.parse import urlparse
-from utilities.aws_s3 import aws_oss_singleton  # 导入全局单例实例
+from xc_common.aws_s3 import aws_oss_singleton  # 导入全局单例实例
 # 获取模块专属logger
 logger = get_logger("book_service")
 
