@@ -264,7 +264,7 @@ class UpdateSoftwareService(Object):
                     if version.parse(latest_version) > version.parse(application_version):
                         # 有新版本
                         logger.info(f"发现新版本，当前版本: {application_version}, 最新版本: {latest_version}")
-                        return latest_item["down_load_url"]
+                        return latest_item["down_load_url"], latest_version
                     else:
                         # 没有新版本
                         logger.info(f"当前版本: {application_version}, 最新版本: {latest_version}，没有新版本")

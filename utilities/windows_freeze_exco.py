@@ -190,7 +190,11 @@ def main():
         (os.path.abspath(p), os.path.join("lib", "black", os.path.basename(p)))
         for p in mypyc_files
     ]
-    include_files = [(os.path.abspath(black_path), os.path.join("lib", "black"))] + extra_include_files
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    include_files = [(os.path.abspath(black_path), os.path.join("lib", "black")),
+                     (os.path.join(current_dir, "update_program.exe"), "update_program.exe"),
+                     ] + extra_include_files
 
     # 检查缺失文件
     missing = [src for src, _ in include_files if not os.path.exists(src)]
