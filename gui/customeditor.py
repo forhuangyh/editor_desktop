@@ -663,17 +663,17 @@ class CustomEditor(BaseEditor):
     Line manipulation functions
     """
 
-    def goto_line(self, line_number, skip_repl_focus=True):
+    def goto_line(self, line_number, skip_repl_focus=True, down_line_count=3):
         """Set focus and cursor to the selected line"""
         # Check if the selected line is within the line boundaries of the current document
         line_number = self.check_line_numbering(line_number)
         # Move the first displayed line to the top of the viewing area minus an offset
-        self.set_first_visible_line(line_number)
+        self.set_first_visible_line(line_number, down_line_count)
         # Disable REPL focus after the REPL evaluation
         # Move the cursor to the start of the selected line
         # self.setCursorPosition(line_number - 10, 0)
-        if skip_repl_focus == True:
-            self._skip_next_repl_focus()
+        # if skip_repl_focus == True:
+        #     self._skip_next_repl_focus()
 
     def goto_index(self, index):
         self.SendScintilla(self.SCI_GOTOPOS, index)
@@ -681,7 +681,7 @@ class CustomEditor(BaseEditor):
         self.set_first_visible_line(line)
         self.setFocus()
 
-    def set_first_visible_line(self, line_number):
+    def set_first_visible_line(self, line_number, down_line_count=3):
         """Move the top of the viewing area to the selected line"""
         if line_number < 0:
             line_number = 0
@@ -693,7 +693,7 @@ class CustomEditor(BaseEditor):
             line_number
         )
         # 设置虚拟行为第一个可见行，即置顶
-        self.setFirstVisibleLine(virtual_line)
+        self.setFirstVisibleLine(virtual_line - down_line_count)
 
     def remove_line(self, line_number):
         """Remove a line from the custom editor"""
