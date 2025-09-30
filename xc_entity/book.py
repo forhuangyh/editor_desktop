@@ -1,7 +1,7 @@
 """
 图书类: 属性，方法
 """
-import re
+import regex
 from xc_common.word_count import word_count_func
 
 
@@ -45,11 +45,11 @@ class Book(QObject):
             return
         chapter_title = f"{chapter_title}\n"
         collect_patt, patt = get_chapter_title_reg(self.language)
-        match = re.search(collect_patt, chapter_title)
+        match = regex.search(collect_patt, chapter_title)
         if match:
             self.set_chapter_pattern(collect_patt)
             return
-        match = re.search(patt, text)
+        match = regex.search(patt, text)
         if match:
             self.set_chapter_pattern(patt)
             return
@@ -73,7 +73,7 @@ class Book(QObject):
         current_chapter = {}
         try:
             index = 0
-            for match in re.finditer(self.compiled_chapter_pattern, text):
+            for match in regex.finditer(self.compiled_chapter_pattern, text):
                 if pre_txt_begin != 0:
                     pre_txt = text[pre_txt_begin:match.start()]
                     current_chapter["word_count"] = self.count_words(pre_txt.decode("utf-8"))
@@ -127,10 +127,10 @@ class Book(QObject):
         # 检查一下标题
         collect_patt, patt = get_chapter_title_reg(self.language)
         for chapter in self.chapter_list:
-            match = re.search(collect_patt, chapter["title"])
+            match = regex.search(collect_patt, chapter["title"])
             if match:
                 continue
-            match = re.search(patt, chapter["title"])
+            match = regex.search(patt, chapter["title"])
             if match:
                 continue
             else:
@@ -142,7 +142,7 @@ class Book(QObject):
         """设置拆章正则
         """
         self.chapter_pattern = bytes(chapter_pattern, "utf-8")
-        self.compiled_chapter_pattern = re.compile(self.chapter_pattern, re.MULTILINE)
+        self.compiled_chapter_pattern = regex.compile(self.chapter_pattern, regex.MULTILINE)
 
     def count_words(self, text):
         """计算字数

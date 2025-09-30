@@ -13,7 +13,7 @@ from qt import (
     QApplication,
     QListView, QStyle, QColor, QFontMetrics,
     QAbstractListModel, QModelIndex, QVariant, Qt,
-    QLabel, QComboBox, pyqtSlot, QToolButton
+    QLabel, QComboBox, pyqtSlot, QToolButton, QTimer
 )
 
 import constants
@@ -65,11 +65,10 @@ class ChapterList(QWidget):
         self._current_book = book_manager.get_book(self._editor)
         self._chapter_list = None
         self.settings_control_font = settings.get("settings_control_font")
-        self.reg_list = [
-            # r'^###(\w{1,25})###(.*?)\r?\n?$',
-            r'^(.*?Chapter.*?)\r?\n?$',
-            r'^(.*?\d+.*?)\r?\n?$',
-        ]
+        self.reg_list = {
+            "章节匹配正则(Book Chapter 1)": r'^(.*?Chapter.*?)\r?\n?$',
+            "章节匹配正则(第一章)": r'^(.*?第.*?章.*?)\r?\n?$',
+        }
         self.last_index = 0
         self.init_ui()
         self._fixed_widget.editor_changed.connect(self.update_editor_reference)
@@ -157,7 +156,8 @@ class ChapterList(QWidget):
         self.find_input = QComboBox()
         self.find_input.setEditable(True)  # 设置为可编辑
         # 可选：添加一些历史搜索项
-        self.find_input.addItems(self.reg_list)
+        for lable, val in self.reg_list.items():
+            self.find_input.addItem(lable, val)
         # self.find_input.setStyleSheet(self.settings_control_font.get("QLineEdit"))
         self.find_input.setPlaceholderText("请输入")
         self.find_input.setMinimumHeight(30)
@@ -221,9 +221,34 @@ class ChapterList(QWidget):
         # # 连接信号槽
         self.search_button.clicked.connect(self._find_all)
         self.find_input.lineEdit().returnPressed.connect(self._find_all)
+        self.find_input.activated.connect(self._on_change)
         self.result_view.clicked.connect(self.on_item_clicked)
+
         self.up_button.clicked.connect(self.on_up_clicked)
         self.down_button.clicked.connect(self.on_down_clicked)
+
+        # 定时器，用于长按连续触发
+        # self.up_repeat_timer = QTimer()
+        # self.up_repeat_timer.setInterval(200)  # 100ms 触发一次
+        # self.up_button.pressed.connect(self.on_up_button_pressed)
+        # self.up_button.released.connect(self.on_up_button_released)
+        # self.up_repeat_timer.timeout.connect(self.on_up_timer_timeout)
+
+    # def on_up_timer_timeout(self):
+    #     self.on_up_clicked()
+
+    # def on_up_button_pressed(self):
+    #     self.on_up_clicked()  # 第一次点击
+    #     self.up_repeat_timer.start()  # 启动定时器，模拟长按
+
+    # def on_up_button_released(self):
+    #     self.up_repeat_timer.stop()  # 松开按钮，停止定时器
+
+    def _on_change(self, index):
+        search_text = self.find_input.currentData()
+        # if search_text in self.reg_list:
+        #     search_text = self.reg_list[search_text]
+        self.find_input.setCurrentText(search_text)
 
     def on_up_clicked(self):
         current_index = self.result_view.currentIndex()

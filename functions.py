@@ -17,6 +17,7 @@ import operator
 import os
 import os.path
 import re
+import regex
 import shutil
 import subprocess
 import sys
@@ -2116,16 +2117,16 @@ def index_strings_in_text(
         text = bytes(text, "utf-8")
     # Set the search text according to the regular expression selection
     if regular_expression == False:
-        search_text = re.escape(search_text)
+        search_text = regex.escape(search_text)
     # Compile expression according to case sensitivity flag
     if case_sensitive == True:
-        compiled_search_re = re.compile(search_text)
+        compiled_search_re = regex.compile(search_text)
     else:
-        compiled_search_re = re.compile(search_text, re.IGNORECASE)
+        compiled_search_re = regex.compile(search_text, regex.IGNORECASE | regex.MULTILINE)
     # Create the list with all of the matches
     list_of_matches = [
         (0, match.start(), 0, match.end(), match.group())
-        for match in re.finditer(compiled_search_re, text)
+        for match in regex.finditer(compiled_search_re, text)
     ]
     return list_of_matches
 
@@ -2213,11 +2214,11 @@ def replace_and_index(
     if regular_expression == True:
         # Compile the regular expression object according to the case sensitivity
         if case_sensitive == True:
-            compiled_search_re = re.compile(search_text)
+            compiled_search_re = regex.compile(search_text, regex.MULTILINE)
         else:
-            compiled_search_re = re.compile(search_text, re.IGNORECASE)
+            compiled_search_re = regex.compile(search_text, regex.IGNORECASE | regex.MULTILINE)
         # Replace all instances of search text with the replace text
-        replaced_text = re.sub(compiled_search_re, replace_text, input_string)
+        replaced_text = regex.sub(compiled_search_re, replace_text, input_string)
         replaced_match_indexes = []
         # Split old and new texts into line lists
         split_input_text = input_string.split("\n")
@@ -2241,13 +2242,13 @@ def replace_and_index(
                 new_search_text = r"\b(" + search_text + r")\b"
             else:
                 # Escape the regex special characters
-                new_search_text = re.escape(search_text)
+                new_search_text = regex.escape(search_text)
             # Replace backslashes with double backslashes, so that the
             # regular expression treats backslashes the same as standard
             # Python string replace!
             new_replace_text = replace_text.replace("\\", "\\\\")
-            compiled_search_re = re.compile(new_search_text, re.IGNORECASE)
-            replaced_text = re.sub(compiled_search_re, new_replace_text, input_string)
+            compiled_search_re = regex.compile(new_search_text, regex.IGNORECASE)
+            replaced_text = regex.sub(compiled_search_re, regex.escape(new_replace_text), input_string)
         replaced_match_indexes = []
         # Loop while storing the new indexes
         diff = 0
@@ -2371,18 +2372,18 @@ def regex_replace_text(
     replaced_text = None
     if regular_expression == True:
         if case_sensitive == True:
-            compiled_search_re = re.compile(search_text)
+            compiled_search_re = regex.compile(search_text, regex.MULTILINE)
         else:
-            compiled_search_re = re.compile(search_text, re.IGNORECASE)
-        replaced_text = re.sub(compiled_search_re, replace_text, input_string)
+            compiled_search_re = regex.compile(search_text, regex.IGNORECASE | regex.MULTILINE)
+        replaced_text = regex.sub(compiled_search_re, replace_text, input_string)
     else:
         if case_sensitive == True:
             replaced_text = input_string.replace(search_text, replace_text)
         else:
             # 're.escape' replaces the re module special characters with literals,
             # so that the search_text is treated as a string literal
-            compiled_re = re.compile(re.escape(search_text), re.IGNORECASE)
-            replaced_text = re.sub(compiled_re, replace_text, input_string)
+            compiled_re = regex.compile(regex.escape(search_text), re.IGNORECASE)
+            replaced_text = regex.sub(compiled_re, regex.escape(replace_text), input_string)
     return replaced_text
 
 

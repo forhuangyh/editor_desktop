@@ -8,6 +8,7 @@ For complete license information of the dependencies, check the 'additional_lice
 
 import os
 import re
+import regex
 
 import components.actionfilter
 import components.hotspots
@@ -432,15 +433,16 @@ class CustomEditor(BaseEditor):
         # This function seems to be asynchronous so a lock
         # is required in order to prevent recursive access to
         # Python's objects
-        if CustomEditor.selection_lock == False:
-            CustomEditor.selection_lock = True
-            selected_text = self.selectedText()
-            self.clear_selection_highlights()
-            if selected_text.isidentifier():
-                self._highlight_selected_text(
-                    selected_text, case_sensitive=False, regular_expression=True
-                )
-            CustomEditor.selection_lock = False
+        pass
+        # if CustomEditor.selection_lock == False:
+        #     CustomEditor.selection_lock = True
+        #     selected_text = self.selectedText()
+        #     self.clear_selection_highlights()
+        #     if selected_text.isidentifier():
+        #         self._highlight_selected_text(
+        #             selected_text, case_sensitive=False, regular_expression=True
+        #         )
+        #     CustomEditor.selection_lock = False
 
     def _skip_next_repl_focus(self):
         """
@@ -647,41 +649,41 @@ class CustomEditor(BaseEditor):
         self.main_form.view.indication_check()
 
     def replaceSelectedText(self, *args, **kwargs):
-        marks = self.main_form.bookmarks.get_editor_all(self)
-        mark_data = []
-        for mark in marks:
-            mark_data.append((mark["line"], mark))
-        for line, mark in mark_data:
-            self.bookmarks.remove_marker_at_line(line)
+        # marks = self.main_form.bookmarks.get_editor_all(self)
+        # mark_data = []
+        # for mark in marks:
+        #     mark_data.append((mark["line"], mark))
+        # for line, mark in mark_data:
+        #     self.bookmarks.remove_marker_at_line(line)
         super().replaceSelectedText(*args, **kwargs)
-        for line, mark in mark_data:
-            new_handle = self.bookmarks.add_marker_at_line(line)
-            mark["line"] = line
-            mark["handle"] = new_handle
+        # for line, mark in mark_data:
+        #     new_handle = self.bookmarks.add_marker_at_line(line)
+        #     mark["line"] = line
+        #     mark["handle"] = new_handle
 
     """
     Line manipulation functions
     """
 
-    def goto_line(self, line_number, skip_repl_focus=True):
+    def goto_line(self, line_number, skip_repl_focus=True, down_line_count=4):
         """Set focus and cursor to the selected line"""
         # Check if the selected line is within the line boundaries of the current document
         line_number = self.check_line_numbering(line_number)
         # Move the first displayed line to the top of the viewing area minus an offset
-        self.set_first_visible_line(line_number)
+        self.set_first_visible_line(line_number, down_line_count)
         # Disable REPL focus after the REPL evaluation
         # Move the cursor to the start of the selected line
         # self.setCursorPosition(line_number - 10, 0)
-        if skip_repl_focus == True:
-            self._skip_next_repl_focus()
+        # if skip_repl_focus == True:
+        #     self._skip_next_repl_focus()
 
     def goto_index(self, index):
         self.SendScintilla(self.SCI_GOTOPOS, index)
         line, line_index = self.lineIndexFromPosition(index)
-        self.set_first_visible_line(line)
+        self.set_first_visible_line(line, 0)
         self.setFocus()
 
-    def set_first_visible_line(self, line_number):
+    def set_first_visible_line(self, line_number, down_line_count):
         """Move the top of the viewing area to the selected line"""
         if line_number < 0:
             line_number = 0
@@ -692,8 +694,8 @@ class CustomEditor(BaseEditor):
             qt.QsciScintillaBase.SCI_VISIBLEFROMDOCLINE,
             line_number
         )
-        # 设置虚拟行为第一个可见行，即置顶
-        self.setFirstVisibleLine(virtual_line)
+        # 设置虚拟行设置为第一个可见行-down_line_count
+        self.setFirstVisibleLine(virtual_line - down_line_count)
 
     def remove_line(self, line_number):
         """Remove a line from the custom editor"""
@@ -1454,20 +1456,20 @@ class CustomEditor(BaseEditor):
             # Convert byte position to character index
             current_char_pos = len(doc_text.encode('utf-8')[:byte_pos].decode('utf-8'))
 
-            flags = re.IGNORECASE if not case_sensitive else 0
-            compiled_search_re = re.compile(search_text, flags)
+            flags = regex.IGNORECASE | regex.MULTILINE if not case_sensitive else regex.MULTILINE
+            compiled_search_re = regex.compile(search_text, flags)
 
             if search_forward:
                 # 向前搜索，从当前位置开始
                 search_slice = doc_text[current_char_pos:]
-                search_result = re.search(compiled_search_re, search_slice)
+                search_result = regex.search(compiled_search_re, search_slice)
 
                 if search_result:
                     char_start = current_char_pos + search_result.start()
                     # char_end = current_char_pos + search_result.end()
                 else:
                     # 循环搜索，从文档开头开始
-                    search_result = re.search(compiled_search_re, doc_text)
+                    search_result = regex.search(compiled_search_re, doc_text)
                     if not search_result:
                         self.main_form.display.write_to_statusbar("查找不到匹配项")
                         return constants.SearchResult.NOT_FOUND
@@ -1594,19 +1596,19 @@ class CustomEditor(BaseEditor):
             )
             if search_result != constants.SearchResult.NOT_FOUND:
                 if case_sensitive == True:
-                    compiled_search_re = re.compile(search_text)
+                    compiled_search_re = regex.compile(search_text, regex.MULTILINE)
                 else:
-                    compiled_search_re = re.compile(search_text, re.IGNORECASE)
+                    compiled_search_re = regex.compile(search_text, regex.IGNORECASE | regex.MULTILINE)
                 # The search expression is already selected from the find_text function
                 found_expression = self.selectedText()
                 # Save the found selected text line/index information
                 saved_selection = self.getSelection()
                 # Replace the search expression with the replace expression
-                replacement = re.sub(compiled_search_re, replace_text, found_expression)
+                replacement = regex.sub(compiled_search_re, replace_text, found_expression)
                 # Replace selected text with replace text
                 self.replaceSelectedText(replacement)
                 # Select the newly replaced text
-                self.main_form.display.repl_display_message(replacement)
+                self.main_form.display.write_to_statusbar(replacement)
                 self.setSelection(
                     saved_selection[0],
                     saved_selection[1],
@@ -1663,10 +1665,10 @@ class CustomEditor(BaseEditor):
         if regular_expression == True:
             # Check case sensitivity for regular expression
             if case_sensitive == True:
-                compiled_search_re = re.compile(search_text)
+                compiled_search_re = regex.compile(search_text, regex.MULTILINE)
             else:
-                compiled_search_re = re.compile(search_text, re.IGNORECASE)
-            search_result = re.search(compiled_search_re, self.text())
+                compiled_search_re = regex.compile(search_text, regex.IGNORECASE | regex.MULTILINE)
+            search_result = regex.search(compiled_search_re, self.text())
         else:
             search_result = self.find_text(search_text, case_sensitive, whole_words=whole_words)
         if search_result == constants.SearchResult.NOT_FOUND:
